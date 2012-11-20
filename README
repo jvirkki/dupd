@@ -7,3 +7,11 @@ minimal changes.
 
 dupd seeks to be fast and efficient. For most file sets it performs
 better than popular tools such as 'fdupes'.
+
+Quick howto:
+
+% dupd scan --path $HOME   (or whichever path you want to scan)
+% dupd report
+
+For more information read the USAGE document.
+
