@@ -1,0 +1,9 @@
+
+dupd is a file duplicate detection CLI utility.
+
+The build currently supports Linux (tested on Debian), Solaris (tested
+on OpenIndiana) and Mac OS X. Other UNIX variants should work with
+minimal changes.
+
+dupd seeks to be fast and efficient. For most file sets it performs
+better than popular tools such as 'fdupes'.
