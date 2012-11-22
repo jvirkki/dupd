@@ -38,7 +38,8 @@
 #include "utils.h"
 
 static int files_count;         // total files processed so far
-static int softlinks;           // count of soft links ignored
+static int files_ignored;       // count of (non-files) ignored
+static int files_error;         // count of errors (files skipped)
 static long avg_size;           // average file size
 
 
@@ -87,22 +88,15 @@ static void walk_dir(const char * path)
     if (rv == 0) {
       if (S_ISDIR(new_stat_info.st_mode)) {
         walk_dir(newpath);
+        continue;
+      }
 
-      } else {
+      if (S_ISREG(new_stat_info.st_mode)) {
         if (verbosity >= 4) {
           printf("FILE: [%s]\n", newpath);
         }
 
-        // Don't follow symlinks
-        if (S_ISLNK(new_stat_info.st_mode)) {
-          softlinks++;
-          if (verbosity >= 4) {
-            printf("Ignoring soft link [%s]\n", newpath);
-          }
-        } else {
-          add_file(new_stat_info.st_size, newpath);
-        }
-
+        add_file(new_stat_info.st_size, newpath);
         files_count++;
         avg_size = avg_size + ((new_stat_info.st_size - avg_size)/files_count);
 
@@ -111,11 +105,17 @@ static void walk_dir(const char * path)
             printf("Files scanned: %d\n", files_count);
           }
         }
+      } else { // if not regular file
+        if (verbosity >= 4) {
+          printf("SKIP (not file) [%s]\n", newpath);
+        }
+        files_ignored++;
       }
-    } else {
+    } else { // if error from stat
       if (verbosity >= 1) {
         printf("SKIP (error) [%s]\n", newpath);
       }
+      files_error++;
     }
   }
 
@@ -149,7 +149,8 @@ void scan()
   if (verbosity >= 2) {
     long t2 = get_current_time_millis();
     printf("Average file size: %ld\n", avg_size);
-    printf("Soft links ignored: %d\n", softlinks);
+    printf("Special files ignored: %d\n", files_ignored);
+    printf("Files with stat errors: %d\n", files_error);
     printf("File scan completed in %ldms\n", t2 - t1);
     report_size_list();
   }
