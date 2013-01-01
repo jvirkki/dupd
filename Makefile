@@ -33,11 +33,20 @@ ifeq ($(BUILD_OS),Linux)
 OBJCP=objcopy
 CFLAGS=-D_FILE_OFFSET_BITS=64
 USAGE=$(BUILD)/usage.o
+# On Linux, gcc by default compiles to the same bitness as the OS,
+# so need to set the flags to objcopy accordingly.
+GCCBITS := $(shell getconf LONG_BIT)
+ifeq ($(GCCBITS),64)
+USAGE_ARCH=-O elf64-x86-64 -B i386
+else
+USAGE_ARCH=-O elf32-i386 -B i386
+endif
 endif
 
 ifeq ($(BUILD_OS),SunOS)
 OBJCP=gobjcopy
 USAGE=$(BUILD)/usage.o
+USAGE_ARCH=-O elf32-i386 -B i386
 endif
 
 ifeq ($(BUILD_OS),Darwin)
@@ -60,7 +69,7 @@ $(BUILD)/%.o: src/%.c
 	$(CC) $(INC) $(CFLAGS) -c $< -o $@
 
 $(BUILD)/usage.o: USAGE
-	$(OBJCP) -I binary -O elf32-i386 -B i386 USAGE $(BUILD)/usage.o
+	$(OBJCP) -I binary $(USAGE_ARCH) USAGE $(BUILD)/usage.o
 
 clean:
 	rm -f dupd
