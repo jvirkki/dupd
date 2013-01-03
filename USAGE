@@ -35,6 +35,9 @@ This will scan all files in your home directory and in all contained
 subdirectories. The duplicates found will be saved in a database file
 $HOME/.dupd_sqlite.
 
+The --path option can be repeated multiple times in order to scan
+multiple directory hierarchies.
+
 Additional options are available:
 
 --db PATH          Override the default database file location.

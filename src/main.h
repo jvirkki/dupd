@@ -40,7 +40,7 @@ extern int verbosity;
  * Scanning starts here.
  *
  */
-extern char * start_path;
+extern char * start_path[];
 
 
 /** ***************************************************************************

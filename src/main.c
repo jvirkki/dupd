@@ -28,9 +28,12 @@
 #include "scan.h"
 #include "utils.h"
 
+#define MAX_START_PATH 10
+
 static char * operation = NULL;
 int verbosity = 1;
-char * start_path = NULL;
+int start_path_count = 0;
+char * start_path[MAX_START_PATH];
 int write_db = 1;
 char * db_path = NULL;
 char * cut_path = NULL;
@@ -124,12 +127,19 @@ static void process_args(int argc, char * argv[])
 
     } else if (!strncmp(argv[i], "--path", 6)) {
       if (argc < i+2) { show_usage(); }
-      start_path = argv[i+1];
+      start_path[start_path_count] = argv[i+1];
       i++;
-      if (start_path[0] != '/') {
-        printf("error: path must be absolute (start with /)\n");
+      if (start_path[start_path_count][0] != '/') {
+        printf("error: path [%s] must be absolute (start with /)\n",
+               start_path[start_path_count]);
         exit(1);
       }
+      start_path_count++;
+      if (start_path_count == MAX_START_PATH) {
+        printf("error: exceeded max number of --path elements\n");
+        exit(1);
+      }
+      start_path[start_path_count] = NULL;
 
     } else if (!strncmp(argv[i], "--db", 4)) {
       if (argc < i+2) { show_usage(); }
@@ -186,7 +196,7 @@ static void process_args(int argc, char * argv[])
     snprintf(db_path, PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
-  if (!strncmp(operation, "scan", 4) && start_path == NULL) {
+  if (!strncmp(operation, "scan", 4) && start_path[0] == NULL) {
     printf("error: scan requires a start path\n");
     show_usage();
   }

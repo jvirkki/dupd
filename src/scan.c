@@ -140,7 +140,9 @@ void scan()
   // Scan phase - stat all files and build size tree, size list and path list
 
   long t1 = get_current_time_millis();
-  walk_dir(start_path);
+  for (int i=0; start_path[i] != NULL; i++) {
+    walk_dir(start_path[i]);
+  }
 
   if (verbosity >= 1) {
     printf("Files scanned: %d\n", files_count);
