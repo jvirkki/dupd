@@ -83,6 +83,18 @@ static void walk_dir(const char * path)
     }
 
     snprintf(newpath, PATH_MAX, "%s/%s", path, entry->d_name);
+
+    // Skip files with a comma in them because dupd uses comma as a separator
+    // in the sqlite duplicates table. It shouldn't, but for now just skip
+    // these files to avoid confusion.
+
+    if (strchr(newpath, ',')) {
+      if (verbosity >= 1) {
+        printf("SKIP (comma) [%s]\n", newpath);
+      }
+      continue;
+    }
+
     rv = get_file_info(newpath, &new_stat_info);
 
     if (rv == 0) {
