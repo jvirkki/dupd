@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -47,6 +47,110 @@ static void print_path(char * path)
   }
 
   printf("  %s\n", path + strlen(cut_path));
+}
+
+
+/** ***************************************************************************
+ * For the given 'path', check if that file is the same as the file in
+ * 'self' which has the given 'hash'.
+ *
+ */
+static int is_duplicate(char * path, char * self, char * hash)
+{
+  char hash2[16];
+
+  if (!strcmp(path, self)) {
+    return(0);
+  }
+
+  if (verbosity >= 3) { printf("Checking %s\n", path); }
+
+  if (!file_exists(path)) {
+    if (verbosity >= 2) { printf("file no longer exists: %s\n", path); }
+    return(0);
+  }
+
+  if (md5(path, hash2, 0, 0)) {
+    printf("error: unable to hash %s\n", path);
+    exit(1);
+  }
+
+  if (memcmp(hash, hash2, 16)) {
+    if (verbosity >= 2) { printf("file no longer a duplicate: %s\n", path); }
+    return(0);
+  }
+
+  print_path(path);
+  return(1);
+}
+
+
+/** ***************************************************************************
+ * For the given file path, check if the database contains known duplicates
+ * for it. If so, verify each listed duplicate to see if it still exists and
+ * is still a duplicate.
+ *
+ * Returns the number of currently known duplicates.
+ *
+ */
+static int check_one_file(char * path)
+{
+  const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
+  sqlite3_stmt * statement = NULL;
+  int rv;
+  char line[PATH_MAX];
+  char hash[16];
+  char * path_list;
+  char * pos = NULL;
+  char * token;
+
+  if (path == NULL) {
+    printf("error: no file specified\n");
+    exit(1);
+  }
+
+  if (!file_exists(path)) {
+    printf("error: not such file: %s\n", path);
+    exit(1);
+  }
+
+  if (verbosity >= 2) { printf("Checking database for file %s\n", path); }
+  if (verbosity >= 3) { printf("Hashing %s\n", path); }
+
+  if (md5(path, hash, 0, 0)) {
+    printf("error: unable to hash %s\n", path);
+    exit(1);
+  }
+
+  sqlite3 * dbh = open_database(db_path, 0);
+  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  snprintf(line, PATH_MAX, "%%%s%%", path);
+  rv = sqlite3_bind_text(statement, 1, line, -1, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
+
+  int dups = 0;
+
+  while (rv != SQLITE_DONE) {
+    rv = sqlite3_step(statement);
+    if (rv == SQLITE_DONE) { continue; }
+    if (rv != SQLITE_ROW) {
+      printf("Error reading duplicates table!\n");
+      exit(1);
+    }
+
+    path_list = (char *)sqlite3_column_text(statement, 0);
+
+    if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
+      dups += is_duplicate(token, path, hash);
+      while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
+        dups += is_duplicate(token, path, hash);
+      }
+    }
+  }
+  sqlite3_finalize(statement);
+  return dups;
 }
 
 
@@ -100,4 +204,16 @@ void report()
     }
   }
   sqlite3_finalize(statement);
+}
+
+
+/** ***************************************************************************
+ * Public function, see report.h
+ *
+ */
+void check_file()
+{
+  printf("Duplicates for %s:\n", file_path);
+  int dups = check_one_file(file_path);
+  printf("It has %d known duplicates in the database.\n", dups);
 }

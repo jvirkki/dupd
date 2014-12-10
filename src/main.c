@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -34,6 +34,7 @@ static char * operation = NULL;
 int verbosity = 1;
 int start_path_count = 0;
 char * start_path[MAX_START_PATH];
+char * file_path = NULL;;
 int write_db = 1;
 char * db_path = NULL;
 char * cut_path = NULL;
@@ -67,6 +68,9 @@ static void show_usage()
   printf("    report  show duplicate report from last scan\n");
   printf("      --cut PATHSEG    remove 'PATHSEG' from report paths\n");
   printf("      --minsize SIZE   min size of duplicated space to report\n");
+  printf("\n");
+  printf("    file    check for duplicates of the given file\n");
+  printf("      --file PATH      check this file\n");
   printf("\n");
   printf("    help    show more help\n");
   printf("\n");
@@ -112,6 +116,7 @@ static void process_args(int argc, char * argv[])
   operation = argv[1];
   if (strncmp(operation, "scan", 4) &&
       strncmp(operation, "report", 6) &&
+      strncmp(operation, "file", 4) &&
       strncmp(operation, "help", 4)) {
     printf("error: unknown operation [%s]\n", operation);
     show_usage();
@@ -140,6 +145,11 @@ static void process_args(int argc, char * argv[])
         exit(1);
       }
       start_path[start_path_count] = NULL;
+
+    } else if (!strncmp(argv[i], "--file", 6)) {
+      if (argc < i+2) { show_usage(); }
+      file_path = argv[i+1];
+      i++;
 
     } else if (!strncmp(argv[i], "--db", 4)) {
       if (argc < i+2) { show_usage(); }
@@ -216,6 +226,9 @@ int main(int argc, char * argv[])
 
   } else if (!strncmp(operation, "report", 6)) {
     report();
+
+  } else if (!strncmp(operation, "file", 4)) {
+    check_file();
 
   } else if (!strncmp(operation, "help", 4)) {
     show_help();

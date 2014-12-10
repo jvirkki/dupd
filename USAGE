@@ -17,6 +17,9 @@ dupd is a duplicate detection utility.
       --cut PATHSEG    remove 'PATHSEG' from report paths
       --minsize SIZE   min size of duplicated space to report
 
+    file    check for duplicates of the given file
+      --file PATH      check this file
+
     help    show more help
 
 General options include:
@@ -133,3 +136,23 @@ Options include:
 --minsize SIZE     Report only duplicate sets which consume at least this
                    much space. Note this is the total size occupied by
                    all the duplicates in a set, not their individual file size.
+
+Check one file
+--------------
+To check whether one given file still has known duplicates use the
+file operation.  Note that this does not do a new scan so it will not
+find new duplicates. This checks whether the duplicates identified
+during the previous scan still exist and are still duplicates. This is
+convenient when the database contains a large scan which takes a long
+time to re-run.
+
+% dupd file --file PATH
+
+Options include:
+
+--file PATH        Required: The file to check
+
+--db PATH          Override the default database file location.
+
+--cut PATHSEG      Remove prefix $PATHSEG from the file paths in the report
+

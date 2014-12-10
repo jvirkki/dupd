@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -27,13 +27,24 @@
 /** ***************************************************************************
  * Prints a report on the duplicates to stdout.
  *
- * Parameters:
- *    dbh - sqlite3 database handle. Must be valid.
+ * Parameters: none
  *
  * Return: none
  *
  */
 void report();
+
+
+/** ***************************************************************************
+ * Checks for the duplicates of a given file based on the scan info present
+ * in the database.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void check_file();
 
 
 #endif
