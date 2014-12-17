@@ -81,6 +81,8 @@ static void show_usage()
   printf("      --path PATH      path where scanning will start\n");
   printf("      --no-unique      ignore unique table even if present\n");
   printf("\n");
+  printf("    rmsh    create shell script to delete all duplicates\n");
+  printf("\n");
   printf("    help    show more help\n");
   printf("\n");
   printf("General options include:\n");
@@ -127,6 +129,7 @@ static void process_args(int argc, char * argv[])
       strncmp(operation, "report", 6) &&
       strncmp(operation, "uniques", 7) &&
       strncmp(operation, "file", 4) &&
+      strncmp(operation, "rmsh", 4) &&
       strncmp(operation, "help", 4)) {
     printf("error: unknown operation [%s]\n", operation);
     show_usage();
@@ -257,11 +260,10 @@ int main(int argc, char * argv[])
     uniques();
 
   } else if (!strncmp(operation, "file", 4)) {
-    if (file_path == NULL) {
-      printf("error: file requires --file\n");
-      exit(1);
-    }
     check_file();
+
+  } else if (!strncmp(operation, "rmsh", 4)) {
+    create_shell_script();
 
   } else if (!strncmp(operation, "help", 4)) {
     show_help();

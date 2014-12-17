@@ -58,4 +58,15 @@ void uniques();
 void check_file();
 
 
+/** ***************************************************************************
+ * Creates a shell script which can delete all the duplicates.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void create_shell_script();
+
+
 #endif

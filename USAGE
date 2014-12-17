@@ -26,6 +26,8 @@ dupd is a duplicate detection utility.
       --path PATH      path where scanning will start
       --no-unique      ignore unique table even if present
 
+    rmsh    create shell script to delete all duplicates
+
     help    show more help
 
 General options include:
@@ -171,4 +173,19 @@ Options include:
 --db PATH          Override the default database file location.
 
 --cut PATHSEG      Remove prefix $PATHSEG from the file paths in the report
+
+
+Remove duplicate files
+----------------------
+
+The rmsh operation prints to stdout a shell script which can be used
+to delete all duplicates in the report, keeping only one copy of each
+set. This is generally not very useful because it takes human
+intervention to decide which of the duplicates is the best one to
+keep. While the content is the same, one of them may have a better
+file name and/or location.
+
+Review the generated script carefully to see if it does what you want!
+
+% dupd rmsh > delete_my_files.sh
 
