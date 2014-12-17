@@ -1,10 +1,13 @@
 #!/bin/bash
 
+set -x
+
 rm -rf files report
 
 tar -zxf files.tar.gz
 
 ../dupd
+set -e
 ../dupd help
 ../dupd scan --path `pwd`/files -q
 ../dupd scan --path `pwd`/files -v

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -39,6 +39,7 @@ extern int stats_single_block_count;
 extern int stats_size_list_count;
 extern int stats_three_file_compare;
 extern int stats_two_file_compare;
+extern int stats_uniques_saved;
 extern long stats_comparison_blocks_read;
 extern long stats_hash_blocks_read;
 extern long stats_size_list_avg;

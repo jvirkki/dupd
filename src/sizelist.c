@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -159,6 +159,14 @@ void process_size_list(sqlite3 * dbh)
     } while (node != NULL);
 
     if (verbosity >= 4) { printf("Done building first hash list.\n"); }
+    if (verbosity >= 5) {
+      printf("Contents of hash list hl_one:\n");
+      print_hash_list(hl_one);
+    }
+
+    if (save_uniques) {
+      record_uniques(dbh, hl_one);
+    }
 
     // If no potential dups after this round, we're done!
     if (HASH_LIST_NO_DUPS(hl_one)) {
@@ -187,6 +195,15 @@ void process_size_list(sqlite3 * dbh)
       hl_previous = hl_partial;
       filter_hash_list(hl_one, intermediate_blocks, hl_partial, 1);
 
+      if (verbosity >= 5) {
+        printf("Contents of hash list hl_partial:\n");
+        print_hash_list(hl_partial);
+      }
+
+      if (save_uniques) {
+        record_uniques(dbh, hl_partial);
+      }
+
       // If no potential dups after this round, we're done!
       if (HASH_LIST_NO_DUPS(hl_partial)) {
         if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
@@ -212,6 +229,14 @@ void process_size_list(sqlite3 * dbh)
     stats_set_full_round++;
     struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
     filter_hash_list(hl_previous, 0, hl_full, intermediate_blocks + 1);
+    if (verbosity >= 5) {
+      printf("Contents of hash list hl_full:\n");
+      print_hash_list(hl_full);
+    }
+
+    if (save_uniques) {
+      record_uniques(dbh, hl_full);
+    }
 
     // If no potential dups after this round, we're done!
     if (HASH_LIST_NO_DUPS(hl_full)) {

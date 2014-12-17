@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -20,18 +20,35 @@
 #ifndef _DUPD_SIZETREE_H
 #define _DUPD_SIZETREE_H
 
+#include <sqlite3.h>
+
 
 /** ***************************************************************************
  * Add the given path to the size tree. Also adds the path to the path list.
  *
  * Parameters:
+ *    dbh  - sqlite3 database handle.
  *    size - Size of this file.
  *    path - Path of this file.
  *
  * Return: none
  *
  */
-void add_file(long size, char * path);
+void add_file(sqlite3 * dbh, long size, char * path);
+
+
+/** ***************************************************************************
+ * Walk through the (presumably completed) size tree to identify size
+ * nodes corresponding to only one path. Save these unique files to
+ * the database.
+ *
+ * Parameters:
+ *    dbh  - sqlite3 database handle.
+ *
+ * Return: none
+ *
+ */
+void find_unique_sizes(sqlite3 * dbh);
 
 
 #endif

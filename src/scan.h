@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -19,6 +19,20 @@
 
 #ifndef _DUPD_SCAN_H
 #define _DUPD_SCAN_H
+
+
+/** ***************************************************************************
+ * Walk down the directory path given and process each file found.
+ *
+ * Parameters:
+ *    dbh          - sqlite3 database handle.
+ *    path         - The path to process. Must not be null or empty.
+ *    process_file - Function to call on each file as it is found.
+ * Return: none
+ *
+ */
+void walk_dir(sqlite3 * dbh, const char * path,
+              void (*process_file)(sqlite3 *, long, char *));
 
 
 /** ***************************************************************************

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -132,6 +132,31 @@ void filter_hash_list(struct hash_list * src, int blocks,
  */
 void publish_duplicate_hash_list(sqlite3 * dbh,
                                  struct hash_list * hl, off_t size);
+
+
+/** ***************************************************************************
+ * Print to stdout the contents of a hash list.
+ *
+ * Parameters:
+ *     src - Source hash list.
+ *
+ * Return: none.
+ *
+ */
+void print_hash_list(struct hash_list * src);
+
+
+/** ***************************************************************************
+ * Export all unique files from the given hash list to the database.
+ *
+ * Parameters:
+ *     dbh - Database handle.
+ *     src - Source hash list.
+ *
+ * Return: none.
+ *
+ */
+void record_uniques(sqlite3 * dbh, struct hash_list * src);
 
 
 #endif

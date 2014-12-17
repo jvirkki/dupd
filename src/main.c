@@ -45,6 +45,9 @@ int opt_compare_two = 1;
 int opt_compare_three = 1;
 long file_count = 1000000L;
 int avg_path_len = 512;
+int save_uniques = 0;
+int have_uniques = 0;
+int no_unique = 0;
 
 
 /** ***************************************************************************
@@ -64,13 +67,19 @@ static void show_usage()
   printf("      --skip-three     do not compare three files directly\n");
   printf("      --file-count     max estimated number of files to scan\n");
   printf("      --avg-size       estimated average file path length\n");
+  printf("      --uniques        save info about unique files\n");
   printf("\n");
   printf("    report  show duplicate report from last scan\n");
   printf("      --cut PATHSEG    remove 'PATHSEG' from report paths\n");
   printf("      --minsize SIZE   min size of duplicated space to report\n");
   printf("\n");
-  printf("    file    check for duplicates of the given file\n");
+  printf("    file    based on report, check for duplicates of one file\n");
   printf("      --file PATH      check this file\n");
+  printf("      --no-unique      ignore unique table even if present\n");
+  printf("\n");
+  printf("    uniques based on report, look for unique files\n");
+  printf("      --path PATH      path where scanning will start\n");
+  printf("      --no-unique      ignore unique table even if present\n");
   printf("\n");
   printf("    help    show more help\n");
   printf("\n");
@@ -116,6 +125,7 @@ static void process_args(int argc, char * argv[])
   operation = argv[1];
   if (strncmp(operation, "scan", 4) &&
       strncmp(operation, "report", 6) &&
+      strncmp(operation, "uniques", 7) &&
       strncmp(operation, "file", 4) &&
       strncmp(operation, "help", 4)) {
     printf("error: unknown operation [%s]\n", operation);
@@ -139,6 +149,11 @@ static void process_args(int argc, char * argv[])
                start_path[start_path_count]);
         exit(1);
       }
+      int x = strlen(start_path[start_path_count]) - 1;
+      // Strip any trailing slashes for consistency
+      while (start_path[start_path_count][x] == '/') {
+        start_path[start_path_count][x--] = 0;
+      }
       start_path_count++;
       if (start_path_count == MAX_START_PATH) {
         printf("error: exceeded max number of --path elements\n");
@@ -158,6 +173,12 @@ static void process_args(int argc, char * argv[])
 
     } else if (!strncmp(argv[i], "--nodb", 6)) {
       write_db = 0;
+
+    } else if (!strncmp(argv[i], "--uniques", 9)) {
+      save_uniques = 1;
+
+    } else if (!strncmp(argv[i], "--no-unique", 11)) {
+      no_unique = 1;
 
     } else if (!strncmp(argv[i], "--skip-two", 10)) {
       opt_compare_two = 0;
@@ -208,7 +229,12 @@ static void process_args(int argc, char * argv[])
 
   if (!strncmp(operation, "scan", 4) && start_path[0] == NULL) {
     printf("error: scan requires a start path\n");
-    show_usage();
+    exit(1);
+  }
+
+  if (save_uniques && !write_db) {
+    printf("error: --uniques and --nodb are incompatible\n");
+    exit(1);
   }
 }
 
@@ -227,7 +253,14 @@ int main(int argc, char * argv[])
   } else if (!strncmp(operation, "report", 6)) {
     report();
 
+  } else if (!strncmp(operation, "uniques", 7)) {
+    uniques();
+
   } else if (!strncmp(operation, "file", 4)) {
+    if (file_path == NULL) {
+      printf("error: file requires --file\n");
+      exit(1);
+    }
     check_file();
 
   } else if (!strncmp(operation, "help", 4)) {

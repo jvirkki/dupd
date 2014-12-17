@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -61,6 +61,10 @@ static void compare_two_open_files(sqlite3 * dbh,
       close(file2);
       if (verbosity >= 4) {
         printf("compare_two_files: differ after reading %d blocks\n", bread);
+      }
+      if (save_uniques) {
+        unique_to_db(dbh, path1, "2-compare");
+        unique_to_db(dbh, path2, "2-compare");
       }
       return;
     }
@@ -197,23 +201,37 @@ void compare_three_files(sqlite3 * dbh,
       if (verbosity >= 4) {
         printf("compare_three_files: All differ after %d blocks\n", bread);
       }
+      if (save_uniques) {
+        unique_to_db(dbh, path1, "3-compareALL");
+        unique_to_db(dbh, path2, "3-compareALL");
+        unique_to_db(dbh, path3, "3-compareALL");
+      }
       return;
     }
 
     if (d12 && !d23) {          // 1 is different
       close(file[1]);
+      if (save_uniques) {
+        unique_to_db(dbh, path1, "3-compare1");
+      }
       compare_two_open_files(dbh, path2, file[2], path3, file[3], size, bread);
       return;
     }
 
     if (!d13 && d23) {          // 2 is different
       close(file[2]);
+      if (save_uniques) {
+        unique_to_db(dbh, path2, "3-compare2");
+      }
       compare_two_open_files(dbh, path1, file[1], path3, file[3], size, bread);
       return;
     }
 
     if (!d12 && d23) {          // 3 is different
       close(file[3]);
+      if (save_uniques) {
+        unique_to_db(dbh, path3, "3-compare3");
+      }
       compare_two_open_files(dbh, path1, file[1], path2, file[2], size, bread);
       return;
     }

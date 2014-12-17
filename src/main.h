@@ -131,6 +131,28 @@ extern char _binary_USAGE_start;
 extern char _binary_USAGE_end;
 #endif
 
+
+/** ***************************************************************************
+ * If true, save files found to be unique during a scan in the database.
+ *
+ */
+extern int save_uniques;
+
+
+/** ***************************************************************************
+ * If true, current database has info on unique files.
+ *
+ */
+extern int have_uniques;
+
+
+/** ***************************************************************************
+ * If true, ignore unique table info even if have_uniques is true.
+ *
+ */
+extern int no_unique;
+
+
 /** ***************************************************************************
  * Used as the max path+filename length.
  *

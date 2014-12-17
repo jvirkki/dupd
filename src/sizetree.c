@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "dbops.h"
 #include "paths.h"
 #include "sizetree.h"
 
@@ -95,10 +96,36 @@ static void add_below(struct size_node * node, long size, char * path)
 
 
 /** ***************************************************************************
+ * Walk through the (presumably completed) size tree to identify size
+ * nodes corresponding to only one path. Save these unique files to
+ * the database.
+ *
+ * Parameters:
+ *    dbh  - sqlite3 database handle.
+ *    node - Check this node and recursively its children.
+ *
+ * Return: none
+ *
+ */
+static void check_uniques(sqlite3 * dbh, struct size_node * node)
+{
+  int path_count = (int)*(char **)((node->paths + sizeof(char *)));
+
+  if (path_count == 1) {
+    char * path = node->paths + 2 * sizeof(char *);
+    unique_to_db(dbh, path, "by-size");
+  }
+
+  if (node->left != NULL) { check_uniques(dbh, node->left); }
+  if (node->right != NULL) { check_uniques(dbh, node->right); }
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
  *
  */
-void add_file(long size, char * path)
+void add_file(sqlite3 * dbh, long size, char * path)
 {
   if (tip == NULL) {
     tip = new_node(size, path);
@@ -106,4 +133,18 @@ void add_file(long size, char * path)
   }
 
   add_below(tip, size, path);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void find_unique_sizes(sqlite3 * dbh)
+{
+  if (tip == NULL) {
+    return;
+  }
+
+  check_uniques(dbh, tip);
 }

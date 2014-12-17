@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -49,6 +49,7 @@ int stats_single_block_count = 0;
 int stats_size_list_count = 0;
 int stats_three_file_compare = 0;
 int stats_two_file_compare = 0;
+int stats_uniques_saved = 0;
 long stats_comparison_blocks_read = 0;
 long stats_hash_blocks_read = 0;
 long stats_size_list_avg = 0;
@@ -116,6 +117,9 @@ void report_stats()
 
   if (verbosity >= 1) {
     printf("Total duplicates: %d\n", stats_duplicate_files);
+    if (save_uniques) {
+      printf("Total unique files: %d\n", stats_uniques_saved);
+    }
     if (write_db && stats_duplicate_files > 0) {
       printf("Run 'dupd report' to list duplicates.\n");
     }

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -303,6 +303,40 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
         // go publish to db
         duplicate_to_db(dbh, p->next_index, size, path_buffer);
       }
+    }
+    p = p->next;
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void print_hash_list(struct hash_list * src)
+{
+  struct hash_list * p = src;
+  while (p != NULL) {
+    printf("hash_valid: %d, has_dups: %d, next_index: %d\n",
+           p->hash_valid, p->has_dups, p->next_index);
+    for (int j=0; j < p->next_index; j++) {
+      printf("  [%s]\n", p->paths + j * PATH_MAX);
+    }
+    p = p->next;
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void record_uniques(sqlite3 * dbh, struct hash_list * src)
+{
+  struct hash_list * p = src;
+  while (p != NULL) {
+    if (p->hash_valid && (p->next_index == 1)) {
+      unique_to_db(dbh, p->paths, "hashlist");
     }
     p = p->next;
   }

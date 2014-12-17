@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -44,15 +44,11 @@ static long avg_size;           // average file size
 
 
 /** ***************************************************************************
- * Walk down the directory path given and process each file found.
- *
- * Parameters:
- *    path - The path to process. Must not be null or empty.
- *
- * Return: none
+ * Public function, see scan.h
  *
  */
-static void walk_dir(const char * path)
+void walk_dir(sqlite3 * dbh, const char * path,
+              void (*process_file)(sqlite3 *, long, char *))
 {
   int rv;
 
@@ -99,7 +95,7 @@ static void walk_dir(const char * path)
 
     if (rv == 0) {
       if (S_ISDIR(new_stat_info.st_mode)) {
-        walk_dir(newpath);
+        walk_dir(dbh, newpath, process_file);
         continue;
       }
 
@@ -108,15 +104,22 @@ static void walk_dir(const char * path)
           printf("FILE: [%s]\n", newpath);
         }
 
-        add_file(new_stat_info.st_size, newpath);
-        files_count++;
-        avg_size = avg_size + ((new_stat_info.st_size - avg_size)/files_count);
+        if (new_stat_info.st_size > 0) {
+          (*process_file)(dbh, new_stat_info.st_size, newpath);
+          files_count++;
+          avg_size = avg_size + ((new_stat_info.st_size - avg_size)/files_count);
 
-        if (verbosity >= 2) {
-          if ((files_count % 5000) == 0) {
-            printf("Files scanned: %d\n", files_count);
+          if (verbosity >= 2) {
+            if ((files_count % 5000) == 0) {
+              printf("Files scanned: %d\n", files_count);
+            }
+          }
+        } else {
+          if (verbosity >= 4) {
+            printf("SKIP (zero size): [%s]\n", newpath);
           }
         }
+
       } else { // if not regular file
         if (verbosity >= 4) {
           printf("SKIP (not file) [%s]\n", newpath);
@@ -149,11 +152,16 @@ void scan()
   init_hash_lists();
   init_filecompare();
 
+  if (write_db) {
+    dbh = open_database(db_path, 1);
+    begin_transaction(dbh);
+  }
+
   // Scan phase - stat all files and build size tree, size list and path list
 
   long t1 = get_current_time_millis();
   for (int i=0; start_path[i] != NULL; i++) {
-    walk_dir(start_path[i]);
+    walk_dir(dbh, start_path[i], add_file);
   }
 
   if (verbosity >= 1) {
@@ -169,9 +177,11 @@ void scan()
     report_size_list();
   }
 
-  if (write_db) {
-    dbh = open_database(db_path, 1);
-    begin_transaction(dbh);
+  if (save_uniques) {
+    if (verbosity >= 3) {
+      printf("Saving files with unique sizes from size tree...\n");
+    }
+    find_unique_sizes(dbh);
   }
 
   // Processing phase - walk through size list whittling down the potentials

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -73,6 +73,9 @@ static void initialize_database(sqlite3 * dbh)
   single_statement(dbh, "CREATE TABLE duplicates "
                         "(id INTEGER PRIMARY KEY, count INTEGER, "
                         "each_size INTEGER, paths TEXT)");
+  if (save_uniques) {
+    single_statement(dbh, "CREATE TABLE files (path TEXT)");
+  }
 }
 
 
@@ -110,6 +113,37 @@ sqlite3 * open_database(char * path, int newdb)
     if (verbosity >= 2) {
       printf("Done initializing new database [%s]\n", path);
     }
+  }
+
+  // Check if this db has 'files' table which will help with unique files
+
+  if (no_unique) {
+    if (verbosity >= 1) {
+      printf("warning: Ignoring unique info in database!\n");
+    }
+
+  } else {
+    sqlite3_stmt * statement = NULL;
+    char * table_name = NULL;
+    char * sql = "SELECT name FROM sqlite_master WHERE type='table'";
+    rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
+    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+    while (rv != SQLITE_DONE) {
+      rv = sqlite3_step(statement);
+      if (rv == SQLITE_DONE) { continue; }
+      if (rv != SQLITE_ROW) {
+        printf("Error reading duplicates table!\n");
+        exit(1);
+      }
+
+      table_name = (char *)sqlite3_column_text(statement, 0);
+      if (!strcmp(table_name, "files")) {
+        have_uniques = 1;
+        if (verbosity >= 3) { printf("Database has unique file info.\n"); }
+      }
+    }
+    sqlite3_finalize(statement);
   }
 
   return dbh;
@@ -177,4 +211,75 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
   rvchk(rv, SQLITE_DONE, "tried to add to duplicates table: %s\n", dbh);
 
   sqlite3_finalize(statement);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void unique_to_db(sqlite3 * dbh, char * path, char * msg)
+{
+  const char * sql = "INSERT INTO files (path) VALUES (?)";
+  sqlite3_stmt * statement = NULL;
+  int rv;
+
+  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  rv = sqlite3_bind_text(statement, 1, path, -1, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
+
+  rv = sqlite3_step(statement);
+  rvchk(rv, SQLITE_DONE, "tried to add to files table: %s\n", dbh);
+
+  stats_uniques_saved++;
+
+  sqlite3_finalize(statement);
+
+  if (verbosity >= 4) {
+    printf("Unique file (%s): [%s]\n", msg, path);
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int is_known_unique(sqlite3 * dbh, char * path)
+{
+  const char * sql = "SELECT path FROM files WHERE path=?";
+  sqlite3_stmt * statement = NULL;
+  int rv;
+
+  if (verbosity >= 3) {
+    printf("Checking files table for uniqueness [%s]\n", path);
+  }
+
+  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  rv = sqlite3_bind_text(statement, 1, path, -1, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
+
+  char * got_path = NULL;
+
+  while (rv != SQLITE_DONE) {
+    rv = sqlite3_step(statement);
+    if (rv == SQLITE_DONE) { continue; }
+    if (rv != SQLITE_ROW) {
+      printf("Error reading duplicates table!\n");
+      exit(1);
+    }
+
+    got_path = (char *)sqlite3_column_text(statement, 0);
+    if (!strcmp(got_path, path)) {
+      sqlite3_finalize(statement);
+      return(1);
+    }
+  }
+  sqlite3_finalize(statement);
+
+  return(0);
 }

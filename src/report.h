@@ -36,6 +36,17 @@ void report();
 
 
 /** ***************************************************************************
+ * Prints a report on unique files to stdout.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void uniques();
+
+
+/** ***************************************************************************
  * Checks for the duplicates of a given file based on the scan info present
  * in the database.
  *

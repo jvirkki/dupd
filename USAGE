@@ -12,13 +12,19 @@ dupd is a duplicate detection utility.
       --skip-three     do not compare three files directly
       --file-count     max estimated number of files to scan
       --avg-size       estimated average file path length
+      --uniques        save info about unique files
 
     report  show duplicate report from last scan
       --cut PATHSEG    remove 'PATHSEG' from report paths
       --minsize SIZE   min size of duplicated space to report
 
-    file    check for duplicates of the given file
+    file    based on report, check for duplicates of one file
       --file PATH      check this file
+      --no-unique      ignore unique table even if present
+
+    uniques based on report, look for unique files
+      --path PATH      path where scanning will start
+      --no-unique      ignore unique table even if present
 
     help    show more help
 
@@ -42,6 +48,16 @@ The --path option can be repeated multiple times in order to scan
 multiple directory hierarchies.
 
 Additional options are available:
+
+--uniques          Save in a separate table the paths of all files found to
+                   be unique while searching for duplicates. This will
+                   increase the size of the database (possibly by a lot)
+                   and slow down the scan. It can be useful if after the
+                   scan you intend to take advantage of a list of unique
+                   files in addition to the sets of duplicates.
+
+--no-unique        Ignore the unique info in the database (if any).
+                   Useful only for debugging.
 
 --db PATH          Override the default database file location.
 
