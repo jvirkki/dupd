@@ -48,12 +48,12 @@ static long avg_size;           // average file size
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path,
-              void (*process_file)(sqlite3 *, long, char *))
+              int (*process_file)(sqlite3 *, long, char *))
 {
   int rv;
 
   if (path == NULL || path[0] == 0) {
-    printf("walk_dir called on null or empty path!");
+    printf("walk_dir called on null or empty path!\n");
     exit(1);
   }
 

@@ -125,14 +125,16 @@ static void check_uniques(sqlite3 * dbh, struct size_node * node)
  * Public function, see header file.
  *
  */
-void add_file(sqlite3 * dbh, long size, char * path)
+int add_file(sqlite3 * dbh, long size, char * path)
 {
   if (tip == NULL) {
     tip = new_node(size, path);
-    return;
+    return(-2);
   }
 
   add_below(tip, size, path);
+
+  return(-2);
 }
 
 

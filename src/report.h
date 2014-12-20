@@ -32,30 +32,7 @@
  * Return: none
  *
  */
-void report();
-
-
-/** ***************************************************************************
- * Prints a report on unique files to stdout.
- *
- * Parameters: none
- *
- * Return: none
- *
- */
-void uniques();
-
-
-/** ***************************************************************************
- * Checks for the duplicates of a given file based on the scan info present
- * in the database.
- *
- * Parameters: none
- *
- * Return: none
- *
- */
-void check_file();
+void operation_report();
 
 
 /** ***************************************************************************
@@ -66,7 +43,51 @@ void check_file();
  * Return: none
  *
  */
-void create_shell_script();
+void operation_shell_script();
+
+
+/** ***************************************************************************
+ * Print status of a single file.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void operation_file();
+
+
+/** ***************************************************************************
+ * List all the known-unique files within a given path.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void operation_uniques();
+
+
+/** ***************************************************************************
+ * List all the known-duplicatefiles within a given path.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void operation_dups();
+
+
+/** ***************************************************************************
+ * List info about all files within a given path.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void operation_ls();
 
 
 #endif

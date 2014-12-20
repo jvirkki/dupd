@@ -31,10 +31,10 @@
  *    size - Size of this file.
  *    path - Path of this file.
  *
- * Return: none
+ * Return: none (int to comply with callback prototype)
  *
  */
-void add_file(sqlite3 * dbh, long size, char * path);
+int add_file(sqlite3 * dbh, long size, char * path);
 
 
 /** ***************************************************************************

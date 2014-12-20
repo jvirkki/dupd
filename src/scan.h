@@ -32,7 +32,7 @@
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path,
-              void (*process_file)(sqlite3 *, long, char *));
+              int (*process_file)(sqlite3 *, long, char *));
 
 
 /** ***************************************************************************

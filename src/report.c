@@ -29,26 +29,39 @@
 #include "scan.h"
 #include "utils.h"
 
+#define STATUS_UNKNOWN -1
+#define STATUS_UNIQUE 0
+#define STATUS_DUPLICATE 1
+
+static int print_uniques = 0;
+static int print_duplicates = 0;
+static int list_all_duplicates = 0;
+
 
 /** ***************************************************************************
- * Prints the given path, excluding the prefix from cut_path, if one is
- * defined and it matches the path.
+ * Prints the given path, excluding the prefix from cut_path, if applicable.
+ *
+ * Parameters:
+ *    prefix - Printed before path. Must not be null.
+ *    path   - The path to print.
+ *
+ * Return: none
  *
  */
-static void print_path(char * path)
+static void print_path(char * prefix, char * path)
 {
   if (cut_path == NULL) {
-    printf("  %s\n", path);
+    printf("%s%s\n", prefix, path);
     return;
   }
 
   char * cut = strstr(path, cut_path);
   if (cut == NULL) {
-    printf("  %s\n", path);
+    printf("%s%s\n", prefix, path);
     return;
   }
 
-  printf("  %s\n", path + strlen(cut_path));
+  printf("%s%s\n", prefix, path + strlen(cut_path));
 }
 
 
@@ -56,8 +69,17 @@ static void print_path(char * path)
  * For the given 'path', check if that file is the same as the file in
  * 'self' which has the given 'hash'.
  *
+ * Parameters:
+ *    path - Compare this file against `self`.
+ *    self - Path of the file to compare against.
+ *    hash - Hash of the file `self`.
+ *
+ * Return:
+ *    1 - If path and self are distinct duplicates.
+ *    0 - If they are not (or cannot be tested to be) duplicates.
+ *
  */
-static int is_duplicate(char * path, char * self, char * hash, int printdup)
+static int is_duplicate(char * path, char * self, char * hash)
 {
   char hash2[16];
 
@@ -65,10 +87,10 @@ static int is_duplicate(char * path, char * self, char * hash, int printdup)
     return(0);
   }
 
-  if (verbosity >= 3) { printf("is_duplicate? [%s]\n", path); }
+  if (verbosity >= 4) { printf("is_duplicate? [%s]\n", path); }
 
   if (!file_exists(path)) {
-    if (verbosity >= 2) { printf("file no longer exists: %s\n", path); }
+    if (verbosity >= 3) { printf("file no longer exists: %s\n", path); }
     return(0);
   }
 
@@ -82,121 +104,63 @@ static int is_duplicate(char * path, char * self, char * hash, int printdup)
     return(0);
   }
 
-  if (printdup) { print_path(path); }
-
   return(1);
 }
 
 
 /** ***************************************************************************
- * For the given file path, check if the database contains known duplicates
- * for it. If so, verify each listed duplicate to see if it still exists and
- * is still a duplicate. If shortcircuit is true, return as soon as one
- * duplicate is found, if any.
+ * Given a file 'path' and a set of paths in 'duplicates', verify if those
+ * are still indeed duplicates of file 'path'.
  *
- * Returns:
- *    -1 if the file does not exist
- *    -2 if the file cannot be read/hashed
- *    otherwise, returns the number of duplicates found (can be zero)
+ * The 'status' param points to an array of ints which must have the
+ * same size as 'dups'. Each element returns the status of the corresponding
+ * file in 'duplicates'. This array must be allocated by the caller, the
+ * values are filled by this function. Possible values are:
+ *    STATUS_UNKNOWN   - This file was not tested (only if shortcircuit)
+ *    STATUS_UNIQUE    - It is not a duplicate of 'path'
+ *    STATUS_DUPLICATE - It is a duplicate of 'path'
+ *
+ * Parameters:
+ *    path         - Primary file to be tested against all 'duplicates'
+ *    dups         - Number of paths in array 'duplicates'
+ *    duplicates   - Array of paths to test against file in 'path'
+ *    status       - Caller-allocated array, filled in by this function.
+ *    shortcircuit - If true, return as soon as one duplicate is found.
+ *
+ * Return:
+ *    The number of duplicates of 'path' found in 'duplicates', zero or more.
+ *    Note that if 'shortcircuit' is true this can be 1 even if there were
+ *    more duplicates present.
  *
  */
-static int check_one_file(sqlite3  *dbh, char * path,
-                          int printdups, int shortcircuit)
+static int reverify_duplicates(char * path, int dups, char * * duplicates,
+                               int * status, int shortcircuit)
 {
-  const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
-  sqlite3_stmt * statement = NULL;
-  int rv;
-  char line[PATH_MAX];
   char hash[16];
-  char * path_list;
-  char * pos = NULL;
-  char * token;
-
-  if (path == NULL) {
-    printf("error: no file specified\n");
-    exit(1);
-  }
-
-  if (!file_exists(path)) {
-    return(-1);
-  }
-
-  if (verbosity >= 4) { printf("Hashing %s\n", path); }
 
   if (md5(path, hash, 0, 0)) {
-    return(-2);
-  }
-
-  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
-  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
-
-  snprintf(line, PATH_MAX, "%%%s%%", path);
-  rv = sqlite3_bind_text(statement, 1, line, -1, SQLITE_STATIC);
-  rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
-
-  int dups = 0;
-
-  while (rv != SQLITE_DONE) {
-    rv = sqlite3_step(statement);
-    if (rv == SQLITE_DONE) { continue; }
-    if (rv != SQLITE_ROW) {
-      printf("Error reading duplicates table!\n");
-      exit(1);
-    }
-
-    path_list = (char *)sqlite3_column_text(statement, 0);
-
-    if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
-      dups += is_duplicate(token, path, hash, printdups);
-      if (shortcircuit && dups > 0) { goto DONE; }
-      while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
-        dups += is_duplicate(token, path, hash, printdups);
-        if (shortcircuit && dups > 0) { goto DONE; }
-      }
-    }
-  }
-  DONE:
-  sqlite3_finalize(statement);
-  return dups;
-}
-
-
-/** ***************************************************************************
- * Callback function used by walk_dir() when called by uniques().
- * Checks if the given file has any known duplicates in the database.
- *
- */
-static void print_if_unique(sqlite3 * dbh, long size, char * path)
-{
-  int printdups = 0;
-  if (verbosity >= 3) { printdups = 1; }
-
-  // If we have a unique file list, just check that!
-  if (have_uniques) {
-    if (verbosity >= 5) { printf("have_uniques, check is_known_unique\n"); }
-    if (is_known_unique(dbh, path)) {
-      printf("%s\n", path);
-      return;
-    }
-  }
-
-  // Otherwise need to do some work to see if it might be unique
-  int dups = check_one_file(dbh, path, printdups, 1);
-
-  switch(dups) {
-  case -1:
-    printf("error: file exists but does not exist?\n%s\n", path);
-    exit(1);
-  case -2:
     printf("error: unable to hash %s\n", path);
-    break;
-  case 0:
-    printf("%s\n", path);
-    break;
-  default:
-    if (verbosity >= 4) { printf("  NOT UNIQUE: %s\n", path); }
-    break;
+    exit(1);
   }
+
+  for (int i = 0; i < dups; i++) { status[i] = STATUS_UNKNOWN; }
+
+  int current_dups = 0;
+  for (int i = 0; i < dups; i++) {
+
+    if (is_duplicate(duplicates[i], path, hash)) {
+      status[i] = STATUS_DUPLICATE;
+      current_dups++;
+      if (shortcircuit) {
+        return(current_dups);
+      }
+
+    } else {
+      status[i] = STATUS_UNIQUE;
+    }
+  }
+
+  return(current_dups);
 }
 
 
@@ -204,7 +168,7 @@ static void print_if_unique(sqlite3 * dbh, long size, char * path)
  * Public function, see report.h
  *
  */
-void report()
+void operation_report()
 {
   const char * sql = "SELECT paths, count*each_size AS total "
                      "FROM duplicates ORDER BY total";
@@ -242,9 +206,9 @@ void report()
       printf("%lu total bytes used by duplicates:\n", total);
       used += total;
       if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
-        print_path(token);
+        print_path("  ", token);
         while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
-          print_path(token);
+          print_path("  ", token);
         }
       }
 
@@ -256,52 +220,93 @@ void report()
   unsigned long mb = kb / 1024;
   unsigned long gb = mb / 1024;
 
-  printf("Total used: %lu bytes (%lu KiB, %lu MiB, %lu GiB)\n", used, kb, mb, gb);
+  printf("Total used: %lu bytes (%lu KiB, %lu MiB, %lu GiB)\n",
+         used, kb, mb, gb);
 
   sqlite3_finalize(statement);
 }
 
 
 /** ***************************************************************************
- * Public function, see report.h
+ * Callback function for walk_dir() used by various reporting operations.
+ *
+ * Parameters:
+ *    dbh  - sqlite3 database handle.
+ *    size - IGNORED
+ *    path - Process this file.
+ *
+ * Return:
+ *    0  - 'path' is a unique file (best we can tell)
+ *    1+ - Number of duplicates identified.
  *
  */
-void check_file()
+static int file_callback(sqlite3 * dbh, long size, char * path)
 {
-  if (file_path == NULL) {
-    printf("error: file requires --file\n");
-    exit(1);
+  char * unique_pfx = "";
+  char * dup_pfx = "";
+
+  // For uniques and dups, only print the list of filenames.
+  // For ls which prints both, include prefixes to identify the type.
+  if (print_uniques && print_duplicates) {
+    unique_pfx = "   UNIQUE: ";
+    dup_pfx = "DUPLICATE: ";
   }
 
-  sqlite3 * dbh = open_database(db_path, 0);
-
+  // If we have a unique file table, just check that!
   if (have_uniques) {
-    if (is_known_unique(dbh, file_path)) {
-      printf("It is unique according to unique info saved during scan.\n");
-      sqlite3_close(dbh);
-      exit(0);
+    if (is_known_unique(dbh, path)) {
+      if (print_uniques) {
+        print_path(unique_pfx, path);
+      }
+      return(0);
     }
   }
 
-  if (verbosity >= 1) {
-    printf("Duplicates for %s:\n", file_path);
+  int dups;
+  char * * dup_paths = get_known_duplicates(dbh, path, &dups);
+
+  if (dups == 0) {
+    if (print_uniques) {
+      print_path(unique_pfx, path);
+    }
+    return(0);
   }
 
-  int dups = check_one_file(dbh, file_path, 1, 0);
-  sqlite3_close(dbh);
+  // File had 1+ duplicates at scan time BUT need to verify if those
+  // still really are duplicates to avoid data loss that could happen
+  // if we claim this has duplicates but turns out it was the last copy.
 
-  switch(dups) {
-  case -1:
-    printf("error: not such file: %s\n", file_path);
-    exit(1);
-  case -2:
-    printf("error: unable to hash %s\n", file_path);
-    exit(1);
-  default:
-    if (verbosity > 0) {
-      printf("It has %d known duplicates in the database.\n", dups);
+  int shortcircuit = 0;
+  int status[dups];
+
+  int verified_dups =
+    reverify_duplicates(path, dups, dup_paths, status, shortcircuit);
+
+  if (verified_dups == 0) {
+    if (print_uniques) {
+      print_path(unique_pfx, path);
+    }
+    return(0);
+  }
+
+  // It has duplicate(s) for sure. But if we don't need the to print
+  // duplicates, work here is done.
+  if (!print_duplicates) {
+    return(verified_dups);
+  }
+
+  // Else, print the duplicate path and, if applicable, the list of duplicates.
+  print_path(dup_pfx, path);
+
+  if (list_all_duplicates) {
+    for (int i = 0; i < verified_dups; i++) {
+      print_path(status[i] == STATUS_DUPLICATE ?
+                 "             DUP: " : "             ---: ",
+                 dup_paths[i]);
     }
   }
+
+  return(verified_dups);
 }
 
 
@@ -309,19 +314,14 @@ void check_file()
  * Public function, see report.h
  *
  */
-void uniques()
+void operation_file()
 {
-  if (start_path[0] == NULL) {
-    printf("error: no --path given\n");
-    exit(1);
-  }
-
-  if (verbosity > 0) {
-    printf("Looking for unique files in %s\n", start_path[0]);
-  }
+  print_uniques = 1;
+  print_duplicates = 1;
+  list_all_duplicates = 1;
 
   sqlite3 * dbh = open_database(db_path, 0);
-  walk_dir(dbh, start_path[0], print_if_unique);
+  file_callback(dbh, 0, file_path);
   sqlite3_close(dbh);
 }
 
@@ -330,7 +330,52 @@ void uniques()
  * Public function, see report.h
  *
  */
-void create_shell_script()
+void operation_ls()
+{
+  print_uniques = 1;
+  print_duplicates = 1;
+  if (verbosity >= 2) { list_all_duplicates = 1; }
+
+  sqlite3 * dbh = open_database(db_path, 0);
+  walk_dir(dbh, start_path[0], file_callback);
+  sqlite3_close(dbh);
+}
+
+
+/** ***************************************************************************
+ * Public function, see report.h
+ *
+ */
+void operation_uniques()
+{
+  print_uniques = 1;
+
+  sqlite3 * dbh = open_database(db_path, 0);
+  walk_dir(dbh, start_path[0], file_callback);
+  sqlite3_close(dbh);
+}
+
+
+/** ***************************************************************************
+ * Public function, see report.h
+ *
+ */
+void operation_dups()
+{
+  print_duplicates = 1;
+  if (verbosity >= 2) { list_all_duplicates = 1; }
+
+  sqlite3 * dbh = open_database(db_path, 0);
+  walk_dir(dbh, start_path[0], file_callback);
+  sqlite3_close(dbh);
+}
+
+
+/** ***************************************************************************
+ * Public function, see report.h
+ *
+ */
+void operation_shell_script()
 {
   const char * sql = "SELECT paths FROM duplicates";
   sqlite3_stmt * statement = NULL;
@@ -367,5 +412,4 @@ void create_shell_script()
     }
   }
   sqlite3_finalize(statement);
-
 }

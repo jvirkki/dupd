@@ -75,20 +75,25 @@ static void show_usage()
   printf("\n");
   printf("    file    based on report, check for duplicates of one file\n");
   printf("      --file PATH      check this file\n");
-  printf("      --no-unique      ignore unique table even if present\n");
   printf("\n");
   printf("    uniques based on report, look for unique files\n");
   printf("      --path PATH      path where scanning will start\n");
-  printf("      --no-unique      ignore unique table even if present\n");
+  printf("\n");
+  printf("    dups    based on report, look for duplicate files\n");
+  printf("      --path PATH      path where scanning will start\n");
+  printf("\n");
+  printf("    ls      based on report, list info about every file seen\n");
+  printf("      --path PATH      path where scanning will start\n");
   printf("\n");
   printf("    rmsh    create shell script to delete all duplicates\n");
   printf("\n");
   printf("    help    show more help\n");
   printf("\n");
   printf("General options include:\n");
-  printf("    -v      increase verbosity (may be repeated for even more)\n");
-  printf("    -q      quiet, supress all output except fatal errors\n");
-  printf("    --db    path to dupd database file\n");
+  printf("    -v          increase verbosity (may be repeated for even more)\n");
+  printf("    -q          quiet, supress all output except fatal errors\n");
+  printf("    --db        path to dupd database file\n");
+  printf("    --no-unique ignore unique table even if present\n");
   printf("\n");
   exit(1);
 }
@@ -128,7 +133,9 @@ static void process_args(int argc, char * argv[])
   if (strncmp(operation, "scan", 4) &&
       strncmp(operation, "report", 6) &&
       strncmp(operation, "uniques", 7) &&
+      strncmp(operation, "dups", 4) &&
       strncmp(operation, "file", 4) &&
+      strncmp(operation, "ls", 2) &&
       strncmp(operation, "rmsh", 4) &&
       strncmp(operation, "help", 4)) {
     printf("error: unknown operation [%s]\n", operation);
@@ -148,7 +155,7 @@ static void process_args(int argc, char * argv[])
       start_path[start_path_count] = argv[i+1];
       i++;
       if (start_path[start_path_count][0] != '/') {
-        printf("error: path [%s] must be absolute (start with /)\n",
+        printf("error: path [%s] must be absolute\n",
                start_path[start_path_count]);
         exit(1);
       }
@@ -168,6 +175,10 @@ static void process_args(int argc, char * argv[])
       if (argc < i+2) { show_usage(); }
       file_path = argv[i+1];
       i++;
+      if (file_path[0] != '/') {
+        printf("error: path [%s] must be absolute\n", file_path);
+        exit(1);
+      }
 
     } else if (!strncmp(argv[i], "--db", 4)) {
       if (argc < i+2) { show_usage(); }
@@ -254,16 +265,22 @@ int main(int argc, char * argv[])
     scan();
 
   } else if (!strncmp(operation, "report", 6)) {
-    report();
+    operation_report();
 
   } else if (!strncmp(operation, "uniques", 7)) {
-    uniques();
+    operation_uniques();
+
+  } else if (!strncmp(operation, "dups", 7)) {
+    operation_dups();
 
   } else if (!strncmp(operation, "file", 4)) {
-    check_file();
+    operation_file();
+
+  } else if (!strncmp(operation, "ls", 2)) {
+    operation_ls();
 
   } else if (!strncmp(operation, "rmsh", 4)) {
-    create_shell_script();
+    operation_shell_script();
 
   } else if (!strncmp(operation, "help", 4)) {
     show_help();

@@ -283,3 +283,102 @@ int is_known_unique(sqlite3 * dbh, char * path)
 
   return(0);
 }
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
+{
+  const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
+  sqlite3_stmt * statement = NULL;
+  int rv;
+  char line[PATH_MAX];
+  char * path_list = NULL;
+  char * pos = NULL;
+  char * token;
+
+  if (verbosity >= 5) {
+    printf("get_known_duplicates(%s)\n", path);
+  }
+
+  if (path == NULL) {
+    printf("error: no file specified\n");
+    exit(1);
+  }
+
+  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  snprintf(line, PATH_MAX, "%%%s%%", path);
+  rv = sqlite3_bind_text(statement, 1, line, -1, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
+
+  while (rv != SQLITE_DONE) {
+    rv = sqlite3_step(statement);
+    if (rv == SQLITE_DONE) { continue; }
+    if (rv != SQLITE_ROW) {
+      printf("Error reading duplicates table!\n");
+      exit(1);
+    }
+
+    char * p = (char *)sqlite3_column_text(statement, 0);
+    path_list = (char *)malloc(strlen(p) + 1);
+    strcpy(path_list, p);
+  }
+
+  if (path_list == NULL) {
+    if (verbosity >= 5) {
+      printf("get_known_duplicates: NULL\n");
+    }
+    *dups = 0;
+    return(NULL);
+  }
+
+  int commas = 0;
+  for (int i = 0; path_list[i] != 0; i++) {
+    if (path_list[i] == ',') { commas++; }
+  }
+
+  if (commas < 1) {
+    printf("error: db has a duplicate set with no duplicates?\n");
+    printf("%s\n", path_list);
+    exit(1);
+  }
+
+  *dups = commas;
+  char * * paths = (char * *)calloc(*dups, sizeof(char *));
+  int i = 0;
+
+  if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
+
+    if (strcmp(path, token)) {
+      paths[i] = (char *)malloc(strlen(token) + 1);
+      strcpy(paths[i++], token);
+    }
+
+    while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
+      if (strcmp(path, token)) {
+        paths[i] = (char *)malloc(strlen(token) + 1);
+        strcpy(paths[i++], token);
+      }
+    }
+  }
+
+  sqlite3_finalize(statement);
+
+  if (*dups > 0) {
+    if (verbosity >= 5) {
+      printf("get_known_duplicates: dups=%d\n", *dups);
+      for (int i = 0; i < *dups; i++) {
+        printf("-> %s\n", paths[i]);
+      }
+    }
+    return paths;
+
+  } else {
+    printf("get_known_duplicates: dups=0\n");
+    return NULL;
+  }
+}

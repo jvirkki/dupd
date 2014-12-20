@@ -124,4 +124,20 @@ void unique_to_db(sqlite3 * dbh, char * path, char * msg);
 int is_known_unique(sqlite3 * dbh, char * path);
 
 
+/** ***************************************************************************
+ * Retrieve the known duplicates of 'path' from the database.
+ *
+ * Parameters:
+ *    dbh  - Database handle.
+ *    path - Path of the file to check.
+ *    dups - Number of duplicates found is returned here (zero or more)
+ *
+ * Return:
+ *    Array of strings (size in 'dups'), containing the paths of each
+ *    duplicate found in the db.
+ *
+ */
+char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups);
+
+
 #endif
