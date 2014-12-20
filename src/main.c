@@ -241,11 +241,6 @@ static void process_args(int argc, char * argv[])
     snprintf(db_path, PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
-  if (!strncmp(operation, "scan", 4) && start_path[0] == NULL) {
-    printf("error: scan requires a start path\n");
-    exit(1);
-  }
-
   if (start_path[0] == NULL) {
     start_path[0] = (char *)malloc(PATH_MAX);
     getwd(start_path[0]);
