@@ -246,6 +246,14 @@ static void process_args(int argc, char * argv[])
     exit(1);
   }
 
+  if (start_path[0] == NULL) {
+    start_path[0] = (char *)malloc(PATH_MAX);
+    getwd(start_path[0]);
+    if (verbosity >= 3) {
+      printf("Defaulting --path to [%s]\n", start_path[0]);
+    }
+  }
+
   if (save_uniques && !write_db) {
     printf("error: --uniques and --nodb are incompatible\n");
     exit(1);
