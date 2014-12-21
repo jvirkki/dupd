@@ -174,11 +174,14 @@ static void process_args(int argc, char * argv[])
     } else if (!strncmp(argv[i], "--file", 6)) {
       if (argc < i+2) { show_usage(); }
       file_path = argv[i+1];
-      i++;
+
       if (file_path[0] != '/') {
-        printf("error: path [%s] must be absolute\n", file_path);
-        exit(1);
+        file_path = (char *)malloc(PATH_MAX);
+        getwd(file_path);
+        strcat(file_path, "/");
+        strcat(file_path, argv[i+1]);
       }
+      i++;
 
     } else if (!strncmp(argv[i], "--db", 4)) {
       if (argc < i+2) { show_usage(); }
