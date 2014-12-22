@@ -100,8 +100,10 @@ static int is_duplicate(char * path, char * self, char * hash)
   }
 
   if (memcmp(hash, hash2, 16)) {
-    if (verbosity >= 3) { printf("file no longer a duplicate: %s\n", path); }
+    if (verbosity >= 4) { printf("file no longer a duplicate: %s\n", path); }
     return(0);
+  } else {
+    if (verbosity >= 4) { printf("Yes, still a duplicate: %s\n", path); }
   }
 
   return(1);
@@ -138,6 +140,10 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
 {
   char hash[16];
 
+  if (verbosity >= 5) {
+    printf("reverify_duplicates(path=%s, dups=%d)\n", path, dups);
+  }
+
   if (md5(path, hash, 0, 0)) {
     printf("error: unable to hash %s\n", path);
     exit(1);
@@ -160,6 +166,10 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     }
   }
 
+  if (verbosity >= 5) {
+    printf("reverify_duplicates() -> %d\n", current_dups);
+  }
+
   return(current_dups);
 }
 
@@ -177,7 +187,7 @@ void operation_report()
   char * path_list;
   char * pos = NULL;
   char * token;
-  unsigned long used = 0;
+  unsigned long long used = 0;
 
   if (verbosity >= 1) {
     printf("Duplicate report from database %s:\n\n", db_path);
@@ -216,11 +226,11 @@ void operation_report()
     }
   }
 
-  unsigned long kb = used / 1024;
+  unsigned long long kb = used / 1024;
   unsigned long mb = kb / 1024;
   unsigned long gb = mb / 1024;
 
-  printf("Total used: %lu bytes (%lu KiB, %lu MiB, %lu GiB)\n",
+  printf("Total used: %llu bytes (%llu KiB, %lu MiB, %lu GiB)\n",
          used, kb, mb, gb);
 
   sqlite3_finalize(statement);
@@ -299,7 +309,7 @@ static int file_callback(sqlite3 * dbh, long size, char * path)
   print_path(dup_pfx, path);
 
   if (list_all_duplicates) {
-    for (int i = 0; i < verified_dups; i++) {
+    for (int i = 0; i < dups; i++) {
       print_path(status[i] == STATUS_DUPLICATE ?
                  "             DUP: " : "             ---: ",
                  dup_paths[i]);
