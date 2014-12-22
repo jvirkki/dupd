@@ -53,6 +53,7 @@ int stats_uniques_saved = 0;
 long stats_comparison_blocks_read = 0;
 long stats_hash_blocks_read = 0;
 long stats_size_list_avg = 0;
+unsigned long long stats_blocks_all_files = 0;
 
 
 /** ***************************************************************************
@@ -104,6 +105,12 @@ void report_stats()
 
     printf("Read %ld blocks from disk for direct comparisons.\n",
            stats_comparison_blocks_read);
+
+    printf("Total blocks of all files considered: %llu\n",
+           stats_blocks_all_files);
+
+    printf("Percentage of total possible blocks read: %f%%\n",
+           (100.0 * stats_comparison_blocks_read /stats_blocks_all_files));
 
     printf("Computed single hash block for %d files.\n",
            stats_single_block_count);

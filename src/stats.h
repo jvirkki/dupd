@@ -43,6 +43,7 @@ extern int stats_uniques_saved;
 extern long stats_comparison_blocks_read;
 extern long stats_hash_blocks_read;
 extern long stats_size_list_avg;
+extern unsigned long long stats_blocks_all_files;
 
 
 /** ***************************************************************************

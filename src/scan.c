@@ -30,6 +30,7 @@
 #include "filecompare.h"
 #include "hashlist.h"
 #include "main.h"
+#include "md5.h"
 #include "paths.h"
 #include "scan.h"
 #include "sizelist.h"
@@ -108,7 +109,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
           (*process_file)(dbh, new_stat_info.st_size, newpath);
           files_count++;
           avg_size = avg_size + ((new_stat_info.st_size - avg_size)/files_count);
-
+          stats_blocks_all_files += 1 + (new_stat_info.st_size / HASH_BLOCK_SIZE);
           if (verbosity >= 2) {
             if ((files_count % 5000) == 0) {
               printf("Files scanned: %d\n", files_count);
