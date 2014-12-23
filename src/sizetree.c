@@ -109,7 +109,7 @@ static void add_below(struct size_node * node, long size, char * path)
  */
 static void check_uniques(sqlite3 * dbh, struct size_node * node)
 {
-  int path_count = (int)*(char **)((node->paths + sizeof(char *)));
+  int path_count = (int)*(char *)((node->paths + sizeof(char *)));
 
   if (path_count == 1) {
     char * path = node->paths + 2 * sizeof(char *);

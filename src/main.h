@@ -77,7 +77,7 @@ extern char * cut_path;
  * to be shown by report.
  *
  */
-extern int minimum_report_size;
+extern unsigned int minimum_report_size;
 
 
 /** ***************************************************************************

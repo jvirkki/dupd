@@ -70,7 +70,7 @@ int md5(const char * path, char * out, int blocks, int skip)
   }
 
   close(file);
-  MD5_Final(out, &md5);
+  MD5_Final((unsigned char *)out, &md5);
 
   if (blocks == 1) { stats_single_block_count++; }
   else if (blocks > 1) { stats_mid_blocks_count++; }

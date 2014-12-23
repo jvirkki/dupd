@@ -196,7 +196,7 @@ void scan()
 
   if (write_db) {
     commit_transaction(dbh);
-    sqlite3_close(dbh);
+    close_database(dbh);
   }
 
   if (verbosity >= 3) {

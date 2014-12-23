@@ -154,6 +154,32 @@ sqlite3 * open_database(char * path, int newdb)
  * Public function, see header file.
  *
  */
+void close_database(sqlite3 * dbh)
+{
+  if (dbh == NULL) {
+    if (verbosity >= 4) {
+      printf("warning: ignoring attempt to close NULL database\n");
+    }
+    return;
+  }
+
+  int rv = sqlite3_close(dbh);
+  if (rv == SQLITE_OK) {
+    if (verbosity >= 5) {
+      printf("closed database\n");
+    }
+    return;
+  }
+
+  if (verbosity >= 1) {
+    printf("warning: unable to close database!\n");
+  }
+}
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void begin_transaction(sqlite3 * dbh)
 {
   single_statement(dbh, "BEGIN EXCLUSIVE TRANSACTION");
@@ -178,7 +204,7 @@ void rvchk(int rv, int code, char * line, sqlite3 * dbh)
 {
   if (rv != code) {
     printf(line, sqlite3_errmsg(dbh));
-    sqlite3_close(dbh);
+    close_database(dbh);
     exit(1);
   }
 }
@@ -289,6 +315,23 @@ int is_known_unique(sqlite3 * dbh, char * path)
  * Public function, see header file.
  *
  */
+void free_known_duplicates(int dups, char * * paths)
+{
+  if (dups < 1 || paths == NULL) {
+    return;
+  }
+
+  for (int i = 0; i < dups; i++) {
+    free(paths[i]);
+  }
+  free(paths);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 {
   const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
@@ -333,6 +376,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
       printf("get_known_duplicates: NULL\n");
     }
     *dups = 0;
+    sqlite3_finalize(statement);
     return(NULL);
   }
 
@@ -366,6 +410,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     }
   }
 
+  free(path_list);
   sqlite3_finalize(statement);
 
   if (*dups > 0) {

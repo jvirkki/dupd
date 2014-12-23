@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 
 #include "dbops.h"
 #include "main.h"
@@ -31,14 +32,14 @@
 #define MAX_START_PATH 10
 
 static char * operation = NULL;
+static int start_path_count = 0;
 int verbosity = 1;
-int start_path_count = 0;
 char * start_path[MAX_START_PATH];
-char * file_path = NULL;;
+char * file_path = NULL;
 int write_db = 1;
 char * db_path = NULL;
 char * cut_path = NULL;
-int minimum_report_size = 0;
+unsigned int minimum_report_size = 0;
 int hash_one_max_blocks = 8;
 int intermediate_blocks = 0;
 int opt_compare_two = 1;
@@ -177,7 +178,7 @@ static void process_args(int argc, char * argv[])
 
       if (file_path[0] != '/') {
         file_path = (char *)malloc(PATH_MAX);
-        getwd(file_path);
+        getcwd(file_path, PATH_MAX);
         strcat(file_path, "/");
         strcat(file_path, argv[i+1]);
       }
@@ -246,7 +247,7 @@ static void process_args(int argc, char * argv[])
 
   if (start_path[0] == NULL) {
     start_path[0] = (char *)malloc(PATH_MAX);
-    getwd(start_path[0]);
+    getcwd(start_path[0], PATH_MAX);
     if (verbosity >= 3) {
       printf("Defaulting --path to [%s]\n", start_path[0]);
     }

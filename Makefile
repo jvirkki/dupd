@@ -23,7 +23,7 @@ BUILD_OS:=$(shell uname)
 BUILD=$(TOP)/build
 INC=
 LIB=
-CC=gcc -Wall -std=gnu99 $(OPT) $(INC) $(LIB)
+CC=gcc -Wall -Wextra -std=gnu99 $(OPT) $(INC) $(LIB)
 CFLAGS=
 
 SRCS:=$(wildcard src/*.c)

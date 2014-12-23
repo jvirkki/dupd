@@ -108,9 +108,9 @@ void insert_end_path(char * path, long size, char * first)
   *(char **)prior = new_entry;
 
   // Increase path length counter on first node
-  int path_count = (int)*(char **)((first + sizeof(char *)));
+  char path_count = (int)*(char *)((first + sizeof(char *)));
   path_count++;
-  *(char **)((first + sizeof(char *))) = (char *)path_count;
+  *(char *)((first + sizeof(char *))) = path_count;
 }
 
 

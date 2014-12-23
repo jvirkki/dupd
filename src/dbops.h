@@ -38,6 +38,18 @@ sqlite3 * open_database(char * path, int newdb);
 
 
 /** ***************************************************************************
+ * Close the sqlite database.
+ *
+ * Parameters:
+ *    dbh - sqlite3 database handle.
+ *
+ * Return: none
+ *
+ */
+void close_database(sqlite3 * dbh);
+
+
+/** ***************************************************************************
  * Begin a database transaction.
  *
  * By default each insert is a transaction and gets synced to disk. This makes
@@ -134,10 +146,17 @@ int is_known_unique(sqlite3 * dbh, char * path);
  *
  * Return:
  *    Array of strings (size in 'dups'), containing the paths of each
- *    duplicate found in the db.
+ *    duplicate found in the db. Caller must free with free_known_duplicates.
  *
  */
 char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups);
+
+
+/** ***************************************************************************
+ * Free the storage returned by get_known_duplicates().
+ *
+ */
+void free_known_duplicates(int dups, char * * paths);
 
 
 #endif

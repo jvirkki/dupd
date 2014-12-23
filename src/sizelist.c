@@ -111,11 +111,11 @@ void process_size_list(sqlite3 * dbh)
     count++;
     node = size_node->path_list;
 
-    int path_count = (int)*(char **)((node + sizeof(char *)));
+    char path_count = *(char *)((node + sizeof(char *)));
 
     if (verbosity >= 3) {
       printf("Processing %d/%d (%d files of size %ld)\n",
-             count, stats_size_list_count, path_count, size_node->size);
+             count, stats_size_list_count, (int)path_count, size_node->size);
     }
 
     // If we only have two files of this size, compare them directly
