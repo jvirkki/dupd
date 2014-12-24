@@ -253,6 +253,7 @@ void operation_report()
  */
 static int file_callback(sqlite3 * dbh, long size, char * path)
 {
+  (void)size;			/* not used */
   char * unique_pfx = "";
   char * dup_pfx = "";
 
@@ -297,14 +298,12 @@ static int file_callback(sqlite3 * dbh, long size, char * path)
     if (print_uniques) {
       print_path(unique_pfx, path);
     }
-    free_known_duplicates(dups, dup_paths);
     return(0);
   }
 
   // It has duplicate(s) for sure. But if we don't need the to print
   // duplicates, work here is done.
   if (!print_duplicates) {
-    free_known_duplicates(dups, dup_paths);
     return(verified_dups);
   }
 
@@ -319,7 +318,6 @@ static int file_callback(sqlite3 * dbh, long size, char * path)
     }
   }
 
-  free_known_duplicates(dups, dup_paths);
   return(verified_dups);
 }
 
@@ -335,8 +333,10 @@ void operation_file()
   list_all_duplicates = 1;
 
   sqlite3 * dbh = open_database(db_path, 0);
+  init_get_known_duplicates();
   file_callback(dbh, 0, file_path);
   close_database(dbh);
+  free_get_known_duplicates();
 }
 
 
@@ -351,8 +351,10 @@ void operation_ls()
   if (verbosity >= 2) { list_all_duplicates = 1; }
 
   sqlite3 * dbh = open_database(db_path, 0);
+  init_get_known_duplicates();
   walk_dir(dbh, start_path[0], file_callback);
   close_database(dbh);
+  free_get_known_duplicates();
 }
 
 
@@ -365,8 +367,10 @@ void operation_uniques()
   print_uniques = 1;
 
   sqlite3 * dbh = open_database(db_path, 0);
+  init_get_known_duplicates();
   walk_dir(dbh, start_path[0], file_callback);
   close_database(dbh);
+  free_get_known_duplicates();
 }
 
 
@@ -380,8 +384,10 @@ void operation_dups()
   if (verbosity >= 2) { list_all_duplicates = 1; }
 
   sqlite3 * dbh = open_database(db_path, 0);
+  init_get_known_duplicates();
   walk_dir(dbh, start_path[0], file_callback);
   close_database(dbh);
+  free_get_known_duplicates();
 }
 
 

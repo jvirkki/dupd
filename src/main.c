@@ -24,15 +24,20 @@
 #include <unistd.h>
 
 #include "dbops.h"
+#include "hashlist.h"
 #include "main.h"
+#include "paths.h"
 #include "report.h"
 #include "scan.h"
+#include "sizelist.h"
+#include "sizetree.h"
 #include "utils.h"
 
 #define MAX_START_PATH 10
 
 static char * operation = NULL;
 static int start_path_count = 0;
+static int free_start_path = 0;
 int verbosity = 1;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
@@ -248,6 +253,8 @@ static void process_args(int argc, char * argv[])
   if (start_path[0] == NULL) {
     start_path[0] = (char *)malloc(PATH_MAX);
     getcwd(start_path[0], PATH_MAX);
+    start_path_count = 1;
+    free_start_path = 1;
     if (verbosity >= 3) {
       printf("Defaulting --path to [%s]\n", start_path[0]);
     }
@@ -293,5 +300,13 @@ int main(int argc, char * argv[])
     show_help();
   }
 
+  if (file_path != NULL) { free(file_path); }
+  if (db_path != NULL) { free(db_path); }
+  if (free_start_path) { free(start_path[0]); }
+  free_size_tree();
+  free_path_block();
+  free_hash_lists();
+  free_size_list();
+  free_filecompare();
   exit(0);
 }

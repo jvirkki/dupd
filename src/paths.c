@@ -62,6 +62,18 @@ void init_path_block()
  * Public function, see paths.h
  *
  */
+void free_path_block()
+{
+  if (path_block != NULL) {
+    free(path_block);
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
 char * insert_first_path(char * path)
 {
   char * rv = next_entry;

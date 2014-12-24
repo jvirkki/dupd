@@ -28,6 +28,10 @@
 #include "stats.h"
 #include "utils.h"
 
+#define ONE_MB_BYTES 1048576
+
+static char * * known_dup_path_list = NULL;
+
 
 /** ***************************************************************************
  * Runs a single SQL statement. Only works for self-contained SQL strings
@@ -315,18 +319,21 @@ int is_known_unique(sqlite3 * dbh, char * path)
  * Public function, see header file.
  *
  */
-void free_known_duplicates(int dups, char * * paths)
+void init_get_known_duplicates()
 {
-  if (dups < 1 || paths == NULL) {
+  if (verbosity >= 5) {
+    printf("init_get_known_duplicates()\n");
+  }
+
+  if (known_dup_path_list != NULL) {
     return;
   }
 
-  for (int i = 0; i < dups; i++) {
-    free(paths[i]);
+  known_dup_path_list = (char * *)calloc(MAX_DUPLICATES, sizeof(char *));
+  for (int i = 0; i < MAX_DUPLICATES; i++) {
+    known_dup_path_list[i] = (char *)malloc(PATH_MAX);
   }
-  free(paths);
 }
-
 
 /** ***************************************************************************
  * Public function, see header file.
@@ -334,11 +341,12 @@ void free_known_duplicates(int dups, char * * paths)
  */
 char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 {
+  static char path_list[ONE_MB_BYTES];
+
   const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
   sqlite3_stmt * statement = NULL;
   int rv;
   char line[PATH_MAX];
-  char * path_list = NULL;
   char * pos = NULL;
   char * token;
 
@@ -350,6 +358,13 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     printf("error: no file specified\n");
     exit(1);
   }
+
+  if (known_dup_path_list == NULL) {
+    printf("error: init_get_known_duplicates() not called\n");
+    exit(1);
+  }
+
+  path_list[0] = 0;
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -367,13 +382,16 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     }
 
     char * p = (char *)sqlite3_column_text(statement, 0);
-    path_list = (char *)malloc(strlen(p) + 1);
+    if (strlen(p) + 1 > ONE_MB_BYTES) {
+      printf("error: no one expects a path list this long: %lu\n", strlen(p));
+      exit(1);
+    }
     strcpy(path_list, p);
   }
 
-  if (path_list == NULL) {
+  if (path_list[0] == 0) {
     if (verbosity >= 5) {
-      printf("get_known_duplicates: NULL\n");
+      printf("get_known_duplicates: NONE\n");
     }
     *dups = 0;
     sqlite3_finalize(statement);
@@ -392,38 +410,58 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
   }
 
   *dups = commas;
-  char * * paths = (char * *)calloc(*dups, sizeof(char *));
+
+  if (*dups > MAX_DUPLICATES) {
+    printf("error: never expected to see %d duplicates (max=%d)\n",
+	   *dups, MAX_DUPLICATES);
+    exit(1);
+  }
+
   int i = 0;
 
   if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
 
     if (strcmp(path, token)) {
-      paths[i] = (char *)malloc(strlen(token) + 1);
-      strcpy(paths[i++], token);
+      strcpy(known_dup_path_list[i++], token);
     }
 
     while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
       if (strcmp(path, token)) {
-        paths[i] = (char *)malloc(strlen(token) + 1);
-        strcpy(paths[i++], token);
+        strcpy(known_dup_path_list[i++], token);
       }
     }
   }
 
-  free(path_list);
   sqlite3_finalize(statement);
 
   if (*dups > 0) {
     if (verbosity >= 5) {
       printf("get_known_duplicates: dups=%d\n", *dups);
       for (int i = 0; i < *dups; i++) {
-        printf("-> %s\n", paths[i]);
+        printf("-> %s\n", known_dup_path_list[i]);
       }
     }
-    return paths;
+    return(known_dup_path_list);
 
   } else {
     printf("get_known_duplicates: dups=0\n");
-    return NULL;
+    return(NULL);
   }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void free_get_known_duplicates()
+{
+  if (known_dup_path_list == NULL) {
+    return;
+  }
+
+  for (int i = 0; i < MAX_DUPLICATES; i++) {
+    free(known_dup_path_list[i]);
+  }
+  free(known_dup_path_list);
 }

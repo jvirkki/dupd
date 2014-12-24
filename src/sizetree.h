@@ -51,4 +51,15 @@ int add_file(sqlite3 * dbh, long size, char * path);
 void find_unique_sizes(sqlite3 * dbh);
 
 
+/** ***************************************************************************
+ * Walk through the size tree and free everything.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void free_size_tree();
+
+
 #endif

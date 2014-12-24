@@ -33,6 +33,17 @@ void init_path_block();
 
 
 /** ***************************************************************************
+ * Free path_block data structures.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void free_path_block();
+
+
+/** ***************************************************************************
  * Inserts the first file in a path list into the next available slot.
  * A path list consists of a linked list of all the files of the same
  * size.  File scan will call this when it encounters the first file

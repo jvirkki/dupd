@@ -62,4 +62,11 @@ void compare_three_files(sqlite3 * dbh,
 void init_filecompare();
 
 
+/** ***************************************************************************
+ * Free any allocations.
+ *
+ */
+void free_filecompare();
+
+
 #endif

@@ -160,4 +160,12 @@ extern int no_unique;
 #define PATH_MAX 4096
 
 
+/** ***************************************************************************
+ * Max number of duplicates a file can have.
+ * Should be dynamic but can do for now.
+ *
+ */
+#define MAX_DUPLICATES 5120
+
+
 #endif

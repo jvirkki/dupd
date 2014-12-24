@@ -98,6 +98,28 @@ static struct hash_list * init_hash_list()
 
 
 /** ***************************************************************************
+ * Free all entries in this hash list.
+ *
+ * Parameters:
+ *    hl - Pointer to the head of the list to reset.
+ *
+ * Return: none
+ *
+ */
+static void free_hash_list(struct hash_list * hl)
+{
+  struct hash_list * p = hl;
+  struct hash_list * me = hl;
+  while (p != NULL) {
+    p = p->next;
+    free(me->paths);
+    free(me);
+    me = p;
+  }
+}
+
+
+/** ***************************************************************************
  * Reset a hash list so it is empty of data but keeps all its
  * allocated space. This allows reusing the same hash list for new
  * data so we don't have to allocate a new one.
@@ -134,6 +156,27 @@ void init_hash_lists()
   hl_one = init_hash_list();
   hl_partial = init_hash_list();
   hl_full = init_hash_list();
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void free_hash_lists()
+{
+  if (hl_one != NULL) {
+    free_hash_list(hl_one);
+  }
+  if (hl_partial != NULL) {
+    free_hash_list(hl_partial);
+  }
+  if (hl_full != NULL) {
+    free_hash_list(hl_full);
+  }
+  if (path_buffer != NULL) {
+    free(path_buffer);
+  }
 }
 
 

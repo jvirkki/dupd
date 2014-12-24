@@ -275,3 +275,15 @@ void init_filecompare()
   buffers[2] = (char *)malloc(HASH_BLOCK_SIZE);
   buffers[3] = (char *)malloc(HASH_BLOCK_SIZE);
 }
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void free_filecompare()
+{
+  free(buffers[1]);
+  free(buffers[2]);
+  free(buffers[3]);
+}

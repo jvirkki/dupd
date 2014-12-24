@@ -121,12 +121,21 @@ static void check_uniques(sqlite3 * dbh, struct size_node * node)
 }
 
 
+static free_node(struct size_node * node)
+{
+  if (node->left != NULL) { free_node(node->left); }
+  if (node->right != NULL) { free_node(node->right); }
+  free(node);
+}
+
+
 /** ***************************************************************************
  * Public function, see header file.
  *
  */
 int add_file(sqlite3 * dbh, long size, char * path)
 {
+  (void)dbh;			/* not used */
   if (tip == NULL) {
     tip = new_node(size, path);
     return(-2);
@@ -149,4 +158,18 @@ void find_unique_sizes(sqlite3 * dbh)
   }
 
   check_uniques(dbh, tip);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void free_size_tree()
+{
+  if (tip == NULL) {
+    return;
+  }
+
+  free_node(tip);
 }

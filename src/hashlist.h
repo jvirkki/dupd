@@ -59,6 +59,17 @@ void init_hash_lists();
 
 
 /** ***************************************************************************
+ * Free storage for all hash lists.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void free_hash_lists();
+
+
+/** ***************************************************************************
  * Retrieve a pointer to one of the available hash lists. Use one of
  * the HASH_LIST_* constants defined above to name the kind of list to
  * retrieve.

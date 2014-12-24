@@ -269,3 +269,22 @@ void init_size_list()
   stats_size_list_count = 0;
   stats_size_list_avg = 0;
 }
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void free_size_list()
+{
+  if (size_list_head != NULL) {
+    struct size_list * p = size_list_head;
+    struct size_list * me = size_list_head;
+
+    while (p != NULL) {
+      p = p->next;
+      free(me);
+      me = p;
+    }
+  }
+}

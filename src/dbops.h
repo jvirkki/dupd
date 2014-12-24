@@ -137,6 +137,16 @@ int is_known_unique(sqlite3 * dbh, char * path);
 
 
 /** ***************************************************************************
+ * Pre-allocate memory used by get_known_duplicates().
+ *
+ * Parameters: none
+ * Return: none
+ *
+ */
+void init_get_known_duplicates();
+
+
+/** ***************************************************************************
  * Retrieve the known duplicates of 'path' from the database.
  *
  * Parameters:
@@ -153,10 +163,13 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups);
 
 
 /** ***************************************************************************
- * Free the storage returned by get_known_duplicates().
+ * Free memory allocated by init_get_known_duplicates()
+ *
+ * Parameters: none
+ * Return: none
  *
  */
-void free_known_duplicates(int dups, char * * paths);
+void free_get_known_duplicates();
 
 
 #endif

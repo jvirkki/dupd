@@ -35,6 +35,17 @@ void init_size_list();
 
 
 /** ***************************************************************************
+ * Free size list.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void free_size_list();
+
+
+/** ***************************************************************************
  * Adds a size_list entry to the tail of the list.
  *
  * Parameters:
