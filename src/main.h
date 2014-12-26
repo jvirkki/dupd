@@ -165,7 +165,7 @@ extern int no_unique;
  * Should be dynamic but can do for now.
  *
  */
-#define MAX_DUPLICATES 5120
+#define MAX_DUPLICATES 8000
 
 
 #endif

@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include "dbops.h"
+#include "filecompare.h"
 #include "hashlist.h"
 #include "main.h"
 #include "paths.h"

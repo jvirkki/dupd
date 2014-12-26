@@ -121,7 +121,11 @@ static void check_uniques(sqlite3 * dbh, struct size_node * node)
 }
 
 
-static free_node(struct size_node * node)
+/** ***************************************************************************
+ * Free one node and its children.
+ *
+ */
+static void free_node(struct size_node * node)
 {
   if (node->left != NULL) { free_node(node->left); }
   if (node->right != NULL) { free_node(node->right); }

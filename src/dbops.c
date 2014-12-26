@@ -383,7 +383,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 
     char * p = (char *)sqlite3_column_text(statement, 0);
     if (strlen(p) + 1 > ONE_MB_BYTES) {
-      printf("error: no one expects a path list this long: %lu\n", strlen(p));
+      printf("error: no one expects a path list this long: %zu\n", strlen(p));
       exit(1);
     }
     strcpy(path_list, p);
