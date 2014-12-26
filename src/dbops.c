@@ -31,6 +31,10 @@
 #define ONE_MB_BYTES 1048576
 
 static char * * known_dup_path_list = NULL;
+static sqlite3_stmt * stmt_is_known_unique = NULL;
+static sqlite3_stmt * stmt_duplicate_to_db = NULL;
+static sqlite3_stmt * stmt_unique_to_db = NULL;
+static sqlite3_stmt * stmt_get_known_duplicates = NULL;
 
 
 /** ***************************************************************************
@@ -167,6 +171,23 @@ void close_database(sqlite3 * dbh)
     return;
   }
 
+  // Need to finalize all prepared statements in order to close db cleanly.
+  if (stmt_is_known_unique != NULL) {
+    sqlite3_finalize(stmt_is_known_unique);
+  }
+
+  if (stmt_duplicate_to_db != NULL) {
+    sqlite3_finalize(stmt_duplicate_to_db);
+  }
+
+  if (stmt_unique_to_db != NULL) {
+    sqlite3_finalize(stmt_unique_to_db);
+  }
+
+  if (stmt_get_known_duplicates != NULL) {
+    sqlite3_finalize(stmt_get_known_duplicates);
+  }
+
   int rv = sqlite3_close(dbh);
   if (rv == SQLITE_OK) {
     if (verbosity >= 5) {
@@ -222,25 +243,26 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
 {
   const char * sql = "INSERT INTO duplicates (count, each_size, paths) "
                      "VALUES(?, ?, ?)";
-  sqlite3_stmt * statement = NULL;
   int rv;
 
-  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
-  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  if (stmt_duplicate_to_db == NULL) {
+    rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_duplicate_to_db, NULL);
+    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  }
 
-  rv = sqlite3_bind_int(statement, 1, count);
+  rv = sqlite3_bind_int(stmt_duplicate_to_db, 1, count);
   rvchk(rv, SQLITE_OK, "Can't bind count: %s\n", dbh);
 
-  rv = sqlite3_bind_int(statement, 2, size);
+  rv = sqlite3_bind_int(stmt_duplicate_to_db, 2, size);
   rvchk(rv, SQLITE_OK, "Can't bind file size: %s\n", dbh);
 
-  rv = sqlite3_bind_text(statement, 3, paths, -1, SQLITE_STATIC);
+  rv = sqlite3_bind_text(stmt_duplicate_to_db, 3, paths, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
 
-  rv = sqlite3_step(statement);
+  rv = sqlite3_step(stmt_duplicate_to_db);
   rvchk(rv, SQLITE_DONE, "tried to add to duplicates table: %s\n", dbh);
 
-  sqlite3_finalize(statement);
+  sqlite3_reset(stmt_duplicate_to_db);
 }
 
 
@@ -251,21 +273,22 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
 void unique_to_db(sqlite3 * dbh, char * path, char * msg)
 {
   const char * sql = "INSERT INTO files (path) VALUES (?)";
-  sqlite3_stmt * statement = NULL;
   int rv;
 
-  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
-  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  if (stmt_unique_to_db == NULL) {
+    rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_unique_to_db, NULL);
+    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  }
 
-  rv = sqlite3_bind_text(statement, 1, path, -1, SQLITE_STATIC);
+  rv = sqlite3_bind_text(stmt_unique_to_db, 1, path, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
 
-  rv = sqlite3_step(statement);
+  rv = sqlite3_step(stmt_unique_to_db);
   rvchk(rv, SQLITE_DONE, "tried to add to files table: %s\n", dbh);
 
   stats_uniques_saved++;
 
-  sqlite3_finalize(statement);
+  sqlite3_reset(stmt_unique_to_db);
 
   if (verbosity >= 4) {
     printf("Unique file (%s): [%s]\n", msg, path);
@@ -280,36 +303,37 @@ void unique_to_db(sqlite3 * dbh, char * path, char * msg)
 int is_known_unique(sqlite3 * dbh, char * path)
 {
   const char * sql = "SELECT path FROM files WHERE path=?";
-  sqlite3_stmt * statement = NULL;
   int rv;
 
   if (verbosity >= 3) {
     printf("Checking files table for uniqueness [%s]\n", path);
   }
 
-  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
-  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  if (stmt_is_known_unique == NULL) {
+    rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_is_known_unique, NULL);
+    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  }
 
-  rv = sqlite3_bind_text(statement, 1, path, -1, SQLITE_STATIC);
+  rv = sqlite3_bind_text(stmt_is_known_unique, 1, path, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
 
   char * got_path = NULL;
 
   while (rv != SQLITE_DONE) {
-    rv = sqlite3_step(statement);
+    rv = sqlite3_step(stmt_is_known_unique);
     if (rv == SQLITE_DONE) { continue; }
     if (rv != SQLITE_ROW) {
       printf("Error reading duplicates table!\n");
       exit(1);
     }
 
-    got_path = (char *)sqlite3_column_text(statement, 0);
+    got_path = (char *)sqlite3_column_text(stmt_is_known_unique, 0);
     if (!strcmp(got_path, path)) {
-      sqlite3_finalize(statement);
+      sqlite3_reset(stmt_is_known_unique);
       return(1);
     }
   }
-  sqlite3_finalize(statement);
+  sqlite3_reset(stmt_is_known_unique);
 
   return(0);
 }
@@ -344,7 +368,6 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
   static char path_list[ONE_MB_BYTES];
 
   const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
-  sqlite3_stmt * statement = NULL;
   int rv;
   char line[PATH_MAX];
   char * pos = NULL;
@@ -364,24 +387,26 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     exit(1);
   }
 
+  if (stmt_get_known_duplicates == NULL) {
+    rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_get_known_duplicates, NULL);
+    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  }
+
   path_list[0] = 0;
 
-  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
-  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
-
   snprintf(line, PATH_MAX, "%%%s%%", path);
-  rv = sqlite3_bind_text(statement, 1, line, -1, SQLITE_STATIC);
+  rv = sqlite3_bind_text(stmt_get_known_duplicates, 1, line, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
 
   while (rv != SQLITE_DONE) {
-    rv = sqlite3_step(statement);
+    rv = sqlite3_step(stmt_get_known_duplicates);
     if (rv == SQLITE_DONE) { continue; }
     if (rv != SQLITE_ROW) {
       printf("Error reading duplicates table!\n");
       exit(1);
     }
 
-    char * p = (char *)sqlite3_column_text(statement, 0);
+    char * p = (char *)sqlite3_column_text(stmt_get_known_duplicates, 0);
     if (strlen(p) + 1 > ONE_MB_BYTES) {
       printf("error: no one expects a path list this long: %zu\n", strlen(p));
       exit(1);
@@ -394,7 +419,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
       printf("get_known_duplicates: NONE\n");
     }
     *dups = 0;
-    sqlite3_finalize(statement);
+    sqlite3_reset(stmt_get_known_duplicates);
     return(NULL);
   }
 
@@ -432,7 +457,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     }
   }
 
-  sqlite3_finalize(statement);
+  sqlite3_reset(stmt_get_known_duplicates);
 
   if (*dups > 0) {
     if (verbosity >= 5) {
