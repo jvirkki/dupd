@@ -1,0 +1,20 @@
+#!/bin/bash
+
+DESC="scan -v -v -v"
+
+set -e
+
+rm -f report
+$DUPD_CMD scan --path `pwd`/files -v -v -v
+$DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" | sort > report
+
+diff report output.01
+RV=$?
+if [ "$RV" != "0" ]; then
+    echo "FAIL ${DESC}"
+    exit 1
+else
+    echo "OK ${DESC}"
+fi
+
+rm -f report

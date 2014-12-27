@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+
+if ($ENV{'DUPD_VALGRIND'}) {
+    $ENV{'DUPD_CMD'} = "valgrind --error-exitcode=1 --tool=memcheck --leak-check=full ../dupd";
+} else {
+    $ENV{'DUPD_CMD'} = "../dupd";
+}
+
+# Needed for sort to work correctly
+$ENV{'LC_ALL'} = "C";
+
+open(TESTS, "ls -1 test.* |");
+while(<TESTS>) {
+    chomp;
+    print("\n---------- $_ --------------------\n");
+    $rv = system("./$_");
+    if ($rv != 0) {
+	$rv = $rv >> 8;
+	print("\nerror: exit code: $rv\n");
+	exit(1);
+    }
+}
+close(TESTS);

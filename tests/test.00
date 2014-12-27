@@ -1,0 +1,12 @@
+#!/bin/bash
+
+DESC="no options"
+
+$DUPD_CMD
+RV=$?
+if [ "$RV" != "1" ]; then
+    echo "FAIL ${DESC}"
+    exit 1
+else
+    echo "OK ${DESC}"
+fi

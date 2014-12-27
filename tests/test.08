@@ -1,0 +1,20 @@
+#!/bin/bash
+
+DESC="ls without --uniques"
+
+set -e
+
+rm -f report
+$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD ls --cut `pwd`/files/ --path `pwd`/files/ | sort > report
+
+diff report output.08
+RV=$?
+if [ "$RV" != "0" ]; then
+    echo "FAIL ${DESC}"
+    exit 1
+else
+    echo "OK ${DESC}"
+fi
+
+rm -f report

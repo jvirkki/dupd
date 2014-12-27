@@ -1,5 +1,5 @@
 #
-#  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -78,10 +78,11 @@ clean:
 lint:
 	lint -x -errfmt=simple $(LIB) $(INC) $(SRCS)
 
-test: dupd
-	(cp testfiles/* $(BUILD) && \
-		cd $(BUILD) && \
-		./runtest)
+test:
+	(cd tests && ./run)
+
+valgrind:
+	(cd tests && DUPD_VALGRIND=1 ./run)
 
 gcov:
 	$(MAKE) clean
@@ -90,5 +91,5 @@ gcov:
 	(cd $(BUILD) && \
 		cp ../src/*.c . && \
 		ln -s ../src . && \
-		gcov -bf *.c)
+		gcov -bf *.c | tee gcov.output)
 	@echo Remember to make clean to remove instrumented objects
