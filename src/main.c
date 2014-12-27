@@ -39,6 +39,7 @@
 static char * operation = NULL;
 static int start_path_count = 0;
 static int free_start_path = 0;
+static int free_db_path = 0;
 int verbosity = 1;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
@@ -248,6 +249,7 @@ static void process_args(int argc, char * argv[])
 
   if (db_path == NULL) {
     db_path = (char *)malloc(PATH_MAX);
+    free_db_path = 1;
     snprintf(db_path, PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
@@ -302,7 +304,7 @@ int main(int argc, char * argv[])
   }
 
   if (file_path != NULL) { free(file_path); }
-  if (db_path != NULL) { free(db_path); }
+  if (free_db_path) { free(db_path); }
   if (free_start_path) { free(start_path[0]); }
   free_size_tree();
   free_path_block();
