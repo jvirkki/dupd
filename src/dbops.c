@@ -330,6 +330,9 @@ int is_known_unique(sqlite3 * dbh, char * path)
     got_path = (char *)sqlite3_column_text(stmt_is_known_unique, 0);
     if (!strcmp(got_path, path)) {
       sqlite3_reset(stmt_is_known_unique);
+      if (verbosity >= 5) {
+	printf("is present in uniques table: %s\n", path);
+      }
       return(1);
     }
   }
@@ -369,6 +372,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 
   const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
   int rv;
+  int copied = 0;
   char line[PATH_MAX];
   char * pos = NULL;
   char * token;
@@ -392,11 +396,11 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
   }
 
-  path_list[0] = 0;
-
   snprintf(line, PATH_MAX, "%%%s%%", path);
-  rv = sqlite3_bind_text(stmt_get_known_duplicates, 1, line, -1, SQLITE_STATIC);
+  rv = sqlite3_bind_text(stmt_get_known_duplicates, 1, line, -1,SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
+
+  path_list[0] = 0;
 
   while (rv != SQLITE_DONE) {
     rv = sqlite3_step(stmt_get_known_duplicates);
@@ -412,8 +416,76 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
       exit(1);
     }
     strcpy(path_list, p);
-  }
 
+    if (verbosity >= 5) {
+      printf("match: %s\n", path_list);
+    }
+
+    int commas = 0;
+    for (int i = 0; path_list[i] != 0; i++) {
+      if (path_list[i] == ',') { commas++; }
+    }
+
+    if (commas < 1) {
+      printf("error: db has a duplicate set with no duplicates?\n");
+      printf("%s\n", path_list);
+      exit(1);
+    }
+
+    *dups = commas;
+
+    if (*dups > MAX_DUPLICATES) {
+      printf("error: never expected to see %d duplicates (max=%d)\n",
+	     *dups, MAX_DUPLICATES);
+      exit(1);
+    }
+
+    // The path list matched may be a false positive because we're
+    // matching substrings. If the parsing loop below does not find
+    // myself (i.e. 'path') then we'll have to ignore this false match
+    // and keep looking in the db.
+    int found_myself = 0;
+
+    if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
+
+      if (strcmp(path, token)) {
+	if (verbosity >= 5) {
+	  printf("copying potential dup: [%s]\n", token);
+	}
+	strcpy(known_dup_path_list[copied++], token);
+      } else {
+	found_myself = 1;
+      }
+
+      while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
+	if (strcmp(path, token)) {
+	  if (verbosity >= 5) {
+	    printf("copying potential dup: [%s]\n", token);
+	  }
+	  strcpy(known_dup_path_list[copied++], token);
+	} else {
+	  found_myself = 1;
+	}
+      }
+    }
+
+    if (!found_myself) {
+      if (verbosity >= 5) {
+	printf("false match, keep looking\n");
+      }
+      path_list[0] = 0;
+      copied = 0;
+    } else {
+      if (verbosity >= 5) {
+	printf("indeed a match for my potential duplicates\n");
+      }
+      break;
+    }
+
+  } // while (rv != SQLITE_DONE)
+
+  // If it never got around to copying anything into path_list it
+  // means there was no duplicates entry containing our path.
   if (path_list[0] == 0) {
     if (verbosity >= 5) {
       printf("get_known_duplicates: NONE\n");
@@ -423,38 +495,9 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     return(NULL);
   }
 
-  int commas = 0;
-  for (int i = 0; path_list[i] != 0; i++) {
-    if (path_list[i] == ',') { commas++; }
-  }
-
-  if (commas < 1) {
-    printf("error: db has a duplicate set with no duplicates?\n");
-    printf("%s\n", path_list);
+  if (copied != *dups) {
+    printf("error: dups: %d  i: %d\n", *dups, copied);
     exit(1);
-  }
-
-  *dups = commas;
-
-  if (*dups > MAX_DUPLICATES) {
-    printf("error: never expected to see %d duplicates (max=%d)\n",
-	   *dups, MAX_DUPLICATES);
-    exit(1);
-  }
-
-  int i = 0;
-
-  if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
-
-    if (strcmp(path, token)) {
-      strcpy(known_dup_path_list[i++], token);
-    }
-
-    while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
-      if (strcmp(path, token)) {
-        strcpy(known_dup_path_list[i++], token);
-      }
-    }
   }
 
   sqlite3_reset(stmt_get_known_duplicates);

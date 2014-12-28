@@ -123,7 +123,6 @@ static void show_help()
 #else
   printf("Usage doc not available on Darwin!\n");
 #endif
-  exit(0);
 }
 
 
@@ -313,5 +312,9 @@ int main(int argc, char * argv[])
   free_hash_lists();
   free_size_list();
   free_filecompare();
-  exit(0);
+
+  // Call return() instead of exit() just to make valgrind mark as
+  // an error any reachable allocations. That makes them show up
+  // when running the tests.
+  return(0);
 }

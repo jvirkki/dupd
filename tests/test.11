@@ -1,20 +1,17 @@
 #!/bin/bash
 
+source common
+
 DESC="dups with --uniques"
 
-set -e
-
-rm -f report
 $DUPD_CMD scan --path `pwd`/files -q --uniques
-$DUPD_CMD dups --cut `pwd`/files/ --path `pwd`/files/ | sort > report
+checkrv $?
 
+$DUPD_CMD dups --cut `pwd`/files/ --path `pwd`/files/ > nreport
+checkrv $?
+
+sort nreport > report
 diff report output.10
-RV=$?
-if [ "$RV" != "0" ]; then
-    echo "FAIL ${DESC}"
-    exit 1
-else
-    echo "OK ${DESC}"
-fi
+checkrv $?
 
-rm -f report
+tdone

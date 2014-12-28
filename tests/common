@@ -1,0 +1,15 @@
+
+rm -f report nreport
+
+checkrv () {
+    if [ "$1" != "0" ]; then
+	echo "FAIL ${DESC}"
+	exit 1
+    else
+	echo "OK ${DESC}"
+    fi
+}
+
+tdone () {
+    rm -f report nreport
+}

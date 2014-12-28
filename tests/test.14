@@ -1,0 +1,16 @@
+#!/bin/bash
+
+source common
+
+DESC="nonexistent file is unique"
+
+$DUPD_CMD scan --path `pwd`/files -q
+checkrv $?
+
+$DUPD_CMD file --file `pwd`/files/file3copy --cut `pwd`/files/ > report
+checkrv $?
+
+diff report output.14
+checkrv $?
+
+tdone

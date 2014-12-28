@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source common
+
+DESC="new file is unique in many"
+
+$DUPD_CMD scan --path `pwd`/files -q
+checkrv $?
+
+echo hi > files/many/ma
+$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ > report
+checkrv $?
+
+rm -f files/many/ma
+
+diff report output.15
+checkrv $?
+
+tdone
