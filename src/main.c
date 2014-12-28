@@ -40,6 +40,7 @@ static char * operation = NULL;
 static int start_path_count = 0;
 static int free_start_path = 0;
 static int free_db_path = 0;
+static int free_file_path = 0;
 int verbosity = 1;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
@@ -185,6 +186,7 @@ static void process_args(int argc, char * argv[])
 
       if (file_path[0] != '/') {
         file_path = (char *)malloc(PATH_MAX);
+	free_file_path = 1;
         getcwd(file_path, PATH_MAX);
         strcat(file_path, "/");
         strcat(file_path, argv[i+1]);
@@ -303,7 +305,7 @@ int main(int argc, char * argv[])
     show_help();
   }
 
-  if (file_path != NULL) { free(file_path); }
+  if (free_file_path) { free(file_path); }
   if (free_db_path) { free(db_path); }
   if (free_start_path) { free(start_path[0]); }
   free_size_tree();
