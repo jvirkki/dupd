@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -120,9 +121,15 @@ void insert_end_path(char * path, long size, char * first)
   *(char **)prior = new_entry;
 
   // Increase path length counter on first node
-  char path_count = (int)*(char *)((first + sizeof(char *)));
+  uint32_t path_count = (uint32_t)*(uint32_t *)((first + sizeof(uint32_t *)));
   path_count++;
-  *(char *)((first + sizeof(char *))) = path_count;
+  *(uint32_t *)((first + sizeof(uint32_t *))) = path_count;
+
+  if (path_count > MAX_DUPLICATES) {
+    printf("warning: a size set has %" PRIu32
+           " entries, more than MAX_DUPLICATES(%d)\n",
+           path_count, MAX_DUPLICATES);
+  }
 }
 
 

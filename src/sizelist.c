@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,11 +112,11 @@ void process_size_list(sqlite3 * dbh)
     count++;
     node = size_node->path_list;
 
-    char path_count = *(char *)((node + sizeof(char *)));
+    int path_count = (int)*(uint32_t *)((node + sizeof(uint32_t *)));
 
     if (verbosity >= 3) {
       printf("Processing %d/%d (%d files of size %ld)\n",
-             count, stats_size_list_count, (int)path_count, size_node->size);
+             count, stats_size_list_count, path_count, size_node->size);
     }
 
     // If we only have two files of this size, compare them directly

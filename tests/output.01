@@ -498,12 +498,7 @@
   many/ma.513
   many/ma.514
   many/ma.515
-  many/ma.516
-  many/ma.517
-  many/ma.518
-  many/ma.519
   many/ma.52
-  many/ma.520
   many/ma.53
   many/ma.54
   many/ma.55
@@ -560,7 +555,7 @@
   small2
   small2copy1
   small2copy2
-1560 total bytes used by duplicates:
+1545 total bytes used by duplicates:
 16384 total bytes used by duplicates:
 16470 total bytes used by duplicates:
 24576 total bytes used by duplicates:
@@ -569,4 +564,4 @@
 32944 total bytes used by duplicates:
 49152 total bytes used by duplicates:
 90 total bytes used by duplicates:
-Total used: 436116 bytes (425 KiB, 0 MiB, 0 GiB)
+Total used: 436101 bytes (425 KiB, 0 MiB, 0 GiB)

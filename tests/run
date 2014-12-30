@@ -16,7 +16,7 @@ while(<TESTS>) {
     $rv = system("./$_");
     if ($rv != 0) {
 	$rv = $rv >> 8;
-	print("\nerror: exit code: $rv\n");
+	print("\nerror: $_ exit code: $rv\n");
 	exit(1);
     }
 }
