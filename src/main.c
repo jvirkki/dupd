@@ -98,6 +98,8 @@ static void show_usage()
   printf("\n");
   printf("    help    show more help\n");
   printf("\n");
+  printf("    version show version and exit\n");
+  printf("\n");
   printf("General options include:\n");
   printf("    -v          increase verbosity (may be repeated for even more)\n");
   printf("    -q          quiet, supress all output except fatal errors\n");
@@ -115,6 +117,7 @@ static void show_usage()
  */
 static void show_help()
 {
+  printf("dupd " DUPD_VERSION "\n");
 #ifndef __APPLE__
   char * p = &_binary_USAGE_start;
   while (p != &_binary_USAGE_end) {
@@ -141,6 +144,7 @@ static void process_args(int argc, char * argv[])
   if (strncmp(operation, "scan", 4) &&
       strncmp(operation, "report", 6) &&
       strncmp(operation, "uniques", 7) &&
+      strncmp(operation, "version", 7) &&
       strncmp(operation, "dups", 4) &&
       strncmp(operation, "file", 4) &&
       strncmp(operation, "ls", 2) &&
@@ -287,6 +291,10 @@ int main(int argc, char * argv[])
 
   } else if (!strncmp(operation, "uniques", 7)) {
     operation_uniques();
+
+  } else if (!strncmp(operation, "version", 7)) {
+    printf(DUPD_VERSION "\n");
+    exit(0);
 
   } else if (!strncmp(operation, "dups", 7)) {
     operation_dups();

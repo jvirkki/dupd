@@ -1,0 +1,10 @@
+2014-12-30  Jyri J. Virkki  <jyri@virkki.com>
+
+	* Version 1.1
+	* Adds ls, dups, uniques and rmsh operations to help navigate duplicate cleanup.
+	* A handful of bug fixes since 1.0.
+
+2012-11-19  Jyri J. Virkki  <jyri@virkki.com>
+
+	* Version 1.0
+	* Initial usable version, scan and report operations supported.

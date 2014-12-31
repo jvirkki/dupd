@@ -19,6 +19,7 @@
 
 TOP:=$(shell  pwd)
 BUILD_OS:=$(shell uname)
+VERSION:=$(shell cat version)
 
 BUILD=$(TOP)/build
 INC=
@@ -64,9 +65,9 @@ endif
 dupd: $(OBJS) $(USAGE)
 	$(CC) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
 
-$(BUILD)/%.o: src/%.c
+$(BUILD)/%.o: src/%.c src/%.h
 	mkdir -p $(BUILD)
-	$(CC) $(INC) $(CFLAGS) -c $< -o $@
+	$(CC) $(INC) $(CFLAGS) -DDUPD_VERSION=\"$(VERSION)\" -c $< -o $@
 
 $(BUILD)/usage.o: USAGE
 	$(OBJCP) -I binary $(USAGE_ARCH) USAGE $(BUILD)/usage.o
