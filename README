@@ -8,6 +8,9 @@ minimal changes.
 dupd seeks to be fast and efficient. For most file sets it performs
 better than popular tools such as 'fdupes'.
 
+See this article for some performance comparisons:
+http://www.virkki.com/jyri/articles/index.php/duplicate-file-detection-performance/
+
 Quick howto:
 
 % dupd scan --path $HOME   (or whichever path you want to scan)
