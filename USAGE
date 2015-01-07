@@ -20,19 +20,25 @@ dupd is a duplicate detection utility.
 
     file    based on report, check for duplicates of one file
       --file PATH      check this file
+      --exclude PATH   if a duplicate lives under PATH, ignore it
 
     uniques based on report, look for unique files
       --path PATH      path where scanning will start
+      --exclude PATH   if a duplicate lives under PATH, ignore it
 
     dups    based on report, look for duplicate files
       --path PATH      path where scanning will start
+      --exclude PATH   if a duplicate lives under PATH, ignore it
 
     ls      based on report, list info about every file seen
       --path PATH      path where scanning will start
+      --exclude PATH   if a duplicate lives under PATH, ignore it
 
     rmsh    create shell script to delete all duplicates
 
     help    show more help
+
+    version show version and exit
 
 General options include:
     -v          increase verbosity (may be repeated for even more)
@@ -165,9 +171,10 @@ Check one file
 To check whether one given file still has known duplicates use the
 file operation.  Note that this does not do a new scan so it will not
 find new duplicates. This checks whether the duplicates identified
-during the previous scan still exist and are still duplicates. This is
-convenient when the database contains a large scan which takes a long
-time to re-run.
+during the previous scan still exist and verifies (by hash) whether
+they are still duplicates. Note that if you only want to know whether the
+file had duplicates at the time of the scan, it is faster to save the
+report output to a file and search that.
 
 % dupd file --file PATH
 
@@ -179,10 +186,17 @@ Options include:
 
 --cut PATHSEG      Remove prefix $PATHSEG from the file paths in the report
 
+--exclude PATH     Ignore any duplicates under PATH when reporting duplicates.
+                   This is useful if you intend to delete the entire tree
+                   under PATH, to make sure you don't delete all copies
+                   of the file.
+
 
 List matching files
 -------------------
 These operations list the best-known status of each file on disk.
+See 'file' operation for more info.
+
 ls: List all files, show whether they have duplicates or not.
 uniques: List all unique files.
 dups: List all files which have known duplicates.
@@ -198,6 +212,8 @@ Options include:
 --db PATH          Override the default database file location.
 
 --cut PATHSEG      Remove prefix $PATHSEG from the file paths in the report
+
+--exclude PATH     Ignore any duplicates under PATH when reporting duplicates.
 
 
 Remove duplicate files

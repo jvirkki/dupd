@@ -73,6 +73,15 @@ extern char * cut_path;
 
 
 /** ***************************************************************************
+ * When reporting duplicates, if exclude_path is defined, any duplicates
+ * contained within this tree are ignored (not considered duplicates).
+ *
+ */
+extern char * exclude_path;
+extern int exclude_path_len;
+
+
+/** ***************************************************************************
  * This minimum_report_size is the smallest total size consumed by duplicates
  * to be shown by report.
  *

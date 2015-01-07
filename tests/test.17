@@ -1,0 +1,16 @@
+#!/bin/bash
+
+source common
+
+DESC="dup is unique if we exclude path of dups"
+
+$DUPD_CMD scan --path `pwd`/files -q
+checkrv $?
+
+$DUPD_CMD file --file `pwd`/files/many/ma.1 --cut `pwd`/files/ --exclude-path `pwd`/files/many/ | sort > report
+checkrv $?
+
+diff report output.17
+checkrv $?
+
+tdone

@@ -30,8 +30,9 @@
 #include "utils.h"
 
 #define STATUS_UNKNOWN -1
-#define STATUS_UNIQUE 0
+#define STATUS_NOTDUP 0
 #define STATUS_DUPLICATE 1
+#define STATUS_EXCLUDE 2
 
 static int print_uniques = 0;
 static int print_duplicates = 0;
@@ -119,8 +120,9 @@ static int is_duplicate(char * path, char * self, char * hash)
  * file in 'duplicates'. This array must be allocated by the caller, the
  * values are filled by this function. Possible values are:
  *    STATUS_UNKNOWN   - This file was not tested (only if shortcircuit)
- *    STATUS_UNIQUE    - It is not a duplicate of 'path'
+ *    STATUS_NOTDUP    - It is not a duplicate of 'path'
  *    STATUS_DUPLICATE - It is a duplicate of 'path'
+ *    STATUS_EXCLUDE   - Ignored due to exclude_path
  *
  * Parameters:
  *    path         - Primary file to be tested against all 'duplicates'
@@ -154,6 +156,12 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
   int current_dups = 0;
   for (int i = 0; i < dups; i++) {
 
+    if (exclude_path != NULL &&
+        !strncmp(exclude_path, duplicates[i], exclude_path_len)) {
+      status[i] = STATUS_EXCLUDE;
+      continue;
+    }
+
     if (is_duplicate(duplicates[i], path, hash)) {
       status[i] = STATUS_DUPLICATE;
       current_dups++;
@@ -162,7 +170,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
       }
 
     } else {
-      status[i] = STATUS_UNIQUE;
+      status[i] = STATUS_NOTDUP;
     }
   }
 
@@ -294,27 +302,36 @@ static int file_callback(sqlite3 * dbh, long size, char * path)
   int verified_dups =
     reverify_duplicates(path, dups, dup_paths, status, shortcircuit);
 
-  if (verified_dups == 0) {
-    if (print_uniques) {
-      print_path(unique_pfx, path);
-    }
-    return(0);
+  int have_info = 0;
+
+  if (verified_dups == 0 && print_uniques) {
+    print_path(unique_pfx, path);
+    have_info = 1;
   }
 
-  // It has duplicate(s) for sure. But if we don't need the to print
-  // duplicates, work here is done.
-  if (!print_duplicates) {
-    return(verified_dups);
+  if (verified_dups !=0 && print_duplicates) {
+    print_path(dup_pfx, path);
+    have_info = 1;
   }
 
-  // Else, print the duplicate path and, if applicable, the list of duplicates.
-  print_path(dup_pfx, path);
+  // Print info about each individual duplicate candidate if applicable
 
-  if (list_all_duplicates) {
+  if (have_info && list_all_duplicates) {
     for (int i = 0; i < dups; i++) {
-      print_path(status[i] == STATUS_DUPLICATE ?
-                 "             DUP: " : "             ---: ",
-                 dup_paths[i]);
+      switch(status[i]) {
+      case STATUS_DUPLICATE:
+        print_path("             DUP: ", dup_paths[i]);
+        break;
+      case STATUS_EXCLUDE:
+        print_path("             xxx: ", dup_paths[i]);
+        break;
+      case STATUS_NOTDUP:
+        print_path("             ---: ", dup_paths[i]);
+        break;
+      default:
+        printf("error: unknown status\n");
+        exit(1);
+      }
     }
   }
 
@@ -365,6 +382,7 @@ void operation_ls()
 void operation_uniques()
 {
   print_uniques = 1;
+  if (verbosity >= 2) { list_all_duplicates = 1; }
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();

@@ -47,6 +47,8 @@ char * file_path = NULL;
 int write_db = 1;
 char * db_path = NULL;
 char * cut_path = NULL;
+char * exclude_path = NULL;
+int exclude_path_len = 0;
 unsigned int minimum_report_size = 0;
 int hash_one_max_blocks = 8;
 int intermediate_blocks = 0;
@@ -84,15 +86,19 @@ static void show_usage()
   printf("\n");
   printf("    file    based on report, check for duplicates of one file\n");
   printf("      --file PATH      check this file\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
   printf("\n");
   printf("    uniques based on report, look for unique files\n");
   printf("      --path PATH      path where scanning will start\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
   printf("\n");
   printf("    dups    based on report, look for duplicate files\n");
   printf("      --path PATH      path where scanning will start\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
   printf("\n");
   printf("    ls      based on report, list info about every file seen\n");
   printf("      --path PATH      path where scanning will start\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
   printf("\n");
   printf("    rmsh    create shell script to delete all duplicates\n");
   printf("\n");
@@ -189,7 +195,7 @@ static void process_args(int argc, char * argv[])
 
       if (file_path[0] != '/') {
         file_path = (char *)malloc(PATH_MAX);
-	free_file_path = 1;
+        free_file_path = 1;
         getcwd(file_path, PATH_MAX);
         strcat(file_path, "/");
         strcat(file_path, argv[i+1]);
@@ -239,6 +245,16 @@ static void process_args(int argc, char * argv[])
     } else if (!strncmp(argv[i], "--cut", 5)) {
       if (argc < i+2) { show_usage(); }
       cut_path = argv[i+1];
+      i++;
+
+    } else if (!strncmp(argv[i], "--exclude-path", 14)) {
+      if (argc < i+2) { show_usage(); }
+      exclude_path = argv[i+1];
+      if (exclude_path[0] != '/') {
+        printf("error: --exclude-path must be absolute\n");
+        exit(1);
+      }
+      exclude_path_len = strlen(exclude_path);
       i++;
 
     } else if (!strncmp(argv[i], "--minsize", 9)) {
