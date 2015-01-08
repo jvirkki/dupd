@@ -113,12 +113,26 @@ extern int hash_one_max_blocks;
 
 
 /** ***************************************************************************
+ * Size of blocks to read from disk during first pass.
+ *
+ */
+extern int hash_one_block_size;
+
+
+/** ***************************************************************************
  * The second hashing pass is done on this many blocks.
  * If this value is less than hash_one_max_blocks, the intermediate list
  * is skipped.
  *
  */
 extern int intermediate_blocks;
+
+
+/** ***************************************************************************
+ * Size of blocks to read from disk during subsequent passes.
+ *
+ */
+extern int hash_block_size;
 
 
 /** ***************************************************************************
@@ -160,6 +174,13 @@ extern int have_uniques;
  *
  */
 extern int no_unique;
+
+
+/** ***************************************************************************
+ * Save stats to this file if defined.
+ *
+ */
+extern char * stats_file;
 
 
 /** ***************************************************************************

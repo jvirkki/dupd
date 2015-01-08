@@ -20,6 +20,13 @@
 #ifndef _DUPD_STATS_H
 #define _DUPD_STATS_H
 
+#include <stdint.h>
+#include <inttypes.h>
+
+extern uint64_t stats_total_bytes;
+extern uint64_t stats_total_bytes_read;
+extern uint64_t stats_total_bytes_hashed;
+extern uint64_t stats_comparison_bytes_read;
 extern int stats_all_blocks_count;
 extern int stats_duplicate_files;
 extern int stats_duplicate_sets;
@@ -40,10 +47,14 @@ extern int stats_size_list_count;
 extern int stats_three_file_compare;
 extern int stats_two_file_compare;
 extern int stats_uniques_saved;
-extern long stats_comparison_blocks_read;
-extern long stats_hash_blocks_read;
 extern long stats_size_list_avg;
-extern unsigned long long stats_blocks_all_files;
+extern long stats_files_count;
+extern int stats_files_ignored;
+extern int stats_files_error;
+extern long stats_avg_file_size;
+extern long stats_time_scan;
+extern long stats_time_process;
+extern long stats_time_total;
 
 
 /** ***************************************************************************
@@ -64,7 +75,15 @@ void report_size_list();
  *
  * Return: none
  *
- */void report_stats();
+ */
+void report_stats();
+
+
+/** ***************************************************************************
+ * Save stats to a disk file.
+ *
+ */
+void save_stats();
 
 
 #endif

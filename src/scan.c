@@ -38,11 +38,6 @@
 #include "stats.h"
 #include "utils.h"
 
-static int files_count;         // total files processed so far
-static int files_ignored;       // count of (non-files) ignored
-static int files_error;         // count of errors (files skipped)
-static long avg_size;           // average file size
-
 
 /** ***************************************************************************
  * Public function, see scan.h
@@ -70,7 +65,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
     return;
   }
 
-  char * newpath = (char *)malloc(PATH_MAX);
+  char newpath[PATH_MAX];
   struct dirent * entry;
   STRUCT_STAT new_stat_info;
 
@@ -107,12 +102,14 @@ void walk_dir(sqlite3 * dbh, const char * path,
 
         if (new_stat_info.st_size > 0) {
           (*process_file)(dbh, new_stat_info.st_size, newpath);
-          files_count++;
-          avg_size = avg_size + ((new_stat_info.st_size - avg_size)/files_count);
-          stats_blocks_all_files += 1 + (new_stat_info.st_size / HASH_BLOCK_SIZE);
+          stats_total_bytes += new_stat_info.st_size;
+          stats_files_count++;
+          stats_avg_file_size = stats_avg_file_size +
+            ((new_stat_info.st_size - stats_avg_file_size)/stats_files_count);
+
           if (verbosity >= 2) {
-            if ((files_count % 5000) == 0) {
-              printf("Files scanned: %d\n", files_count);
+            if ((stats_files_count % 5000) == 0) {
+              printf("Files scanned: %ld\n", stats_files_count);
             }
           }
         } else {
@@ -125,18 +122,17 @@ void walk_dir(sqlite3 * dbh, const char * path,
         if (verbosity >= 4) {
           printf("SKIP (not file) [%s]\n", newpath);
         }
-        files_ignored++;
+        stats_files_ignored++;
       }
     } else { // if error from stat
       if (verbosity >= 1) {
         printf("SKIP (error) [%s]\n", newpath);
       }
-      files_error++;
+      stats_files_error++;
     }
   }
 
   closedir(dir);
-  free(newpath);
 }
 
 
@@ -166,15 +162,16 @@ void scan()
   }
 
   if (verbosity >= 1) {
-    printf("Files scanned: %d\n", files_count);
+    printf("Files scanned: %ld\n", stats_files_count);
   }
 
   if (verbosity >= 2) {
     long t2 = get_current_time_millis();
-    printf("Average file size: %ld\n", avg_size);
-    printf("Special files ignored: %d\n", files_ignored);
-    printf("Files with stat errors: %d\n", files_error);
-    printf("File scan completed in %ldms\n", t2 - t1);
+    stats_time_scan = t2 - t1;
+    printf("Average file size: %ld\n", stats_avg_file_size);
+    printf("Special files ignored: %d\n", stats_files_ignored);
+    printf("Files with stat errors: %d\n", stats_files_error);
+    printf("File scan completed in %ldms\n", stats_time_scan);
     report_size_list();
   }
 
@@ -189,9 +186,9 @@ void scan()
 
   t1 = get_current_time_millis();
   process_size_list(dbh);
+  stats_time_process = get_current_time_millis() - t1;
   if (verbosity >= 2) {
-    long t2 = get_current_time_millis();
-    printf("Duplicate processing completed in %ldms\n", t2 - t1);
+    printf("Duplicate processing completed in %ldms\n", stats_time_process);
   }
 
   if (write_db) {

@@ -331,7 +331,7 @@ int is_known_unique(sqlite3 * dbh, char * path)
     if (!strcmp(got_path, path)) {
       sqlite3_reset(stmt_is_known_unique);
       if (verbosity >= 5) {
-	printf("is present in uniques table: %s\n", path);
+        printf("is present in uniques table: %s\n", path);
       }
       return(1);
     }
@@ -436,7 +436,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 
     if (*dups > MAX_DUPLICATES) {
       printf("error: never expected to see %d duplicates (max=%d)\n",
-	     *dups, MAX_DUPLICATES);
+             *dups, MAX_DUPLICATES);
       exit(1);
     }
 
@@ -449,35 +449,35 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
 
       if (strcmp(path, token)) {
-	if (verbosity >= 5) {
-	  printf("copying potential dup: [%s]\n", token);
-	}
-	strcpy(known_dup_path_list[copied++], token);
+        if (verbosity >= 5) {
+          printf("copying potential dup: [%s]\n", token);
+        }
+        strcpy(known_dup_path_list[copied++], token);
       } else {
-	found_myself = 1;
+        found_myself = 1;
       }
 
       while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
-	if (strcmp(path, token)) {
-	  if (verbosity >= 5) {
-	    printf("copying potential dup: [%s]\n", token);
-	  }
-	  strcpy(known_dup_path_list[copied++], token);
-	} else {
-	  found_myself = 1;
-	}
+        if (strcmp(path, token)) {
+          if (verbosity >= 5) {
+            printf("copying potential dup: [%s]\n", token);
+          }
+          strcpy(known_dup_path_list[copied++], token);
+        } else {
+          found_myself = 1;
+        }
       }
     }
 
     if (!found_myself) {
       if (verbosity >= 5) {
-	printf("false match, keep looking\n");
+        printf("false match, keep looking\n");
       }
       path_list[0] = 0;
       copied = 0;
     } else {
       if (verbosity >= 5) {
-	printf("indeed a match for my potential duplicates\n");
+        printf("indeed a match for my potential duplicates\n");
       }
       break;
     }

@@ -4,15 +4,18 @@ dupd is a duplicate detection utility.
 % dupd operation options
 
     scan    scan starting from the given path
-      --path PATH      path where scanning will start
-      --nodb           do not generate database file
-      --firstblocks N  max blocks to read in first hash pass
-      --intblocks N    blocks to read in intermediate hash
-      --skip-two       do not compare two files directly
-      --skip-three     do not compare three files directly
-      --file-count     max estimated number of files to scan
-      --avg-size       estimated average file path length
-      --uniques        save info about unique files
+      --path PATH         path where scanning will start
+      --nodb              do not generate database file
+      --firstblocks N     max blocks to read in first hash pass
+      --firstblocksize N  size of firstblocks to read
+      --intblocks N       blocks to read in intermediate hash
+      --blocksize N       size of regular blocks to read
+      --skip-two          do not compare two files directly
+      --skip-three        do not compare three files directly
+      --file-count        max estimated number of files to scan
+      --avg-size          estimated average file path length
+      --uniques           save info about unique files
+      --stats-file FILE   save stats to this file
 
     report  show duplicate report from last scan
       --cut PATHSEG    remove 'PATHSEG' from report paths
@@ -20,19 +23,19 @@ dupd is a duplicate detection utility.
 
     file    based on report, check for duplicates of one file
       --file PATH      check this file
-      --exclude PATH   if a duplicate lives under PATH, ignore it
+      --exclude PATH   if a duplicate lives under PATH, ignore
 
     uniques based on report, look for unique files
       --path PATH      path where scanning will start
-      --exclude PATH   if a duplicate lives under PATH, ignore it
+      --exclude PATH   if a duplicate lives under PATH, ignore
 
     dups    based on report, look for duplicate files
       --path PATH      path where scanning will start
-      --exclude PATH   if a duplicate lives under PATH, ignore it
+      --exclude PATH   if a duplicate lives under PATH, ignore
 
     ls      based on report, list info about every file seen
       --path PATH      path where scanning will start
-      --exclude PATH   if a duplicate lives under PATH, ignore it
+      --exclude PATH   if a duplicate lives under PATH, ignore
 
     rmsh    create shell script to delete all duplicates
 
@@ -41,7 +44,7 @@ dupd is a duplicate detection utility.
     version show version and exit
 
 General options include:
-    -v          increase verbosity (may be repeated for even more)
+    -v          increase verbosity (may be repeated for more)
     -q          quiet, supress all output except fatal errors
     --db        path to dupd database file
     --no-unique ignore unique table even if present
@@ -82,6 +85,11 @@ Additional options are available:
 --nodb             Do not create the database file. Duplicate file info is
                    sent to stdout instead.
 
+--stats-file FILE  On completion, create (or append to) FILE and save some
+                   stats from the run. These are the same stats as get
+                   displayed with "-v -v" verbosity but are more friendly
+                   for programmatic consumption.
+
 The remaining scan options can be used to experiment with alternate
 scanning thresholds. In most cases these will not provide significant
 performance difference.
@@ -106,34 +114,31 @@ the same reasons.
 
 --skip-three        This option disables the three file comparison.
 
-Next, dupd will read only one 8K block of each file in a given size
-group. This is effective at quickly discarding different files from
-the list of potential duplicates.
+For size groups of four or more files, dupd will first read and hash a
+small amount of data from each. This is effective at quickly
+discarding different files from the list of potential duplicates.
 
-If the files in a given size group are slightly above this size
-threshold it may be faster to simply read them entirely during the
-first pass instead of doing a separate pass on them later. By default
-dupd will read up to 8 blocks of 8K each, or 64K, in this first pass
-if the files size is smaller than this. For many random file
-collections this has been seen to provide a reasonable tradeoff and
-there is no significant benefit in changing this value:
+By default, dupd will read a 512 byte block, or up to two blocks (1K)
+if the file is smaller than that. These defaults can be changed with:
 
+--firstblocksize N  Number of bytes in the initial block read.
 --firstblocks N     Maximum number of blocks to read in the first pass.
 
 Next, dupd can do an intermediate pass where it computes the hash on a
-larger number of 8K blocks than the first round but not on the entire
-file. Experimentation has shown that this is often not worth doing so
+larger number of blocks than the first round but not on the entire
+file.  Experimentation has shown that this is often not worth doing so
 this intermediate pass is disabled by default. The case where this can
 be benefitial is when the files being scanned are large with few
-duplicates but they tend to be identical in the first 8K of
-content. In such a scenario the intermediate scan can help.
+duplicates but they tend to be identical in the first bytes of
+content. In such a scenario the intermediate scan may help.
 
 --intblocks N      Blocks to read during the intermediate scan. Must be
                    larger than one to enable the intermediate scan.
+--blocksize N      Block size in bytes. Default 8192.
 
 Finally, for any files which are still undecided after all the above
 steps, dupd will read and hash the entire file to compare against the
-others in the size group. There is no configuration for this stage.
+others in the size group. The same blocksize as above is used.
 
 
 The two remaining options adjust the path block size which needs

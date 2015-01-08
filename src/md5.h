@@ -20,7 +20,7 @@
 #ifndef _DUPD_MD5_H
 #define _DUPD_MD5_H
 
-#define HASH_BLOCK_SIZE 1024*8
+#include <stdint.h>
 
 
 /** ***************************************************************************
@@ -34,6 +34,7 @@
  *    output  - Buffer where output will be stored.
  *    blocks  - Number of blocks to read from file.
  *              Or set to 0 to read entire file.
+ *    bsize   - Size of blocks to read from disk.
  *    skip    - Skip this many blocks when hashing from the file.
  *
  * Return:
@@ -41,7 +42,8 @@
  *   -1 - If unable to compute hash (e.g. unable to open file)
  *
  */
-int md5(const char * path, char * output, int blocks, int skip);
+int md5(const char * path, char * output, uint64_t blocks,
+        int bsize, uint64_t skip);
 
 
 #endif

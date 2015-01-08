@@ -18,6 +18,7 @@
 */
 
 #include <fcntl.h>
+#include <inttypes.h>
 #include <openssl/md5.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,19 +30,28 @@
 #include "md5.h"
 #include "stats.h"
 
-static char buffer[HASH_BLOCK_SIZE];
+#define MAX_BLOCK (1024 * 64)
+
+static char buffer[MAX_BLOCK];
 
 
 /** ***************************************************************************
  * Public function, see md5.h
  *
  */
-int md5(const char * path, char * out, int blocks, int skip)
+int md5(const char * path, char * output, uint64_t blocks,
+        int bsize, uint64_t skip)
 {
   int counter = blocks;
 
   if (verbosity >= 5) {
-    printf("md5: blocks=%d skip=%d path=%s\n", blocks, skip, path);
+    printf("md5: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
+           bsize, blocks, skip, path);
+  }
+
+  if (bsize > MAX_BLOCK) {
+    printf("error: md5 requested block size too big. max is %d\n", MAX_BLOCK);
+    exit(1);
   }
 
   int file = open(path, O_RDONLY);
@@ -53,15 +63,16 @@ int md5(const char * path, char * out, int blocks, int skip)
   }
 
   if (skip > 0) {
-    lseek(file, skip * HASH_BLOCK_SIZE, SEEK_SET);
+    lseek(file, skip * bsize, SEEK_SET);
   }
 
   ssize_t bytes;
   MD5_CTX md5;
 
   MD5_Init(&md5);
-  while ((bytes = read(file, buffer, HASH_BLOCK_SIZE)) > 0) {
-    stats_hash_blocks_read++;
+  while ((bytes = read(file, buffer, bsize)) > 0) {
+    stats_total_bytes_hashed += bytes;
+    stats_total_bytes_read += bytes;
     MD5_Update(&md5, buffer, bytes);
     if (blocks) {
       counter--;
@@ -70,11 +81,7 @@ int md5(const char * path, char * out, int blocks, int skip)
   }
 
   close(file);
-  MD5_Final((unsigned char *)out, &md5);
-
-  if (blocks == 1) { stats_single_block_count++; }
-  else if (blocks > 1) { stats_mid_blocks_count++; }
-  else if (blocks == 0) { stats_all_blocks_count++; }
+  MD5_Final((unsigned char *)output, &md5);
 
   return(0);
 }

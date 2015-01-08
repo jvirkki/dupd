@@ -33,6 +33,8 @@
 #include "md5.h"
 #include "stats.h"
 
+#define FC_BLOCK_SIZE 8192
+
 static char * buffers[4];
 static char paths[PATH_MAX * 3];
 
@@ -50,11 +52,13 @@ static void compare_two_open_files(sqlite3 * dbh,
   ssize_t bytes1;
   ssize_t bytes2;
 
-  while ((bytes1 = read(file1, buffers[1], HASH_BLOCK_SIZE)) > 0) {
-    stats_comparison_blocks_read++;
+  while ((bytes1 = read(file1, buffers[1], FC_BLOCK_SIZE)) > 0) {
+    stats_comparison_bytes_read += bytes1;
+    stats_total_bytes_read += bytes1;
     bread++;
-    bytes2 = read(file2, buffers[2], HASH_BLOCK_SIZE);
-    stats_comparison_blocks_read++;
+    bytes2 = read(file2, buffers[2], FC_BLOCK_SIZE);
+    stats_comparison_bytes_read += bytes2;
+    stats_total_bytes_read += bytes2;
     if ( (bytes1 != bytes2) ||
          (memcmp(buffers[1], buffers[2], bytes1)) ) {
       close(file1);
@@ -172,8 +176,9 @@ void compare_three_files(sqlite3 * dbh,
 
     for (i=1; i<4; i++) {
       if (file[i] > 0) {
-        bytes[i] = read(file[i], buffers[i], HASH_BLOCK_SIZE);
-        stats_comparison_blocks_read++;
+        bytes[i] = read(file[i], buffers[i], FC_BLOCK_SIZE);
+        stats_comparison_bytes_read += bytes[i];
+        stats_total_bytes_read += bytes[i];
       }
     }
 
@@ -271,9 +276,9 @@ void compare_three_files(sqlite3 * dbh,
  */
 void init_filecompare()
 {
-  buffers[1] = (char *)malloc(HASH_BLOCK_SIZE);
-  buffers[2] = (char *)malloc(HASH_BLOCK_SIZE);
-  buffers[3] = (char *)malloc(HASH_BLOCK_SIZE);
+  buffers[1] = (char *)malloc(FC_BLOCK_SIZE);
+  buffers[2] = (char *)malloc(FC_BLOCK_SIZE);
+  buffers[3] = (char *)malloc(FC_BLOCK_SIZE);
 }
 
 

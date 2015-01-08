@@ -30,11 +30,13 @@
 #include "main.h"
 #include "stats.h"
 
-int stats_all_blocks_count = 0;
+uint64_t stats_total_bytes = 0;
+uint64_t stats_total_bytes_read = 0;
+uint64_t stats_total_bytes_hashed = 0;
+uint64_t stats_comparison_bytes_read = 0;
 int stats_duplicate_files = 0;
 int stats_duplicate_sets = 0;
 int stats_full_hash_first = 0;
-int stats_mid_blocks_count = 0;
 int stats_one_block_hash_first = 0;
 int stats_set_dups_done_full_round = 0;
 int stats_set_dups_done_round_one = 0;
@@ -45,15 +47,18 @@ int stats_set_no_dups_round_one = 0;
 int stats_set_no_dups_round_two = 0;
 int stats_set_round_one = 0;
 int stats_set_round_two = 0;
-int stats_single_block_count = 0;
 int stats_size_list_count = 0;
 int stats_three_file_compare = 0;
 int stats_two_file_compare = 0;
 int stats_uniques_saved = 0;
-long stats_comparison_blocks_read = 0;
-long stats_hash_blocks_read = 0;
 long stats_size_list_avg = 0;
-unsigned long long stats_blocks_all_files = 0;
+long stats_files_count = 0;
+int stats_files_ignored = 0;
+int stats_files_error = 0;
+long stats_avg_file_size = 0;
+long stats_time_scan = 0;
+long stats_time_process = 0;
+long stats_time_total = 0;
 
 
 /** ***************************************************************************
@@ -74,13 +79,17 @@ void report_size_list()
 void report_stats()
 {
   if (verbosity >= 2) {
+    printf("\n");
     printf("Size sets with two files, hash list skipped: %d times\n",
            stats_two_file_compare);
     printf("Size sets with three files, hash list skipped: %d times\n",
            stats_three_file_compare);
 
+    printf("\n");
     printf("Round one: hash list processed for %d size sets\n",
            stats_set_round_one);
+    printf("  Block size %d (%d max blocks)\n",
+           hash_one_block_size, hash_one_max_blocks);
     printf("  Sets fully hashed in round one: %d\n", stats_full_hash_first);
     printf("  Sets with single block first round: %d\n",
            stats_one_block_hash_first);
@@ -91,6 +100,8 @@ void report_stats()
 
     printf("Round two: hash list processed for %d size sets\n",
            stats_set_round_two);
+    printf("  Block size %d (%d max blocks)\n",
+           hash_block_size, intermediate_blocks);
     printf("  Sets with dups ruled out in second round: %d\n",
            stats_set_no_dups_round_two);
     printf("  Sets with dups confirmed in second round: %d\n",
@@ -98,27 +109,25 @@ void report_stats()
 
     printf("Round three: hash list processed for %d size sets\n",
            stats_set_full_round);
+    printf("  Block size %d\n", hash_block_size);
     printf("  Sets with dups ruled out in full round: %d\n",
            stats_set_no_dups_full_round);
     printf("  Sets with dups confirmed in full round: %d\n",
            stats_set_dups_done_full_round);
 
-    printf("Read %ld blocks from disk for direct comparisons.\n",
-           stats_comparison_blocks_read);
+    printf("\n");
+    printf("Total bytes of all files: %" PRIu64 "\n", stats_total_bytes);
+    printf("Total bytes read from disk: %" PRIu64 " (%d%%)\n",
+           stats_total_bytes_read,
+           (int)((100 * stats_total_bytes_read) / stats_total_bytes));
+    printf("  Total bytes hashed: %" PRIu64 " (%d%%)\n",
+           stats_total_bytes_hashed,
+           (int)((100 * stats_total_bytes_hashed) / stats_total_bytes));
+    printf("  Total bytes directly compared: %" PRIu64 " (%d%%)\n",
+           stats_comparison_bytes_read,
+           (int)((100 * stats_comparison_bytes_read) / stats_total_bytes));
 
-    printf("Total blocks of all files considered: %llu\n",
-           stats_blocks_all_files);
-
-    printf("Percentage of total possible blocks read: %f%%\n",
-           (100.0 * stats_comparison_blocks_read /stats_blocks_all_files));
-
-    printf("Computed single hash block for %d files.\n",
-           stats_single_block_count);
-    printf("Computed partial hash for %d files.\n", stats_mid_blocks_count);
-    printf("Computed full hash for %d files.\n", stats_all_blocks_count);
-    printf("Read and hashed a total of %ld blocks from disk.\n",
-           stats_hash_blocks_read);
-
+    printf("\n");
     printf("Number of sets with duplicates: %d\n", stats_duplicate_sets);
   }
 
@@ -132,4 +141,55 @@ void report_stats()
     }
   }
 
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void save_stats()
+{
+  FILE * fp = fopen(stats_file, "a");
+  fprintf(fp, "stats_total_bytes %" PRIu64 "\n", stats_total_bytes);
+  fprintf(fp, "stats_total_bytes_read %" PRIu64 "\n", stats_total_bytes_read);
+  fprintf(fp, "stats_total_bytes_hashed %" PRIu64 "\n",
+          stats_total_bytes_hashed);
+  fprintf(fp, "stats_comparison_bytes_read %" PRIu64 "\n",
+          stats_comparison_bytes_read);
+  fprintf(fp, "stats_duplicate_files %d\n", stats_duplicate_files);
+  fprintf(fp, "stats_duplicate_sets %d\n", stats_duplicate_sets);
+  fprintf(fp, "stats_full_hash_first %d\n", stats_full_hash_first);
+  fprintf(fp, "stats_one_block_hash_first %d\n", stats_one_block_hash_first);
+  fprintf(fp, "stats_set_dups_done_full_round %d\n",
+          stats_set_dups_done_full_round);
+  fprintf(fp, "stats_set_dups_done_round_one %d\n",
+          stats_set_dups_done_round_one);
+  fprintf(fp, "stats_set_dups_done_round_two %d\n",
+          stats_set_dups_done_round_two);
+  fprintf(fp, "stats_set_full_round %d\n", stats_set_full_round);
+  fprintf(fp, "stats_set_no_dups_full_round %d\n",
+          stats_set_no_dups_full_round);
+  fprintf(fp, "stats_set_no_dups_round_one %d\n", stats_set_no_dups_round_one);
+  fprintf(fp, "stats_set_no_dups_round_two %d\n", stats_set_no_dups_round_two);
+  fprintf(fp, "stats_set_round_one %d\n", stats_set_round_one);
+  fprintf(fp, "stats_set_round_two %d\n", stats_set_round_two);
+  fprintf(fp, "stats_size_list_count %d\n", stats_size_list_count);
+  fprintf(fp, "stats_three_file_compare %d\n", stats_three_file_compare);
+  fprintf(fp, "stats_two_file_compare %d\n", stats_two_file_compare);
+  fprintf(fp, "stats_uniques_saved %d\n", stats_uniques_saved);
+  fprintf(fp, "stats_size_list_avg %ld\n", stats_size_list_avg);
+  fprintf(fp, "stats_files_count %ld\n", stats_files_count);
+  fprintf(fp, "stats_files_ignored %d\n", stats_files_ignored);
+  fprintf(fp, "stats_files_error %d\n", stats_files_error);
+  fprintf(fp, "stats_avg_file_size %ld\n", stats_avg_file_size);
+  fprintf(fp, "stats_time_scan %ld\n", stats_time_scan);
+  fprintf(fp, "stats_time_process %ld\n", stats_time_process);
+  fprintf(fp, "stats_time_total %ld\n", stats_time_total);
+  fprintf(fp, "hash_one_block_size %d\n", hash_one_block_size);
+  fprintf(fp, "hash_one_max_blocks %d\n", hash_one_max_blocks);
+  fprintf(fp, "hash_block_size %d\n", hash_block_size);
+  fprintf(fp, "intermediate_blocks %d\n", intermediate_blocks);
+  fprintf(fp, "\n");
+  fclose(fp);
 }

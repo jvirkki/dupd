@@ -21,6 +21,7 @@
 #define _DUPD_HASHLISTS_H
 
 #include <sqlite3.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 #define HASH_LIST_ONE 1
@@ -95,13 +96,14 @@ struct hash_list * get_hash_list(int kind);
  *     path   - Path of the file to add.
  *     blocks - Number of blocks to read from file path when computing
  *              its hash. If 0, reads entire file.
+ *     bsize  - Size of blocks to read.
  *     skip   - Skip this many blocks when hashing from the file.
  *
  * Return: none.
  *
  */
-void add_hash_list(struct hash_list * hl, char * path, int blocks, int skip);
-
+void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
+                   int bsize, uint64_t skip);
 
 /** ***************************************************************************
  * Copy potentially duplicate files from src hash list to destination hash
@@ -114,14 +116,15 @@ void add_hash_list(struct hash_list * hl, char * path, int blocks, int skip);
  *     src         - Source hash list.
  *     blocks      - Number of blocks to read from file path when computing
  *                   its hash. If 0, reads entire file.
+ *     bsize       - Size of blocks to read.
  *     destination - Destination hash list.
  *     skip        - Skip this many blocks when hashing from the file.
  *
  * Return: none.
  *
  */
-void filter_hash_list(struct hash_list * src, int blocks,
-                      struct hash_list * destination, int skip);
+void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
+                      struct hash_list * destination, uint64_t skip);
 
 
 /** ***************************************************************************

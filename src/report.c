@@ -95,7 +95,7 @@ static int is_duplicate(char * path, char * self, char * hash)
     return(0);
   }
 
-  if (md5(path, hash2, 0, 0)) {
+  if (md5(path, hash2, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);
     return(0);
   }
@@ -146,7 +146,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     printf("reverify_duplicates(path=%s, dups=%d)\n", path, dups);
   }
 
-  if (md5(path, hash, 0, 0)) {
+  if (md5(path, hash, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);
     exit(1);
   }
@@ -261,7 +261,7 @@ void operation_report()
  */
 static int file_callback(sqlite3 * dbh, long size, char * path)
 {
-  (void)size;			/* not used */
+  (void)size;                   /* not used */
   char * unique_pfx = "";
   char * dup_pfx = "";
 

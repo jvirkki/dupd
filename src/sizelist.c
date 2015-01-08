@@ -139,7 +139,7 @@ void process_size_list(sqlite3 * dbh)
     }
 
     // If we have files of smallish size, do a full hash up front
-    if (size_node->size <= (HASH_BLOCK_SIZE * hash_one_max_blocks)) {
+    if (size_node->size <= (hash_one_block_size * hash_one_max_blocks)) {
       stats_full_hash_first++;
       round_one_hash_blocks = 0;
       if (verbosity >= 4) {
@@ -155,7 +155,8 @@ void process_size_list(sqlite3 * dbh)
     struct hash_list * hl_one = get_hash_list(HASH_LIST_ONE);
     do {
       line = node + (2 * sizeof(char *));
-      add_hash_list(hl_one, line, round_one_hash_blocks, 0);
+      add_hash_list(hl_one, line, round_one_hash_blocks,
+                    hash_one_block_size, 0);
       node = *(char **)node;
     } while (node != NULL);
 
@@ -194,7 +195,8 @@ void process_size_list(sqlite3 * dbh)
       stats_set_round_two++;
       struct hash_list * hl_partial = get_hash_list(HASH_LIST_PARTIAL);
       hl_previous = hl_partial;
-      filter_hash_list(hl_one, intermediate_blocks, hl_partial, 1);
+      filter_hash_list(hl_one, intermediate_blocks,
+                       hash_block_size, hl_partial, 0);
 
       if (verbosity >= 5) {
         printf("Contents of hash list hl_partial:\n");
@@ -213,7 +215,7 @@ void process_size_list(sqlite3 * dbh)
       }
 
       // If this size < hashed so far, we're done so publish to db
-      if (size_node->size < HASH_BLOCK_SIZE * intermediate_blocks) {
+      if (size_node->size < hash_block_size * intermediate_blocks) {
         stats_set_dups_done_round_two++;
         if (verbosity >= 4) {
           printf("Some dups confirmed, here they are:\n");
@@ -229,7 +231,8 @@ void process_size_list(sqlite3 * dbh)
     }
     stats_set_full_round++;
     struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
-    filter_hash_list(hl_previous, 0, hl_full, intermediate_blocks + 1);
+    filter_hash_list(hl_previous, 0, hash_block_size,
+                     hl_full, intermediate_blocks);
     if (verbosity >= 5) {
       printf("Contents of hash list hl_full:\n");
       print_hash_list(hl_full);

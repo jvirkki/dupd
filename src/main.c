@@ -30,6 +30,7 @@
 #include "paths.h"
 #include "report.h"
 #include "scan.h"
+#include "stats.h"
 #include "sizelist.h"
 #include "sizetree.h"
 #include "utils.h"
@@ -50,8 +51,10 @@ char * cut_path = NULL;
 char * exclude_path = NULL;
 int exclude_path_len = 0;
 unsigned int minimum_report_size = 0;
-int hash_one_max_blocks = 8;
+int hash_one_max_blocks = 2;
 int intermediate_blocks = 0;
+int hash_one_block_size = 512;
+int hash_block_size = 8192;
 int opt_compare_two = 1;
 int opt_compare_three = 1;
 long file_count = 1000000L;
@@ -59,6 +62,7 @@ int avg_path_len = 512;
 int save_uniques = 0;
 int have_uniques = 0;
 int no_unique = 0;
+char * stats_file = NULL;
 
 
 /** ***************************************************************************
@@ -70,15 +74,18 @@ static void show_usage()
   printf("%% dupd operation options\n");
   printf("\n");
   printf("    scan    scan starting from the given path\n");
-  printf("      --path PATH      path where scanning will start\n");
-  printf("      --nodb           do not generate database file\n");
-  printf("      --firstblocks N  max blocks to read in first hash pass\n");
-  printf("      --intblocks N    blocks to read in intermediate hash\n");
-  printf("      --skip-two       do not compare two files directly\n");
-  printf("      --skip-three     do not compare three files directly\n");
-  printf("      --file-count     max estimated number of files to scan\n");
-  printf("      --avg-size       estimated average file path length\n");
-  printf("      --uniques        save info about unique files\n");
+  printf("      --path PATH         path where scanning will start\n");
+  printf("      --nodb              do not generate database file\n");
+  printf("      --firstblocks N     max blocks to read in first hash pass\n");
+  printf("      --firstblocksize N  size of firstblocks to read\n");
+  printf("      --intblocks N       blocks to read in intermediate hash\n");
+  printf("      --blocksize N       size of regular blocks to read\n");
+  printf("      --skip-two          do not compare two files directly\n");
+  printf("      --skip-three        do not compare three files directly\n");
+  printf("      --file-count        max estimated number of files to scan\n");
+  printf("      --avg-size          estimated average file path length\n");
+  printf("      --uniques           save info about unique files\n");
+  printf("      --stats-file FILE   save stats to this file\n");
   printf("\n");
   printf("    report  show duplicate report from last scan\n");
   printf("      --cut PATHSEG    remove 'PATHSEG' from report paths\n");
@@ -86,19 +93,19 @@ static void show_usage()
   printf("\n");
   printf("    file    based on report, check for duplicates of one file\n");
   printf("      --file PATH      check this file\n");
-  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore\n");
   printf("\n");
   printf("    uniques based on report, look for unique files\n");
   printf("      --path PATH      path where scanning will start\n");
-  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore\n");
   printf("\n");
   printf("    dups    based on report, look for duplicate files\n");
   printf("      --path PATH      path where scanning will start\n");
-  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore\n");
   printf("\n");
   printf("    ls      based on report, list info about every file seen\n");
   printf("      --path PATH      path where scanning will start\n");
-  printf("      --exclude PATH   if a duplicate lives under PATH, ignore it\n");
+  printf("      --exclude PATH   if a duplicate lives under PATH, ignore\n");
   printf("\n");
   printf("    rmsh    create shell script to delete all duplicates\n");
   printf("\n");
@@ -107,7 +114,7 @@ static void show_usage()
   printf("    version show version and exit\n");
   printf("\n");
   printf("General options include:\n");
-  printf("    -v          increase verbosity (may be repeated for even more)\n");
+  printf("    -v          increase verbosity (may be repeated for more)\n");
   printf("    -q          quiet, supress all output except fatal errors\n");
   printf("    --db        path to dupd database file\n");
   printf("    --no-unique ignore unique table even if present\n");
@@ -227,6 +234,16 @@ static void process_args(int argc, char * argv[])
       intermediate_blocks = atoi(argv[i+1]);
       i++;
 
+    } else if (!strncmp(argv[i], "--firstblocksize", 16)) {
+      if (argc < i+2) { show_usage(); }
+      hash_one_block_size = atoi(argv[i+1]);
+      i++;
+
+    } else if (!strncmp(argv[i], "--blocksize", 11)) {
+      if (argc < i+2) { show_usage(); }
+      hash_block_size = atoi(argv[i+1]);
+      i++;
+
     } else if (!strncmp(argv[i], "--firstblocks", 14)) {
       if (argc < i+2) { show_usage(); }
       hash_one_max_blocks = atoi(argv[i+1]);
@@ -255,6 +272,11 @@ static void process_args(int argc, char * argv[])
         exit(1);
       }
       exclude_path_len = strlen(exclude_path);
+      i++;
+
+    } else if (!strncmp(argv[i], "--stats-file", 12)) {
+      if (argc < i+2) { show_usage(); }
+      stats_file = argv[i+1];
       i++;
 
     } else if (!strncmp(argv[i], "--minsize", 9)) {
@@ -297,6 +319,8 @@ static void process_args(int argc, char * argv[])
  */
 int main(int argc, char * argv[])
 {
+  long t1 = get_current_time_millis();
+
   process_args(argc, argv);
 
   if (!strncmp(operation, "scan", 4)) {
@@ -336,6 +360,16 @@ int main(int argc, char * argv[])
   free_hash_lists();
   free_size_list();
   free_filecompare();
+
+  stats_time_total = get_current_time_millis() - t1;
+
+  if (verbosity >= 3) {
+    printf("Total time: %ld ms\n", stats_time_total);
+  }
+
+  if (stats_file != NULL) {
+    save_stats();
+  }
 
   // Call return() instead of exit() just to make valgrind mark as
   // an error any reachable allocations. That makes them show up

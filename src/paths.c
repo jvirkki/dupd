@@ -140,7 +140,7 @@ void insert_end_path(char * path, long size, char * first)
 void report_path_block_usage()
 {
   long used = (long)(next_entry - path_block);
-  int pct = (int)(100 * used / block_size);
+  int pct = (int)((100 * used) / block_size);
   printf("Total path block size: %ld\n", block_size);
   printf("Bytes used in this run: %ld (%d%%)\n", used, pct);
 }

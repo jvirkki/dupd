@@ -206,13 +206,14 @@ struct hash_list * get_hash_list(int kind)
  * Public function, see header file.
  *
  */
-void add_hash_list(struct hash_list * hl, char * path, int blocks, int skip)
+void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
+                   int bsize, uint64_t skip)
 {
   assert(hl != NULL);
   assert(path != NULL);
 
   char md5out[16];
-  int rv = md5(path, md5out, blocks, skip);
+  int rv = md5(path, md5out, blocks, bsize, skip);
   if (rv != 0) {
     if (verbosity >= 1) {
       printf("SKIP [%s]: Unable to compute hash\n", path);
@@ -274,8 +275,8 @@ void add_hash_list(struct hash_list * hl, char * path, int blocks, int skip)
  * Public function, see header file.
  *
  */
-void filter_hash_list(struct hash_list * src, int blocks,
-                      struct hash_list * destination, int skip)
+void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
+                      struct hash_list * destination, uint64_t skip)
 {
   struct hash_list * p = src;
   while (p != NULL) {
@@ -284,7 +285,8 @@ void filter_hash_list(struct hash_list * src, int blocks,
       // have two or more files with same hash here.. might be duplicates...
       // promote them to new hash list
       for (int j=0; j < p->next_index; j++) {
-        add_hash_list(destination, p->paths + j * PATH_MAX, blocks, skip);
+        add_hash_list(destination,
+                      p->paths + j * PATH_MAX, blocks, bsize, skip);
       }
     }
     p = p->next;

@@ -139,7 +139,7 @@ static void free_node(struct size_node * node)
  */
 int add_file(sqlite3 * dbh, long size, char * path)
 {
-  (void)dbh;			/* not used */
+  (void)dbh;                    /* not used */
   if (tip == NULL) {
     tip = new_node(size, path);
     return(-2);
