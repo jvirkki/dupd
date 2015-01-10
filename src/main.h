@@ -184,6 +184,13 @@ extern char * stats_file;
 
 
 /** ***************************************************************************
+ * If true, generate symlinks in rmsh operation.
+ *
+ */
+extern int rmsh_link;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

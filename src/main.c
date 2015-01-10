@@ -63,6 +63,7 @@ int save_uniques = 0;
 int have_uniques = 0;
 int no_unique = 0;
 char * stats_file = NULL;
+int rmsh_link = 0;
 
 
 /** ***************************************************************************
@@ -108,6 +109,7 @@ static void show_usage()
   printf("      --exclude PATH   if a duplicate lives under PATH, ignore\n");
   printf("\n");
   printf("    rmsh    create shell script to delete all duplicates\n");
+  printf("      --link           create symlinks for deleted files\n");
   printf("\n");
   printf("    help    show more help\n");
   printf("\n");
@@ -216,6 +218,9 @@ static void process_args(int argc, char * argv[])
 
     } else if (!strncmp(argv[i], "--nodb", 6)) {
       write_db = 0;
+
+    } else if (!strncmp(argv[i], "--link", 6)) {
+      rmsh_link = 1;
 
     } else if (!strncmp(argv[i], "--uniques", 9)) {
       save_uniques = 1;
