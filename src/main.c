@@ -50,7 +50,7 @@ char * db_path = NULL;
 char * cut_path = NULL;
 char * exclude_path = NULL;
 int exclude_path_len = 0;
-unsigned int minimum_report_size = 0;
+unsigned int minimum_file_size = 0;
 int hash_one_max_blocks = 2;
 int intermediate_blocks = 0;
 int hash_one_block_size = 512;
@@ -87,6 +87,7 @@ static void show_usage()
   printf("      --avg-size          estimated average file path length\n");
   printf("      --uniques           save info about unique files\n");
   printf("      --stats-file FILE   save stats to this file\n");
+  printf("      --minsize SIZE      min size of files to scan\n");
   printf("\n");
   printf("    report  show duplicate report from last scan\n");
   printf("      --cut PATHSEG    remove 'PATHSEG' from report paths\n");
@@ -286,7 +287,7 @@ static void process_args(int argc, char * argv[])
 
     } else if (!strncmp(argv[i], "--minsize", 9)) {
       if (argc < i+2) { show_usage(); }
-      minimum_report_size = atoi(argv[i+1]);
+      minimum_file_size = atoi(argv[i+1]);
       i++;
 
     } else {

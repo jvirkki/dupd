@@ -100,7 +100,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
           printf("FILE: [%s]\n", newpath);
         }
 
-        if (new_stat_info.st_size > 0) {
+        if (new_stat_info.st_size > minimum_file_size) {
           (*process_file)(dbh, new_stat_info.st_size, newpath);
           stats_total_bytes += new_stat_info.st_size;
           stats_files_count++;
@@ -114,7 +114,8 @@ void walk_dir(sqlite3 * dbh, const char * path,
           }
         } else {
           if (verbosity >= 4) {
-            printf("SKIP (zero size): [%s]\n", newpath);
+            printf("SKIP (too small: %zu): [%s]\n",
+                   (size_t)new_stat_info.st_size, newpath);
           }
         }
 

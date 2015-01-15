@@ -82,11 +82,10 @@ extern int exclude_path_len;
 
 
 /** ***************************************************************************
- * This minimum_report_size is the smallest total size consumed by duplicates
- * to be shown by report.
+ * This minimum_file_size is the smallest size handled by scan or report.
  *
  */
-extern unsigned int minimum_report_size;
+extern unsigned int minimum_file_size;
 
 
 /** ***************************************************************************

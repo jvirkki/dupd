@@ -220,7 +220,7 @@ void operation_report()
       printf("size (%lu) [%s]\n", total, path_list);
     }
 
-    if (total >= minimum_report_size) {
+    if (total >= minimum_file_size) {
       printf("%lu total bytes used by duplicates:\n", total);
       used += total;
       if ((token = strtok_r(path_list, ",", &pos)) != NULL) {

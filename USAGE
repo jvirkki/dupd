@@ -16,6 +16,7 @@ dupd is a duplicate detection utility.
       --avg-size          estimated average file path length
       --uniques           save info about unique files
       --stats-file FILE   save stats to this file
+      --minsize SIZE      min size of files to scan
 
     report  show duplicate report from last scan
       --cut PATHSEG    remove 'PATHSEG' from report paths
@@ -89,6 +90,8 @@ Additional options are available:
                    stats from the run. These are the same stats as get
                    displayed with "-v -v" verbosity but are more friendly
                    for programmatic consumption.
+
+--minsize SIZE     Ignore files smaller than this size when scanning.
 
 The remaining scan options can be used to experiment with alternate
 scanning thresholds. In most cases these will not provide significant
