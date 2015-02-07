@@ -111,6 +111,7 @@ static void show_usage()
   printf("\n");
   printf("    rmsh    create shell script to delete all duplicates\n");
   printf("      --link           create symlinks for deleted files\n");
+  printf("      --hardlink       create hard links for deleted files\n");
   printf("\n");
   printf("    help    show more help\n");
   printf("\n");
@@ -221,7 +222,10 @@ static void process_args(int argc, char * argv[])
       write_db = 0;
 
     } else if (!strncmp(argv[i], "--link", 6)) {
-      rmsh_link = 1;
+      rmsh_link = RMSH_LINK_SOFT;
+
+    } else if (!strncmp(argv[i], "--hardlink", 10)) {
+      rmsh_link = RMSH_LINK_HARD;
 
     } else if (!strncmp(argv[i], "--uniques", 9)) {
       save_uniques = 1;

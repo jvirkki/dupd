@@ -450,8 +450,14 @@ void operation_shell_script()
       }
       while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
         printf("rm \"%s\"\n", token);
-        if (rmsh_link) {
+
+        switch (rmsh_link) {
+        case RMSH_LINK_SOFT:
           printf("ln -s \"%s\" \"%s\"\n", kept, token);
+          break;
+        case RMSH_LINK_HARD:
+          printf("ln \"%s\" \"%s\"\n", kept, token);
+          break;
         }
       }
     }

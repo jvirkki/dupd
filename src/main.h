@@ -183,9 +183,11 @@ extern char * stats_file;
 
 
 /** ***************************************************************************
- * If true, generate symlinks in rmsh operation.
+ * If true, generate links in rmsh operation.
  *
  */
+#define RMSH_LINK_SOFT 1
+#define RMSH_LINK_HARD 2
 extern int rmsh_link;
 
 

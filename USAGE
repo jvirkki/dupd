@@ -39,6 +39,8 @@ dupd is a duplicate detection utility.
       --exclude PATH   if a duplicate lives under PATH, ignore
 
     rmsh    create shell script to delete all duplicates
+      --link           create symlinks for deleted files
+      --hardlink       create hard links for deleted files
 
     help    show more help
 
@@ -226,14 +228,25 @@ Options include:
 
 Remove duplicate files
 ----------------------
-The rmsh operation prints to stdout a shell script which can be used
-to delete all duplicates in the report, keeping only one copy of each
-set. This is generally not very useful because it takes human
-intervention to decide which of the duplicates is the best one to
-keep. While the content is the same, one of them may have a better
-file name and/or location.
+As a policy dupd never modifies the filesystem.
 
-Review the generated script carefully to see if it does what you want!
+As a convenience for those times when it is desirable to automatically
+remove files, this operation can create a shell script to do so. The
+output is a shell script instead of directly deleting the files as an
+additional layer of safety: Review the generated script carefully to
+see if it truly does what you want!
+
+Automated deletion is generally not very useful because it takes human
+intervention to decide which of the duplicates is the best one to keep
+in each case. While the content is the same, one of them may have a
+better file name and/or location.
+
+Optionally, the shell script can create either soft or hard links from
+each removed file to the copy being kept. The options are mutually
+exclusive (if both given, the last one takes precedence).
+
+--link           create symlinks for deleted files
+--hardlink       create hard links for deleted files
 
 % dupd rmsh > delete_my_files.sh
 
