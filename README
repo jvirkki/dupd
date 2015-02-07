@@ -16,5 +16,27 @@ Quick howto:
 % dupd scan --path $HOME   (or whichever path you want to scan)
 % dupd report
 
-For more information read the USAGE document.
+dupd supports a slightly different approach on dealing with duplicates
+than other similar tools I have tried. Other tools tend to fall into
+one of these two styles:
 
+1. Tools which produce a long text report and you're on your own. This
+works ok but can be overwhelming when the number of files is huge.
+
+2. Tools which are eager (sometimes dangerously overeager) to actively
+delete duplicates. I find this far too risky (dupd will never delete
+files directly).
+
+While dupd can be used in mode #1 ('dupd report') and it can be sort
+of coaxed into mode #2 ('dupd rmsh'), dupd is best when used in an
+interactive exploratory style.
+
+I generate a scan of the entire filesystem first, which dupd saves
+into an SQLite database. I then drill down into subdirectories where
+duplicates live and using the ls/dups/uniques/file operations, I
+review where duplicates are coming from and why. Then I move or remove
+files around as desired and then analyze other subdirectories.  After
+a few rounds of such cleanup, I then re-run a whole scan to refresh
+the database.
+
+For more information read the USAGE document or run 'dupd help'.
