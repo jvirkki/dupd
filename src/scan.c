@@ -174,6 +174,7 @@ void scan()
     printf("Files with stat errors: %d\n", stats_files_error);
     printf("File scan completed in %ldms\n", stats_time_scan);
     report_size_list();
+    printf("Longest path list %d\n", stats_max_pathlist);
   }
 
   if (save_uniques) {
@@ -190,6 +191,7 @@ void scan()
   stats_time_process = get_current_time_millis() - t1;
   if (verbosity >= 2) {
     printf("Duplicate processing completed in %ldms\n", stats_time_process);
+    printf("Largest duplicate set %d\n", stats_most_dups);
   }
 
   if (write_db) {

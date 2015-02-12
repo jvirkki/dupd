@@ -29,6 +29,7 @@
 #include "paths.h"
 #include "sizelist.h"
 #include "sizetree.h"
+#include "stats.h"
 #include "utils.h"
 
 static long block_size;
@@ -124,6 +125,10 @@ void insert_end_path(char * path, long size, char * first)
   uint32_t path_count = (uint32_t)*(uint32_t *)((first + sizeof(uint32_t *)));
   path_count++;
   *(uint32_t *)((first + sizeof(uint32_t *))) = path_count;
+
+  if (path_count > stats_max_pathlist) {
+    stats_max_pathlist = path_count;
+  }
 }
 
 

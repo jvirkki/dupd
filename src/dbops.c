@@ -264,6 +264,10 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
   rvchk(rv, SQLITE_DONE, "tried to add to duplicates table: %s\n", dbh);
 
   sqlite3_reset(stmt_duplicate_to_db);
+
+  if (count > stats_most_dups) {
+    stats_most_dups = count;
+  }
 }
 
 
