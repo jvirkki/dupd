@@ -198,12 +198,4 @@ extern int rmsh_link;
 #define PATH_MAX 4096
 
 
-/** ***************************************************************************
- * Max number of duplicates a file can have.
- * Should be dynamic but can do for now.
- *
- */
-#define MAX_DUPLICATES 8000
-
-
 #endif

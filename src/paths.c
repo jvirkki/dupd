@@ -124,12 +124,6 @@ void insert_end_path(char * path, long size, char * first)
   uint32_t path_count = (uint32_t)*(uint32_t *)((first + sizeof(uint32_t *)));
   path_count++;
   *(uint32_t *)((first + sizeof(uint32_t *))) = path_count;
-
-  if (path_count > MAX_DUPLICATES) {
-    printf("warning: a size set has %" PRIu32
-           " entries, more than MAX_DUPLICATES(%d)\n",
-           path_count, MAX_DUPLICATES);
-  }
 }
 
 

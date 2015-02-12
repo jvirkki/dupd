@@ -31,6 +31,7 @@
 #define ONE_MB_BYTES 1048576
 
 static char * * known_dup_path_list = NULL;
+static int known_dup_path_list_size = 512;
 static sqlite3_stmt * stmt_is_known_unique = NULL;
 static sqlite3_stmt * stmt_duplicate_to_db = NULL;
 static sqlite3_stmt * stmt_unique_to_db = NULL;
@@ -356,8 +357,10 @@ void init_get_known_duplicates()
     return;
   }
 
-  known_dup_path_list = (char * *)calloc(MAX_DUPLICATES, sizeof(char *));
-  for (int i = 0; i < MAX_DUPLICATES; i++) {
+  known_dup_path_list =
+    (char * *)calloc(known_dup_path_list_size, sizeof(char *));
+
+  for (int i = 0; i < known_dup_path_list_size; i++) {
     known_dup_path_list[i] = (char *)malloc(PATH_MAX);
   }
 }
@@ -434,10 +437,16 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 
     *dups = commas;
 
-    if (*dups > MAX_DUPLICATES) {
-      printf("error: never expected to see %d duplicates (max=%d)\n",
-             *dups, MAX_DUPLICATES);
-      exit(1);
+    // known_dup_path_list is a fixed array of paths, so may need to
+    // resize it if this duplicate set is too large.
+    if (*dups > known_dup_path_list_size) {
+      free_get_known_duplicates();
+      known_dup_path_list_size = *dups + 16;
+      if (verbosity >= 4) {
+        printf("Expanding known_dup_path_list_size to %d\n",
+               known_dup_path_list_size);
+      }
+      init_get_known_duplicates();
     }
 
     // The path list matched may be a false positive because we're
@@ -528,8 +537,9 @@ void free_get_known_duplicates()
     return;
   }
 
-  for (int i = 0; i < MAX_DUPLICATES; i++) {
+  for (int i = 0; i < known_dup_path_list_size; i++) {
     free(known_dup_path_list[i]);
   }
   free(known_dup_path_list);
+  known_dup_path_list = NULL;
 }
