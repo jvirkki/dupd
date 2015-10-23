@@ -121,8 +121,8 @@ void process_size_list(sqlite3 * dbh)
 
     // If we only have two files of this size, compare them directly
     if (opt_compare_two && path_count == 2) {
-      char * path1 = node + (2 * sizeof(char *));
-      char * path2 = (*(char **)node) + (2 * sizeof(char *));
+      char * path1 = node + (3 * sizeof(char *));
+      char * path2 = (*(char **)node) + (3 * sizeof(char *));
       compare_two_files(dbh, path1, path2, size_node->size);
       stats_two_file_compare++;
       goto CONTINUE;
@@ -130,9 +130,9 @@ void process_size_list(sqlite3 * dbh)
 
     // If we only have three files of this size, compare them directly
     if (opt_compare_three && path_count == 3) {
-      char * path1 = node + (2 * sizeof(char *));
-      char * path2 = (*(char **)node) + (2 * sizeof(char *));
-      char * path3 = *(char **)(*(char **)node) + (2 * sizeof(char *));
+      char * path1 = node + (3 * sizeof(char *));
+      char * path2 = (*(char **)node) + (3 * sizeof(char *));
+      char * path3 = *(char **)(*(char **)node) + (3 * sizeof(char *));
       compare_three_files(dbh, path1, path2, path3, size_node->size);
       stats_three_file_compare++;
       goto CONTINUE;
@@ -154,7 +154,7 @@ void process_size_list(sqlite3 * dbh)
     stats_set_round_one++;
     struct hash_list * hl_one = get_hash_list(HASH_LIST_ONE);
     do {
-      line = node + (2 * sizeof(char *));
+      line = node + (3 * sizeof(char *));
       add_hash_list(hl_one, line, round_one_hash_blocks,
                     hash_one_block_size, 0);
       node = *(char **)node;

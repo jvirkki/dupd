@@ -81,10 +81,12 @@ char * insert_first_path(char * path)
   char * rv = next_entry;
 
   *(char **)next_entry = (char *)NULL;       // points to next path list entry
-  *(char **)((next_entry + sizeof(char *))) = (char *)1; // count of entries
-  strcpy(next_entry + 2 * sizeof(char *), path); // the path string
+  *(char **)(next_entry + 1 * sizeof(char *)) = (char *)1; // count of entries
+  *(char **)(next_entry + 2 * sizeof(char *)) = (char *)next_entry; // LAST
 
-  next_entry = next_entry + (2 * sizeof(char *)) + 1 + strlen(path);
+  strcpy(next_entry + 3 * sizeof(char *), path); // the path string
+
+  next_entry = next_entry + (3 * sizeof(char *)) + 1 + strlen(path);
 
   if (next_entry > path_block_end) {
     printf("error: path block too small!\n");
@@ -112,14 +114,17 @@ void insert_end_path(char * path, long size, char * first)
     add_to_size_list(size, first);
 
   } else {
-    // Walk to the end of the path list
-    while ( (next = *(char **)prior) != NULL) {
-      prior = next;
-    }
+    // Jump to the end of the path list
+    prior = (char *)*(char **)(first + 2 * sizeof(char *));
   }
 
   char * new_entry = insert_first_path(path);
+
+  // Add link from prior (previous last entry) to the new last entry
   *(char **)prior = new_entry;
+
+  // Add link from first entry to the new last entry
+  *(char **)(first + 2 * sizeof(char *)) = (char *)new_entry;
 
   // Increase path length counter on first node
   uint32_t path_count = (uint32_t)*(uint32_t *)((first + sizeof(uint32_t *)));
