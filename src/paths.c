@@ -39,6 +39,37 @@ static char * path_block_end;
 
 
 /** ***************************************************************************
+ * Debug function. Dumps the path list for a given size starting from head.
+ *
+ */
+static void dump_path_list(const char * line, long size, char * head)
+{
+  printf("----- dump_size_list for size %ld -----\n", size);
+  printf("%s\n", line);
+
+  printf("  head: %p\n", head);
+
+  char * last_elem = *(char **)head;
+  printf("  last_elem: %p\n", last_elem);
+
+  char * list_len_ptr = head + 1 * sizeof(char *);
+  uint32_t list_len = (uint32_t)*(uint32_t *)list_len_ptr;
+  printf("  list_len: %d\n", (int)list_len);
+
+  char * first_elem = head + 2 * sizeof(char *);
+  printf("  first_elem: %p\n", first_elem);
+
+  char * here = first_elem;
+  while (here != NULL) {
+    printf("   [%s]\n", here + sizeof(char *));
+    printf("   next: %p\n", *(char **)here);
+    here = *(char **)here;
+  }
+  printf("-----\n\n\n");
+}
+
+
+/** ***************************************************************************
  * Public function, see paths.h
  *
  */
@@ -80,13 +111,26 @@ char * insert_first_path(char * path)
 {
   char * rv = next_entry;
 
-  *(char **)next_entry = (char *)NULL;       // points to next path list entry
-  *(char **)(next_entry + 1 * sizeof(char *)) = (char *)1; // count of entries
-  *(char **)(next_entry + 2 * sizeof(char *)) = (char *)next_entry; // LAST
+  // See paths.h for documentation on structure
 
-  strcpy(next_entry + 3 * sizeof(char *), path); // the path string
+  // PTR2LAST - Set to point to self since we're the first and last elem now
+  *(char **)(rv + 0 * sizeof(char *)) = (char *)(rv + 2 * sizeof(char *));
 
+  // ListSize - Now 1 since we're adding the first and only elem
+  *(char **)(rv + 1 * sizeof(char *)) = (char *)1;
+
+  // PTR2NEXT - NULL, no other elements yet
+  *(char **)(rv + 2 * sizeof(char *)) = NULL;
+
+  // path string...
+  strcpy((char *)(rv + 3 * sizeof(char *)), path);
+
+  // Update top of free space to point beyond the space we just used up
   next_entry = next_entry + (3 * sizeof(char *)) + 1 + strlen(path);
+
+  if (verbosity > 6) {
+    dump_path_list("AFTER insert_first_path", -1, rv);
+  }
 
   if (next_entry > path_block_end) {
     printf("error: path block too small!\n");
@@ -101,35 +145,49 @@ char * insert_first_path(char * path)
  * Public function, see paths.h
  *
  */
-void insert_end_path(char * path, long size, char * first)
+void insert_end_path(char * path, long size, char * head)
 {
-  char * prior = first;
-  char * next = NULL;
+  char * last_elem = *(char **)head;
+  char * list_len = head + 1 * sizeof(char *);
+  char * first_elem = head + 2 * sizeof(char *);
+  char * second_elem = *(char **)(head + 2 * sizeof(char *));
+  char * prior = NULL;
 
-  next = *(char **)first;
-  if (next == NULL) {
-    // If first->next is null, we are adding the second element to
-    // this path list. This means we have a size which is a candidate
-    // for duplicate processing later.
-    add_to_size_list(size, first);
+  if (second_elem == NULL) {
+    // This means we are now adding the second element to this path list.
+    // Which means we have a size which is a candidate for duplicate
+    // processing later, so add it to the size list.
+    add_to_size_list(size, head);
+    prior = first_elem;
 
   } else {
     // Jump to the end of the path list
-    prior = (char *)*(char **)(first + 2 * sizeof(char *));
+    prior = last_elem;
   }
 
-  char * new_entry = insert_first_path(path);
+  // PTR2LAST - Set to point to next_entry, where the new entry will be
+  *(char **)head = next_entry;
 
-  // Add link from prior (previous last entry) to the new last entry
-  *(char **)prior = new_entry;
+  // PTR2NEXT - Set previous last element to point to new element as well
+  *(char **)prior = next_entry;
 
-  // Add link from first entry to the new last entry
-  *(char **)(first + 2 * sizeof(char *)) = (char *)new_entry;
+  // path string...
+  strcpy(next_entry + sizeof(char *), path);
 
-  // Increase path length counter on first node
-  uint32_t path_count = (uint32_t)*(uint32_t *)((first + sizeof(uint32_t *)));
+  // PTR2NEXT - Next of new elem
+  *(char **)next_entry = NULL;
+
+  // Increase ListSize of this path list
+  uint32_t path_count = (uint32_t)*(uint32_t *)list_len;
   path_count++;
-  *(uint32_t *)((first + sizeof(uint32_t *))) = path_count;
+  *(uint32_t *)list_len = path_count;
+
+  // Update top of free space to point beyond the space we just used up
+  next_entry = next_entry + sizeof(char *) + strlen(path) + 1;
+
+  if (verbosity >= 6) {
+    dump_path_list("AFTER insert_end_path", size, head);
+  }
 
   if (path_count > stats_max_pathlist) {
     stats_max_pathlist = path_count;

@@ -22,6 +22,27 @@
 
 
 /** ***************************************************************************
+ * Functions to manage the path lists.
+ *
+ * A path list is a linked list of the file paths of all files which have
+ * the same size.
+ *
+ * The head of the path list (returned by insert_first_path()) points to:
+ *
+ *      head
+ *       |
+ *    +--v-----+--------+--------+-------------------+
+ *    |PTR2LAST|ListSize|PTR2NEXT|path string[0] ... |
+ *    +--------+--------+----+---+-------------------+
+ *                           |
+ *                      +----v---+-------------------+
+ *                      |PTR2NEXT|path string[1] ... |
+ *                      +--------+-------------------+
+ *
+ */
+
+
+/** ***************************************************************************
  * Initialize path_block data structures.
  *
  * Parameters: none
@@ -45,15 +66,14 @@ void free_path_block();
 
 /** ***************************************************************************
  * Inserts the first file in a path list into the next available slot.
- * A path list consists of a linked list of all the files of the same
- * size.  File scan will call this when it encounters the first file
- * to have a given size. Subsequent files of the same size are added
- * with insert_end_path().
+ * File scan will call this when it encounters the first file to have
+ * a given size. Subsequent files of the same size are added with
+ * insert_end_path().
  *
  * Parameters:
  *    path - The path of the file to add. Gets copies into the path block.
  *
- * Return: Pointer to the path block entry now containing this path.
+ * Return: Pointer to the head of this path list.
  *
  */
 char * insert_first_path(char * path);
@@ -69,12 +89,12 @@ char * insert_first_path(char * path);
  * Parameters:
  *    path  - The path of the file to add. Gets copied into the path block.
  *    size  - The size of the files in this path list.
- *    first - The head of this path list (from insert_first_path() earlier).
+ *    head  - The head of this path list (from insert_first_path() earlier).
  *
  * Return: none
  *
  */
-void insert_end_path(char * path, long size, char * first);
+void insert_end_path(char * path, long size, char * head);
 
 
 /** ***************************************************************************
