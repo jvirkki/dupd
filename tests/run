@@ -1,7 +1,36 @@
 #!/usr/bin/perl
 
+#
+#  Copyright 2014-2015 Jyri J. Virkki <jyri@virkki.com>
+#
+#  This file is part of dupd.
+#
+#  dupd is free software: you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  dupd is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with dupd.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+#
+# Runs tests.
+#
+# By default, runs all the tests (all files test.* in this directory)
+#
+# Or, pass in the name(s) of the individual test(s) to run.
+#
+
 if ($ENV{'DUPD_VALGRIND'}) {
-    $ENV{'DUPD_CMD'} = "valgrind --error-exitcode=1 --tool=memcheck --leak-check=full ../dupd";
+    $ENV{'DUPD_CMD'} =
+        "valgrind --error-exitcode=1 --tool=memcheck " .
+        "--leak-check=full ../dupd";
 } else {
     $ENV{'DUPD_CMD'} = "../dupd";
 }
@@ -9,15 +38,24 @@ if ($ENV{'DUPD_VALGRIND'}) {
 # Needed for sort to work correctly
 $ENV{'LC_ALL'} = "C";
 
-open(TESTS, "ls -1 test.* |");
-while(<TESTS>) {
-    chomp;
+if (@ARGV) {
+    @testname = @ARGV;
+
+} else {
+    open(TESTS, "ls -1 test.* |");
+    while(<TESTS>) {
+        chomp;
+        push @testname, $_;
+    }
+    close(TESTS);
+}
+
+foreach (@testname) {
     print("\n---------- $_ --------------------\n");
     $rv = system("./$_");
     if ($rv != 0) {
-	$rv = $rv >> 8;
-	print("\nerror: $_ exit code: $rv\n");
-	exit(1);
+        $rv = $rv >> 8;
+        print("\nerror: $_ exit code: $rv\n");
+        exit(1);
     }
 }
-close(TESTS);
