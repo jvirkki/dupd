@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source common
+
+DESC="scan with --skip-two"
+
+$DUPD_CMD scan --path `pwd`/files -q --skip-two
+checkrv $?
+
+$DUPD_CMD ls --cut `pwd`/files/ --path `pwd`/files/ > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.08
+checkrv $?
+
+tdone
