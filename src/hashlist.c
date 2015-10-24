@@ -144,6 +144,32 @@ static void reset_hash_list(struct hash_list * hl)
 
 
 /** ***************************************************************************
+ * Compare two memory buffers similar to memcmp().
+ *
+ * For small buffers like the 16 bytes compared in add_hash_list(), this can
+ * be faster than memcmp().
+ *
+ * Parameters:
+ *    b1 - Pointer to first buffer
+ *    b2 - Pointer to second buffer
+ *    n  - Length of these buffers (number of bytes to compare)
+ *
+ * Return: 0 if identical, 1 if different
+ *
+ */
+static inline int dupd_memcmp(const char * b1, const char * b2, size_t n)
+{
+  while (n) {
+    if (*b1++ != *b2++) {
+      return 1;
+    }
+    n--;
+  }
+  return 0;
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
  *
  */
@@ -227,7 +253,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
   // Find the node which contains the paths for this hash, if it exists.
 
   while (p != NULL && p->hash_valid) {
-    if (!memcmp(p->hash, md5out, 16)) {
+    if (!dupd_memcmp(p->hash, md5out, 16)) {
 
       if (p->next_index == p->capacity) {
         // Found correct node but need more space in path list
