@@ -23,6 +23,7 @@
 #include <strings.h>
 #include <unistd.h>
 
+#include "copying.h"
 #include "dbops.h"
 #include "filecompare.h"
 #include "hashlist.h"
@@ -30,9 +31,9 @@
 #include "paths.h"
 #include "report.h"
 #include "scan.h"
-#include "stats.h"
 #include "sizelist.h"
 #include "sizetree.h"
+#include "stats.h"
 #include "utils.h"
 
 #define MAX_START_PATH 10
@@ -67,11 +68,27 @@ int rmsh_link = 0;
 
 
 /** ***************************************************************************
+ * Show banner.
+ *
+ */
+static void show_banner()
+{
+  printf("dupd " DUPD_VERSION " Copyright 2012-2015 Jyri J. Virkki\n");
+  printf("This program comes with ABSOLUTELY NO WARRANTY.\n");
+  printf("This is free software, and you are welcome to redistribute it\n");
+  printf("under certain conditions. Run 'dupd license' for details.\n");
+  printf("\n");
+}
+
+
+/** ***************************************************************************
  * Show brief usage info and exit.
  *
  */
-static void show_usage()
+static void show_help()
 {
+  show_banner();
+
   printf("%% dupd operation options\n");
   printf("\n");
   printf("    scan    scan starting from the given path\n");
@@ -113,7 +130,11 @@ static void show_usage()
   printf("      --link           create symlinks for deleted files\n");
   printf("      --hardlink       create hard links for deleted files\n");
   printf("\n");
-  printf("    help    show more help\n");
+  printf("    help    show brief usage info\n");
+  printf("\n");
+  printf("    usage   show more extensive documentation\n");
+  printf("\n");
+  printf("    license show license info\n");
   printf("\n");
   printf("    version show version and exit\n");
   printf("\n");
@@ -123,7 +144,7 @@ static void show_usage()
   printf("    --db        path to dupd database file\n");
   printf("    --no-unique ignore unique table even if present\n");
   printf("\n");
-  exit(1);
+  exit(0);
 }
 
 
@@ -132,22 +153,23 @@ static void show_usage()
  * Content is compiled into the binary from the USAGE file.
  *
  */
-static void show_help()
+static void show_usage()
 {
-  printf("dupd " DUPD_VERSION "\n");
+  show_banner();
+
 #ifndef __APPLE__
   char * p = &_binary_USAGE_start;
   while (p != &_binary_USAGE_end) {
     putchar(*p++);
   }
 #else
-  printf("Usage doc not available on Darwin!\n");
+  printf("Usage documentation not available on Darwin!\n");
 #endif
 }
 
 
 /** ***************************************************************************
- * Process commend line arguments and set corresponding globals.
+ * Process command line arguments and set corresponding globals.
  * Shows usage and exits if errors are detected in argument usage.
  *
  */
@@ -155,20 +177,28 @@ static void process_args(int argc, char * argv[])
 {
   int i;
 
-  if (argc < 2) { show_usage(); }
+  if (argc < 2) {
+    show_banner();
+    printf("\n");
+    printf("Run 'dupd help' for a summary of available options.\n");
+    printf("Run 'dupd usage' for more documentation.\n");
+    exit(0);
+  }
 
   operation = argv[1];
   if (strncmp(operation, "scan", 4) &&
       strncmp(operation, "report", 6) &&
       strncmp(operation, "uniques", 7) &&
       strncmp(operation, "version", 7) &&
+      strncmp(operation, "license", 7) &&
       strncmp(operation, "dups", 4) &&
       strncmp(operation, "file", 4) &&
       strncmp(operation, "ls", 2) &&
       strncmp(operation, "rmsh", 4) &&
+      strncmp(operation, "usage", 5) &&
       strncmp(operation, "help", 4)) {
     printf("error: unknown operation [%s]\n", operation);
-    show_usage();
+    show_help();
   }
 
   for (i = 2; i < argc; i++) {
@@ -342,6 +372,9 @@ int main(int argc, char * argv[])
   } else if (!strncmp(operation, "uniques", 7)) {
     operation_uniques();
 
+  } else if (!strncmp(operation, "license", 7)) {
+    show_license();
+
   } else if (!strncmp(operation, "version", 7)) {
     printf(DUPD_VERSION "\n");
     exit(0);
@@ -357,6 +390,9 @@ int main(int argc, char * argv[])
 
   } else if (!strncmp(operation, "rmsh", 4)) {
     operation_shell_script();
+
+  } else if (!strncmp(operation, "usage", 5)) {
+    show_usage();
 
   } else if (!strncmp(operation, "help", 4)) {
     show_help();

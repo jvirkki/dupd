@@ -42,7 +42,11 @@ dupd is a duplicate detection utility.
       --link           create symlinks for deleted files
       --hardlink       create hard links for deleted files
 
-    help    show more help
+    help    show brief usage info
+
+    usage   show more extensive documentation
+
+    license show license info
 
     version show version and exit
 
