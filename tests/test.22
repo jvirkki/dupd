@@ -1,0 +1,23 @@
+#!/bin/bash
+
+source common
+
+DESC="scan nonexistent path"
+
+$DUPD_CMD scan --path /nosuchdirectory -v > nreport
+if [ "$?" != "1" ]; then
+    echo "FAIL ${DESC}"
+    exit 1
+else
+    echo "OK ${DESC}"
+fi
+
+OUT=`wc -l nreport`
+if [ "$OUT" != "2 nreport" ]; then
+    echo "FAIL ${DESC}"
+    exit 1
+else
+    echo "OK ${DESC}"
+fi
+
+tdone

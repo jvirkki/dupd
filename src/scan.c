@@ -166,6 +166,10 @@ void scan()
     printf("Files scanned: %ld\n", stats_files_count);
   }
 
+  if (stats_files_count == 0) {
+    exit(1);
+  }
+
   if (verbosity >= 2) {
     long t2 = get_current_time_millis();
     stats_time_scan = t2 - t1;
