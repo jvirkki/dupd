@@ -4,7 +4,7 @@ DESC="no options"
 
 $DUPD_CMD
 
-if [ "$?" != "1" ]; then
+if [ "$?" != "0" ]; then
     echo "FAIL ${DESC}"
     exit 1
 else
