@@ -132,6 +132,10 @@ static void free_hash_list(struct hash_list * hl)
  */
 static void reset_hash_list(struct hash_list * hl)
 {
+  if (hl == NULL) {
+    return;
+  }
+
   struct hash_list * p = hl;
   while (p != NULL) {
     p->has_dups = 0;
@@ -180,8 +184,13 @@ void init_hash_lists()
   assert(hl_full == NULL);
 
   hl_one = init_hash_list();
-  hl_partial = init_hash_list();
   hl_full = init_hash_list();
+
+  // The intermediate hash list is unused by default, so only allocate it
+  // if it has been enabled.
+  if (intermediate_blocks > 0) {
+    hl_partial = init_hash_list();
+  }
 }
 
 
