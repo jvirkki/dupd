@@ -164,7 +164,12 @@ static void show_usage()
   }
 #else
   printf("Usage documentation not available on Darwin!\n");
+  printf("\n");
+  printf("Alternatively, refer to the document here:\n");
+  printf("https://github.com/jvirkki/dupd/blob/master/USAGE\n");
 #endif
+
+  exit(1);
 }
 
 
