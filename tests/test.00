@@ -1,12 +1,10 @@
 #!/bin/bash
 
+source common
+
 DESC="no options"
 
 $DUPD_CMD
+checkrv $?
 
-if [ "$?" != "0" ]; then
-    echo "FAIL ${DESC}"
-    exit 1
-else
-    echo "OK ${DESC}"
-fi
+tdone
