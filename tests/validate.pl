@@ -33,14 +33,17 @@ while (<FOUT>)
     if (/used by duplicates/) {
         $first = <FOUT>;
         chomp $first;
+        $first =~ s/^\s+|\s+$//g;
 
         $len = 0;
         do {
             $duplicate = <FOUT>;
             chomp $duplicate;
+            $duplicate =~ s/^\s+|\s+$//g;
             $len = length($duplicate);
             if ($len > 1) {
-                $rv = system("cmp $first $duplicate");
+                $cmd = "cmp \"$first\" \"$duplicate\"";
+                $rv = system($cmd);
                 if ($rv != 0) {
                     print "ERROR: $first $duplicate\n";
                     $code = 1;
