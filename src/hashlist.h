@@ -37,7 +37,7 @@ struct hash_list {
   int has_dups;                 // true if this hash list has duplicates
   int hash_valid;               // true if hash buffer is set to valid value
   char hash[16];                // the hash string shared by all these paths
-  char * paths;                 // all the paths with a given hash
+  char ** pathptrs;             // pointers to all the paths with this hash
   int capacity;                 // 'paths' block current capacity
   int next_index;               // when adding a path, index of next one
   struct hash_list * next;      // next in list

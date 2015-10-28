@@ -67,7 +67,7 @@ static struct hash_list * new_hash_list_node()
   hl->has_dups = 0;
   hl->hash_valid = 0;
   hl->hash[0] = 0;
-  hl->paths = (char *)malloc(PATH_MAX * DEFAULT_PATH_CAPACITY);
+  hl->pathptrs = (char **)malloc(sizeof(char *) * DEFAULT_PATH_CAPACITY);
   hl->capacity = DEFAULT_PATH_CAPACITY;
   hl->next_index = 0;
   hl->next = NULL;
@@ -112,7 +112,7 @@ static void free_hash_list(struct hash_list * hl)
   struct hash_list * me = hl;
   while (p != NULL) {
     p = p->next;
-    free(me->paths);
+    free(me->pathptrs);
     free(me);
     me = p;
   }
@@ -258,14 +258,14 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
       if (p->next_index == p->capacity) {
         // Found correct node but need more space in path list
         p->capacity = p->capacity * 2;
-        p->paths = (char *)realloc(p->paths, p->capacity * PATH_MAX);
+        p->pathptrs = (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
         if (verbosity >= 5) {
           printf("Had to increase path capacity to %d\n", p->capacity);
         }
       }
 
       // Add new path to existing node
-      strcpy(p->paths + p->next_index * PATH_MAX, path);
+      p->pathptrs[p->next_index] = path;
       if (p->next_index) {
         hl->has_dups = 1;
       }
@@ -291,7 +291,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
   // Populate new node...
   memcpy(p->hash, md5out, 16);
   p->hash_valid = 1;
-  strcpy(p->paths + p->next_index * PATH_MAX, path);
+  p->pathptrs[p->next_index] = path;
   p->next_index++;
   return;
 }
@@ -311,8 +311,7 @@ void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
       // have two or more files with same hash here.. might be duplicates...
       // promote them to new hash list
       for (int j=0; j < p->next_index; j++) {
-        add_hash_list(destination,
-                      p->paths + j * PATH_MAX, blocks, bsize, skip);
+        add_hash_list(destination, *(p->pathptrs + j), blocks, bsize, skip);
       }
     }
     p = p->next;
@@ -339,7 +338,7 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
         printf("Duplicates: file size: %ld, count: [%d]\n",
                (long)size, p->next_index);
         for (int j=0; j < p->next_index; j++) {
-          printf(" %s\n", p->paths + j * PATH_MAX);
+          printf(" %s\n", *(p->pathptrs + j));
         }
       }
 
@@ -365,9 +364,9 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
         int pos = 0;
         for (int i = 0; i < p->next_index; i++) {
           if (i + 1 < p->next_index) {
-            pos += sprintf(path_buffer + pos, "%s,", p->paths + i * PATH_MAX);
+            pos += sprintf(path_buffer + pos, "%s,", *(p->pathptrs + i));
           } else{
-            sprintf(path_buffer + pos, "%s%c", p->paths + i * PATH_MAX, 0);
+            sprintf(path_buffer + pos, "%s%c", *(p->pathptrs + i), 0);
           }
         }
 
@@ -391,7 +390,7 @@ void print_hash_list(struct hash_list * src)
     printf("hash_valid: %d, has_dups: %d, next_index: %d\n",
            p->hash_valid, p->has_dups, p->next_index);
     for (int j=0; j < p->next_index; j++) {
-      printf("  [%s]\n", p->paths + j * PATH_MAX);
+      printf("  [%s]\n", *(p->pathptrs + j));
     }
     p = p->next;
   }
@@ -407,7 +406,7 @@ void record_uniques(sqlite3 * dbh, struct hash_list * src)
   struct hash_list * p = src;
   while (p != NULL) {
     if (p->hash_valid && (p->next_index == 1)) {
-      unique_to_db(dbh, p->paths, "hashlist");
+      unique_to_db(dbh, *(p->pathptrs), "hashlist");
     }
     p = p->next;
   }
