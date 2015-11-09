@@ -183,6 +183,15 @@ extern char * stats_file;
 
 
 /** ***************************************************************************
+ * Character used as pathname separator when saving multiple paths to db.
+ * path_sep_string contains same in null-terminated string form.
+ *
+ */
+extern int path_separator;
+extern char * path_sep_string;
+
+
+/** ***************************************************************************
  * If true, generate links in rmsh operation.
  *
  */

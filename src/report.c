@@ -223,9 +223,9 @@ void operation_report()
     if (total >= minimum_file_size) {
       printf("%lu total bytes used by duplicates:\n", total);
       used += total;
-      if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
+      if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
         print_path("  ", token);
-        while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
+        while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
           print_path("  ", token);
         }
       }
@@ -443,12 +443,12 @@ void operation_shell_script()
 
     path_list = (char *)sqlite3_column_text(statement, 0);
 
-    if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
+    if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
       printf("\n#\n# KEEPING: %s\n#\n", token);
       if (rmsh_link) {
         snprintf(kept, PATH_MAX, "%s", token);
       }
-      while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
+      while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
         printf("rm \"%s\"\n", token);
 
         switch (rmsh_link) {

@@ -369,11 +369,12 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
           }
         }
 
-        // print comma-separated list of the paths into buffer
+        // print separated list of the paths into buffer
         int pos = 0;
         for (int i = 0; i < p->next_index; i++) {
           if (i + 1 < p->next_index) {
-            pos += sprintf(path_buffer + pos, "%s,", *(p->pathptrs + i));
+            pos += sprintf(path_buffer + pos,
+                           "%s%c", *(p->pathptrs + i), path_separator);
           } else{
             sprintf(path_buffer + pos, "%s%c", *(p->pathptrs + i), 0);
           }

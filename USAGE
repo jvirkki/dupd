@@ -17,6 +17,7 @@ dupd is a duplicate detection utility.
       --uniques           save info about unique files
       --stats-file FILE   save stats to this file
       --minsize SIZE      min size of files to scan
+      --pathsep CHAR      change internal path separator to CHAR
 
     report  show duplicate report from last scan
       --cut PATHSEG    remove 'PATHSEG' from report paths
@@ -98,6 +99,18 @@ Additional options are available:
                    for programmatic consumption.
 
 --minsize SIZE     Ignore files smaller than this size when scanning.
+
+--pathsep CHAR     Change the internal path separator character to CHAR.
+                   When a list of paths is saved to the database, they are
+                   separated by this character. The result is that any files
+                   which contains this character in the name will be ignored
+                   during scan because the name conflicts with this separator.
+
+                   This is a bug, really, but unless you have oddly named
+                   files should not be much of an issue. If you do have files
+                   names containing the default separator (`), this option
+                   allows changing it to something else that might work better
+                   for your file set.
 
 The remaining scan options can be used to experiment with alternate
 scanning thresholds. In most cases these will not provide significant

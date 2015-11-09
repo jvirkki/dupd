@@ -65,6 +65,8 @@ int have_uniques = 0;
 int no_unique = 0;
 char * stats_file = NULL;
 int rmsh_link = 0;
+int path_separator = ',';
+char * path_sep_string = NULL;
 
 
 /** ***************************************************************************
@@ -105,6 +107,7 @@ static void show_help()
   printf("      --uniques           save info about unique files\n");
   printf("      --stats-file FILE   save stats to this file\n");
   printf("      --minsize SIZE      min size of files to scan\n");
+  printf("      --pathsep CHAR      change internal path separator to CHAR\n");
   printf("\n");
   printf("    report  show duplicate report from last scan\n");
   printf("      --cut PATHSEG    remove 'PATHSEG' from report paths\n");
@@ -213,6 +216,11 @@ static void process_args(int argc, char * argv[])
 
     } else if (!strncmp(argv[i], "-q", 2)) {
       verbosity = -99;
+
+    } else if (!strncmp(argv[i], "--pathsep", 9)) {
+      if (argc < i+2) { show_usage(); }
+      path_separator = argv[i+1][0];
+      i++;
 
     } else if (!strncmp(argv[i], "--path", 6)) {
       if (argc < i+2) { show_usage(); }
@@ -355,6 +363,10 @@ static void process_args(int argc, char * argv[])
     printf("error: --uniques and --nodb are incompatible\n");
     exit(1);
   }
+
+  path_sep_string = (char *)malloc(2);
+  path_sep_string[0] = (char)path_separator;
+  path_sep_string[1] = 0;
 }
 
 
@@ -406,6 +418,7 @@ int main(int argc, char * argv[])
   if (free_file_path) { free(file_path); }
   if (free_db_path) { free(db_path); }
   if (free_start_path) { free(start_path[0]); }
+  if (path_sep_string) { free(path_sep_string); }
   free_size_tree();
   free_path_block();
   free_hash_lists();

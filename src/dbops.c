@@ -82,9 +82,29 @@ static void initialize_database(sqlite3 * dbh)
   single_statement(dbh, "CREATE TABLE duplicates "
                         "(id INTEGER PRIMARY KEY, count INTEGER, "
                         "each_size INTEGER, paths TEXT)");
+
+  single_statement(dbh, "CREATE TABLE meta "
+                        "(separator TEXT)");
+
   if (save_uniques) {
     single_statement(dbh, "CREATE TABLE files (path TEXT)");
   }
+
+  // Save current path_separator into meta table for future reference
+
+  static sqlite3_stmt * stmt;
+  const char * sql = "INSERT INTO meta (separator) VALUES(?)";
+
+  int rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  rv = sqlite3_bind_text(stmt, 1, path_sep_string, -1, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind separator: %s\n", dbh);
+
+  rv = sqlite3_step(stmt);
+  rvchk(rv, SQLITE_DONE, "tried to set separator: %s\n", dbh);
+
+  sqlite3_finalize(stmt);
 }
 
 
@@ -154,6 +174,36 @@ sqlite3 * open_database(char * path, int newdb)
     }
     sqlite3_finalize(statement);
   }
+
+  // Load path separator set in database
+
+  sqlite3_stmt * statement = NULL;
+  char * sql = "SELECT separator FROM meta";
+
+  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  rv = sqlite3_step(statement);
+  if (rv != SQLITE_ROW) {
+    printf("Error reading meta table!\n");
+    exit(1);
+  }
+
+  char * sep = (char *)sqlite3_column_text(statement, 0);
+  if (strlen(sep) != 1) {
+    printf("error: meta.separator not a single char: %s\n", sep);
+    exit(1);
+  }
+
+  strcpy(path_sep_string, sep);
+  path_separator = (int)path_sep_string[0];
+
+  if (verbosity >= 3) {
+    printf("Set path_separator from db to %c (%s)\n",
+           path_separator, path_sep_string);
+  }
+
+  sqlite3_finalize(statement);
 
   return dbh;
 }
@@ -428,18 +478,18 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
       printf("match: %s\n", path_list);
     }
 
-    int commas = 0;
+    int separators = 0;
     for (int i = 0; path_list[i] != 0; i++) {
-      if (path_list[i] == ',') { commas++; }
+      if (path_list[i] == path_separator) { separators++; }
     }
 
-    if (commas < 1) {
+    if (separators < 1) {
       printf("error: db has a duplicate set with no duplicates?\n");
       printf("%s\n", path_list);
       exit(1);
     }
 
-    *dups = commas;
+    *dups = separators;
 
     // known_dup_path_list is a fixed array of paths, so may need to
     // resize it if this duplicate set is too large.
@@ -459,7 +509,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     // and keep looking in the db.
     int found_myself = 0;
 
-    if ((token = strtok_r(path_list, ",", &pos)) != NULL) {
+    if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
 
       if (strcmp(path, token)) {
         if (verbosity >= 5) {
@@ -470,7 +520,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
         found_myself = 1;
       }
 
-      while ((token = strtok_r(NULL, ",", &pos)) != NULL) {
+      while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
         if (strcmp(path, token)) {
           if (verbosity >= 5) {
             printf("copying potential dup: [%s]\n", token);

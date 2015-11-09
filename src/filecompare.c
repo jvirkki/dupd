@@ -82,7 +82,7 @@ static void compare_two_open_files(sqlite3 * dbh,
   }
 
   if (write_db) {
-    snprintf(paths, 2 * PATH_MAX, "%s,%s", path1, path2);
+    snprintf(paths, 2 * PATH_MAX, "%s%c%s", path1, path_separator, path2);
     duplicate_to_db(dbh, 2, size, paths);
   }
 
@@ -254,7 +254,8 @@ void compare_three_files(sqlite3 * dbh,
   }
 
   if (write_db) {
-    snprintf(paths, 3 * PATH_MAX, "%s,%s,%s", path1, path2, path3);
+    snprintf(paths, 3 * PATH_MAX, "%s%c%s%c%s",
+             path1, path_separator, path2, path_separator, path3);
     duplicate_to_db(dbh, 3, size, paths);
   }
 
