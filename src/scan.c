@@ -167,7 +167,11 @@ void scan()
   }
 
   if (stats_files_count == 0) {
-    exit(1);
+    if (write_db) {
+      commit_transaction(dbh);
+      close_database(dbh);
+    }
+    return;
   }
 
   if (verbosity >= 2) {
