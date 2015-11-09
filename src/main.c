@@ -65,7 +65,7 @@ int have_uniques = 0;
 int no_unique = 0;
 char * stats_file = NULL;
 int rmsh_link = 0;
-int path_separator = ',';
+int path_separator = '`';
 char * path_sep_string = NULL;
 
 
