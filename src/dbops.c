@@ -198,7 +198,7 @@ sqlite3 * open_database(char * path, int newdb)
   strcpy(path_sep_string, sep);
   path_separator = (int)path_sep_string[0];
 
-  if (verbosity >= 3) {
+  if (verbosity >= 4) {
     printf("Set path_separator from db to %c (%s)\n",
            path_separator, path_sep_string);
   }
