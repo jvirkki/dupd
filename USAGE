@@ -1,63 +1,6 @@
 
 dupd is a duplicate detection utility.
 
-% dupd operation options
-
-    scan    scan starting from the given path
-      --path PATH         path where scanning will start
-      --nodb              do not generate database file
-      --firstblocks N     max blocks to read in first hash pass
-      --firstblocksize N  size of firstblocks to read
-      --intblocks N       blocks to read in intermediate hash
-      --blocksize N       size of regular blocks to read
-      --skip-two          do not compare two files directly
-      --skip-three        do not compare three files directly
-      --file-count        max estimated number of files to scan
-      --avg-size          estimated average file path length
-      --uniques           save info about unique files
-      --stats-file FILE   save stats to this file
-      --minsize SIZE      min size of files to scan
-      --pathsep CHAR      change internal path separator to CHAR
-
-    report  show duplicate report from last scan
-      --cut PATHSEG    remove 'PATHSEG' from report paths
-      --minsize SIZE   min size of duplicated space to report
-
-    file    based on report, check for duplicates of one file
-      --file PATH         check this file
-      --exclude-path PATH ignore duplicates under
-
-    uniques based on report, look for unique files
-      --path PATH         path where scanning will start
-      --exclude-path PATH ignore duplicates under
-
-    dups    based on report, look for duplicate files
-      --path PATH         path where scanning will start
-      --exclude-path PATH ignore duplicates under
-
-    ls      based on report, list info about every file seen
-      --path PATH         path where scanning will start
-      --exclude-path PATH ignore duplicates under
-
-    rmsh    create shell script to delete all duplicates
-      --link           create symlinks for deleted files
-      --hardlink       create hard links for deleted files
-
-    help    show brief usage info
-
-    usage   show more extensive documentation
-
-    license show license info
-
-    version show version and exit
-
-General options include:
-    -v          increase verbosity (may be repeated for more)
-    -q          quiet, supress all output except fatal errors
-    --db        path to dupd database file
-    --no-unique ignore unique table even if present
-
-
 Scanning
 --------
 At a minimum the --path option must be specified. For example:
@@ -84,6 +27,9 @@ Additional options are available:
                    Useful only for debugging.
 
 --db PATH          Override the default database file location.
+                   If you override the path during scan, remember to
+                   provide this argument and the path for subsequent
+                   operations so the database can be found.
 
 -v                 Increases diagnostic verbosity. Can be repeated several
                    times for ever more output.
