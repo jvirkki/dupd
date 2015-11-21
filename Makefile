@@ -1,5 +1,5 @@
 #
-#  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -94,3 +94,9 @@ gcov:
 		ln -s ../src . && \
 		gcov -bf *.c | tee gcov.output)
 	@echo Remember to make clean to remove instrumented objects
+
+# Ideally should always generate optgen files dynamically and not have
+# them checked in at all... but keeping this in a separate rule so others
+# can build without having optgen installed.
+options:
+	(cd src; optgen options.conf)

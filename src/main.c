@@ -28,6 +28,8 @@
 #include "filecompare.h"
 #include "hashlist.h"
 #include "main.h"
+#include "main_opt.h"
+#include "optgen.h"
 #include "paths.h"
 #include "report.h"
 #include "scan.h"
@@ -38,7 +40,7 @@
 
 #define MAX_START_PATH 10
 
-static char * operation = NULL;
+static int operation = -1;
 static int start_path_count = 0;
 static int free_start_path = 0;
 static int free_db_path = 0;
@@ -90,63 +92,9 @@ static void show_banner()
 static void show_help()
 {
   show_banner();
-
   printf("%% dupd operation options\n");
   printf("\n");
-  printf("    scan    scan starting from the given path\n");
-  printf("      --path PATH         path where scanning will start\n");
-  printf("      --nodb              do not generate database file\n");
-  printf("      --firstblocks N     max blocks to read in first hash pass\n");
-  printf("      --firstblocksize N  size of firstblocks to read\n");
-  printf("      --intblocks N       blocks to read in intermediate hash\n");
-  printf("      --blocksize N       size of regular blocks to read\n");
-  printf("      --skip-two          do not compare two files directly\n");
-  printf("      --skip-three        do not compare three files directly\n");
-  printf("      --file-count        max estimated number of files to scan\n");
-  printf("      --avg-size          estimated average file path length\n");
-  printf("      --uniques           save info about unique files\n");
-  printf("      --stats-file FILE   save stats to this file\n");
-  printf("      --minsize SIZE      min size of files to scan\n");
-  printf("      --pathsep CHAR      change internal path separator to CHAR\n");
-  printf("\n");
-  printf("    report  show duplicate report from last scan\n");
-  printf("      --cut PATHSEG    remove 'PATHSEG' from report paths\n");
-  printf("      --minsize SIZE   min size of duplicated space to report\n");
-  printf("\n");
-  printf("    file    based on report, check for duplicates of one file\n");
-  printf("      --file PATH         check this file\n");
-  printf("      --exclude-path PATH ignore duplicates under\n");
-  printf("\n");
-  printf("    uniques based on report, look for unique files\n");
-  printf("      --path PATH         path where scanning will start\n");
-  printf("      --exclude-path PATH ignore duplicates under\n");
-  printf("\n");
-  printf("    dups    based on report, look for duplicate files\n");
-  printf("      --path PATH         path where scanning will start\n");
-  printf("      --exclude-path PATH ignore duplicates under\n");
-  printf("\n");
-  printf("    ls      based on report, list info about every file seen\n");
-  printf("      --path PATH         path where scanning will start\n");
-  printf("      --exclude-path PATH ignore duplicates under\n");
-  printf("\n");
-  printf("    rmsh    create shell script to delete all duplicates\n");
-  printf("      --link           create symlinks for deleted files\n");
-  printf("      --hardlink       create hard links for deleted files\n");
-  printf("\n");
-  printf("    help    show brief usage info\n");
-  printf("\n");
-  printf("    usage   show more extensive documentation\n");
-  printf("\n");
-  printf("    license show license info\n");
-  printf("\n");
-  printf("    version show version and exit\n");
-  printf("\n");
-  printf("General options include:\n");
-  printf("    -v          increase verbosity (may be repeated for more)\n");
-  printf("    -q          quiet, supress all output except fatal errors\n");
-  printf("    --db        path to dupd database file\n");
-  printf("    --no-unique ignore unique table even if present\n");
-  printf("\n");
+  opt_show_help();
   exit(0);
 }
 
@@ -171,8 +119,38 @@ static void show_usage()
   printf("Alternatively, refer to the document here:\n");
   printf("https://github.com/jvirkki/dupd/blob/master/USAGE\n");
 #endif
+}
 
-  exit(1);
+
+/** ***************************************************************************
+ * Callback called by optgen whenever a 'path' arg is seen.
+ */
+int opt_add_path(char * arg, int command)
+{
+  (void)command;
+
+  start_path[start_path_count] = arg;
+
+  if (start_path[start_path_count][0] != '/') {
+    printf("error: path [%s] must be absolute\n",start_path[start_path_count]);
+    exit(1);
+  }
+
+  // Strip any trailing slashes for consistency
+  int x = strlen(start_path[start_path_count]) - 1;
+  while (start_path[start_path_count][x] == '/') {
+    start_path[start_path_count][x--] = 0;
+  }
+
+  start_path_count++;
+  if (start_path_count == MAX_START_PATH) {
+    printf("error: exceeded max number of --path elements\n");
+    exit(1);
+  }
+
+  start_path[start_path_count] = NULL;
+
+  return OPTGEN_CALLBACK_OK;
 }
 
 
@@ -183,9 +161,16 @@ static void show_usage()
  */
 static void process_args(int argc, char * argv[])
 {
-  int i;
+  char * options[COUNT_OPTIONS];
 
-  if (argc < 2) {
+  int rv = optgen_parse(argc, argv, &operation, options);
+
+  if (options[OPT_help]) {
+    show_help();
+    exit(0);
+  }
+
+  if (rv == OPTGEN_NONE) {
     show_banner();
     printf("\n");
     printf("Run 'dupd help' for a summary of available options.\n");
@@ -193,161 +178,16 @@ static void process_args(int argc, char * argv[])
     exit(0);
   }
 
-  operation = argv[1];
-  if (strncmp(operation, "scan", 4) &&
-      strncmp(operation, "report", 6) &&
-      strncmp(operation, "uniques", 7) &&
-      strncmp(operation, "version", 7) &&
-      strncmp(operation, "license", 7) &&
-      strncmp(operation, "dups", 4) &&
-      strncmp(operation, "file", 4) &&
-      strncmp(operation, "ls", 2) &&
-      strncmp(operation, "rmsh", 4) &&
-      strncmp(operation, "usage", 5) &&
-      strncmp(operation, "help", 4)) {
-    printf("error: unknown operation [%s]\n", operation);
-    show_help();
+  if (rv != OPTGEN_OK) {
+    printf("error parsing command line arguments\n");
+    exit(1);
   }
 
-  for (i = 2; i < argc; i++) {
+  if (options[OPT_quiet]) { verbosity = -99; }
 
-    if (!strncmp(argv[i], "-v", 2)) {
-      verbosity++;
+  verbosity += opt_count(options[OPT_verbose]);
 
-    } else if (!strncmp(argv[i], "-q", 2)) {
-      verbosity = -99;
-
-    } else if (!strncmp(argv[i], "--pathsep", 9)) {
-      if (argc < i+2) { show_usage(); }
-      path_separator = argv[i+1][0];
-      i++;
-
-    } else if (!strncmp(argv[i], "--path", 6)) {
-      if (argc < i+2) { show_usage(); }
-      start_path[start_path_count] = argv[i+1];
-      i++;
-      if (start_path[start_path_count][0] != '/') {
-        printf("error: path [%s] must be absolute\n",
-               start_path[start_path_count]);
-        exit(1);
-      }
-      int x = strlen(start_path[start_path_count]) - 1;
-      // Strip any trailing slashes for consistency
-      while (start_path[start_path_count][x] == '/') {
-        start_path[start_path_count][x--] = 0;
-      }
-      start_path_count++;
-      if (start_path_count == MAX_START_PATH) {
-        printf("error: exceeded max number of --path elements\n");
-        exit(1);
-      }
-      start_path[start_path_count] = NULL;
-
-    } else if (!strncmp(argv[i], "--file", 6)) {
-      if (argc < i+2) { show_usage(); }
-      file_path = argv[i+1];
-
-      if (file_path[0] != '/') {
-        file_path = (char *)malloc(PATH_MAX);
-        free_file_path = 1;
-        getcwd(file_path, PATH_MAX);
-        strcat(file_path, "/");
-        strcat(file_path, argv[i+1]);
-      }
-      i++;
-
-    } else if (!strncmp(argv[i], "--db", 4)) {
-      if (argc < i+2) { show_usage(); }
-      db_path = argv[i+1];
-      i++;
-
-    } else if (!strncmp(argv[i], "--nodb", 6)) {
-      write_db = 0;
-
-    } else if (!strncmp(argv[i], "--link", 6)) {
-      rmsh_link = RMSH_LINK_SOFT;
-
-    } else if (!strncmp(argv[i], "--hardlink", 10)) {
-      rmsh_link = RMSH_LINK_HARD;
-
-    } else if (!strncmp(argv[i], "--uniques", 9)) {
-      save_uniques = 1;
-
-    } else if (!strncmp(argv[i], "--no-unique", 11)) {
-      no_unique = 1;
-
-    } else if (!strncmp(argv[i], "--skip-two", 10)) {
-      opt_compare_two = 0;
-
-    } else if (!strncmp(argv[i], "--skip-three", 12)) {
-      opt_compare_three = 0;
-
-    } else if (!strncmp(argv[i], "--intblocks", 11)) {
-      if (argc < i+2) { show_usage(); }
-      intermediate_blocks = atoi(argv[i+1]);
-      i++;
-
-    } else if (!strncmp(argv[i], "--firstblocksize", 16)) {
-      if (argc < i+2) { show_usage(); }
-      hash_one_block_size = atoi(argv[i+1]);
-      i++;
-
-    } else if (!strncmp(argv[i], "--blocksize", 11)) {
-      if (argc < i+2) { show_usage(); }
-      hash_block_size = atoi(argv[i+1]);
-      i++;
-
-    } else if (!strncmp(argv[i], "--firstblocks", 14)) {
-      if (argc < i+2) { show_usage(); }
-      hash_one_max_blocks = atoi(argv[i+1]);
-      i++;
-
-    } else if (!strncmp(argv[i], "--file-count", 12)) {
-      if (argc < i+2) { show_usage(); }
-      file_count = atol(argv[i+1]);
-      i++;
-
-    } else if (!strncmp(argv[i], "--avg-size", 10)) {
-      if (argc < i+2) { show_usage(); }
-      avg_path_len = atoi(argv[i+1]);
-      i++;
-
-    } else if (!strncmp(argv[i], "--cut", 5)) {
-      if (argc < i+2) { show_usage(); }
-      cut_path = argv[i+1];
-      i++;
-
-    } else if (!strncmp(argv[i], "--exclude-path", 14)) {
-      if (argc < i+2) { show_usage(); }
-      exclude_path = argv[i+1];
-      if (exclude_path[0] != '/') {
-        printf("error: --exclude-path must be absolute\n");
-        exit(1);
-      }
-      exclude_path_len = strlen(exclude_path);
-      i++;
-
-    } else if (!strncmp(argv[i], "--stats-file", 12)) {
-      if (argc < i+2) { show_usage(); }
-      stats_file = argv[i+1];
-      i++;
-
-    } else if (!strncmp(argv[i], "--minsize", 9)) {
-      if (argc < i+2) { show_usage(); }
-      minimum_file_size = atoi(argv[i+1]);
-      i++;
-
-    } else {
-      printf("error: unknown argument [%s]\n", argv[i]);
-      show_usage();
-    }
-  }
-
-  if (db_path == NULL) {
-    db_path = (char *)malloc(PATH_MAX);
-    free_db_path = 1;
-    snprintf(db_path, PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
-  }
+  path_separator = opt_char(options[OPT_pathsep], path_separator);
 
   if (start_path[0] == NULL) {
     start_path[0] = (char *)malloc(PATH_MAX);
@@ -358,6 +198,58 @@ static void process_args(int argc, char * argv[])
       printf("Defaulting --path to [%s]\n", start_path[0]);
     }
   }
+
+  if (options[OPT_file] != NULL) {
+    file_path = options[OPT_file];
+    // file path can be relative, normalize in that case
+    if (file_path[0] != '/') {
+      file_path = (char *)malloc(PATH_MAX);
+      free_file_path = 1;
+      getcwd(file_path, PATH_MAX);
+      strcat(file_path, "/");
+      strcat(file_path, options[OPT_file]);
+    }
+  }
+
+  db_path = options[OPT_db];
+  if (db_path == NULL) {
+    db_path = (char *)malloc(PATH_MAX);
+    free_db_path = 1;
+    snprintf(db_path, PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
+  }
+
+  if (options[OPT_nodb]) { write_db = 0; }
+  if (options[OPT_link]) { rmsh_link = RMSH_LINK_SOFT; }
+  if (options[OPT_hardlink]) { rmsh_link = RMSH_LINK_HARD; }
+  if (options[OPT_uniques]) { save_uniques = 1; }
+  if (options[OPT_no_unique]) { no_unique = 1; }
+  if (options[OPT_skip_two]) { opt_compare_two = 0; }
+  if (options[OPT_skip_three]) { opt_compare_three = 0; }
+
+  intermediate_blocks = opt_int(options[OPT_intblocks], intermediate_blocks);
+
+  hash_one_block_size =
+    opt_int(options[OPT_firstblocksize], hash_one_block_size);
+
+  hash_block_size = opt_int(options[OPT_blocksize], hash_block_size);
+
+  hash_one_max_blocks = opt_int(options[OPT_firstblocks], hash_one_max_blocks);
+
+  file_count = opt_int(options[OPT_file_count], file_count);
+
+  avg_path_len = opt_int(options[OPT_avg_size], avg_path_len);
+
+  cut_path = options[OPT_cut];
+
+  exclude_path = options[OPT_exclude_path];
+  if (exclude_path != NULL && exclude_path[0] != '/') {
+    printf("error: --exclude-path must be absolute\n");
+    exit(1);
+  }
+
+  stats_file = options[OPT_stats_file];
+
+  minimum_file_size = opt_int(options[OPT_minsize], minimum_file_size);
 
   if (save_uniques && !write_db) {
     printf("error: --uniques and --nodb are incompatible\n");
@@ -380,39 +272,24 @@ int main(int argc, char * argv[])
 
   process_args(argc, argv);
 
-  if (!strncmp(operation, "scan", 4)) {
-    scan();
+  switch (operation) {
 
-  } else if (!strncmp(operation, "report", 6)) {
-    operation_report();
+    case COMMAND_scan:      scan();                      break;
+    case COMMAND_report:    operation_report();          break;
+    case COMMAND_uniques:   operation_uniques();         break;
+    case COMMAND_license:   show_license();              break;
+    case COMMAND_version:   printf(DUPD_VERSION "\n");   exit(0);
+    case COMMAND_dups:      operation_dups();            break;
+    case COMMAND_file:      operation_file();            break;
+    case COMMAND_ls:        operation_ls();              break;
+    case COMMAND_rmsh:      operation_shell_script();    break;
+    case COMMAND_usage:     show_usage();                exit(0);
+    case COMMAND_help:      show_help();                 exit(0);
+    case OPTGEN_NO_COMMAND: show_help();                 exit(1);
 
-  } else if (!strncmp(operation, "uniques", 7)) {
-    operation_uniques();
-
-  } else if (!strncmp(operation, "license", 7)) {
-    show_license();
-
-  } else if (!strncmp(operation, "version", 7)) {
-    printf(DUPD_VERSION "\n");
-    exit(0);
-
-  } else if (!strncmp(operation, "dups", 7)) {
-    operation_dups();
-
-  } else if (!strncmp(operation, "file", 4)) {
-    operation_file();
-
-  } else if (!strncmp(operation, "ls", 2)) {
-    operation_ls();
-
-  } else if (!strncmp(operation, "rmsh", 4)) {
-    operation_shell_script();
-
-  } else if (!strncmp(operation, "usage", 5)) {
-    show_usage();
-
-  } else if (!strncmp(operation, "help", 4)) {
-    show_help();
+    default:
+      printf("error: unknown operation [%d]\n", operation);
+      exit(1);
   }
 
   if (free_file_path) { free(file_path); }
