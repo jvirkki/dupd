@@ -20,6 +20,7 @@
 TOP:=$(shell  pwd)
 BUILD_OS:=$(shell uname)
 VERSION:=$(shell cat version)
+OPTGEN:=$(shell which optgen | head -c1)
 
 BUILD=$(TOP)/build
 INC=
@@ -62,7 +63,7 @@ OPT=-O3
 endif
 
 
-dupd: $(OBJS) $(USAGE)
+dupd: src/optgen.c $(OBJS) $(USAGE)
 	$(CC) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
@@ -95,8 +96,10 @@ gcov:
 		gcov -bf *.c | tee gcov.output)
 	@echo Remember to make clean to remove instrumented objects
 
-# Ideally should always generate optgen files dynamically and not have
-# them checked in at all... but keeping this in a separate rule so others
-# can build without having optgen installed.
-options:
+# If optgen is not present, skip option handling code generation.
+# This allows compiling dupd without optgen present. The downside is
+# that optgen.c is checked in although it really should not be.
+src/optgen.c: src/options.conf
+ifeq (/,$(OPTGEN))
 	(cd src; optgen options.conf)
+endif
