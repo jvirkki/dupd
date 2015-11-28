@@ -63,7 +63,7 @@ OPT=-O3
 endif
 
 
-dupd: src/optgen.c $(OBJS) $(USAGE)
+dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
 	$(CC) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
@@ -99,7 +99,9 @@ gcov:
 # If optgen is not present, skip option handling code generation.
 # This allows compiling dupd without optgen present. The downside is
 # that optgen.c is checked in although it really should not be.
-src/optgen.c: src/options.conf
+src/optgen.c src/optgen.h: src/options.conf
 ifeq (/,$(OPTGEN))
 	(cd src; optgen options.conf)
+else
+	@echo optgen not found, unable to regenerate option code
 endif
