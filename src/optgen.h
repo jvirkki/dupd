@@ -15,76 +15,76 @@
 
 #define COUNT_OPTIONS 24
 
-// nodb : (--nodb)  do not generate database file
+// nodb (--nodb) : do not generate database file
 #define OPT_nodb 0
 
-// path ["ABSPATH"]: (-p --path)  absolute path where scanning will start
+// path (-p,--path) ABSPATH : absolute path where scanning will start
 #define OPT_path 1
 
-// firstblocks ["N"]: (--firstblocks)  max blocks to read in first hash pass
+// firstblocks (--firstblocks) N : max blocks to read in first hash pass
 #define OPT_firstblocks 2
 
-// firstblocksize ["N"]: (--firstblocksize)  size of firstblocks to read
+// firstblocksize (--firstblocksize) N : size of firstblocks to read
 #define OPT_firstblocksize 3
 
-// intblocks ["N"]: (--intblocks)  blocks to read in intermediate hash
+// intblocks (--intblocks) N : blocks to read in intermediate hash
 #define OPT_intblocks 4
 
-// blocksize ["N"]: (--blocksize)  size of regular blocks to read
+// blocksize (--blocksize) N : size of regular blocks to read
 #define OPT_blocksize 5
 
-// skip_two : (--skip-two)  do not compare two files directly
+// skip_two (--skip-two) : do not compare two files directly
 #define OPT_skip_two 6
 
-// skip_three : (--skip-three)  do not compare three files directly
+// skip_three (--skip-three) : do not compare three files directly
 #define OPT_skip_three 7
 
-// file_count : (--file-count)  max estimated number of files to scan
+// file_count (--file-count) : max estimated number of files to scan
 #define OPT_file_count 8
 
-// avg_size : (--avg-size)  estimated average file path length
+// avg_size (--avg-size) : estimated average file path length
 #define OPT_avg_size 9
 
-// uniques : (--uniques)  save info about unique files
+// uniques (--uniques) : save info about unique files
 #define OPT_uniques 10
 
-// stats_file ["FILE"]: (--stats-file)  save stats to this file
+// stats_file (--stats-file) FILE : save stats to this file
 #define OPT_stats_file 11
 
-// minsize ["SIZE"]: (-m --minsize)  min size of total duplicated space to report
+// minsize (-m,--minsize) SIZE : min size of files to scan
 #define OPT_minsize 12
 
-// pathsep ["CHAR"]: (--pathsep)  change internal path separator to CHAR
+// pathsep (--pathsep) CHAR : change internal path separator to CHAR
 #define OPT_pathsep 13
 
-// cut ["PATHSEG"]: (-c --cut)  remove 'PATHSEG' from report paths
+// cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
 #define OPT_cut 14
 
-// file ["PATH"]: (-f --file)  check this file
+// file (-f,--file) PATH : check this file
 #define OPT_file 15
 
-// exclude_path ["PATH"]: (-x --exclude-path)  ignore duplicates under this path
+// exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
 #define OPT_exclude_path 16
 
-// link : (-L --link)  create symlinks for deleted files
+// link (-L,--link) : create symlinks for deleted files
 #define OPT_link 17
 
-// hardlink : (-H --hardlink)  create hard links for deleted files
+// hardlink (-H,--hardlink) : create hard links for deleted files
 #define OPT_hardlink 18
 
-// verbose : (-v --verbose)  increase verbosity (may be repeated for more)
+// verbose (-v,--verbose) : increase verbosity (may be repeated for more)
 #define OPT_verbose 19
 
-// quiet : (-q --quiet)  quiet, supress all output except fatal errors
+// quiet (-q,--quiet) : quiet, supress all output except fatal errors
 #define OPT_quiet 20
 
-// db ["PATH"]: (-d --db)  path to dupd database file
+// db (-d,--db) PATH : path to dupd database file
 #define OPT_db 21
 
-// no_unique : (--no-unique)  ignore unique table even if present
+// no_unique (--no-unique) : ignore unique table even if present
 #define OPT_no_unique 22
 
-// help : (-h --help)  show brief usage info
+// help (-h,--help) : show brief usage info
 #define OPT_help 23
 
 // scan: scan starting from the given path
