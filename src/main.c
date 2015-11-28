@@ -131,11 +131,6 @@ int opt_add_path(char * arg, int command)
 
   start_path[start_path_count] = arg;
 
-  if (start_path[start_path_count][0] != '/') {
-    printf("error: path [%s] must be absolute\n",start_path[start_path_count]);
-    exit(1);
-  }
-
   // Strip any trailing slashes for consistency
   int x = strlen(start_path[start_path_count]) - 1;
   while (start_path[start_path_count][x] == '/') {
