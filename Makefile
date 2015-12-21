@@ -25,7 +25,7 @@ OPTGEN:=$(shell which optgen | head -c1)
 BUILD=$(TOP)/build
 INC=
 LIB=
-CC=gcc -Wall -Wextra -std=gnu99 $(OPT) $(INC) $(LIB)
+CCC=gcc -Wall -Wextra -std=gnu99 $(OPT) $(INC) $(LIB)
 CFLAGS=
 
 SRCS:=$(wildcard src/*.c)
@@ -64,11 +64,11 @@ endif
 
 
 dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
-	$(CC) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
+	$(CCC) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
 	mkdir -p $(BUILD)
-	$(CC) $(INC) $(CFLAGS) -DDUPD_VERSION=\"$(VERSION)\" -c $< -o $@
+	$(CCC) $(INC) $(CFLAGS) -DDUPD_VERSION=\"$(VERSION)\" -c $< -o $@
 
 $(BUILD)/usage.o: USAGE
 	$(OBJCP) -I binary $(USAGE_ARCH) USAGE $(BUILD)/usage.o
