@@ -3,8 +3,6 @@ dupd is a duplicate detection utility.
 
 Scanning
 --------
-At a minimum the --path option must be specified. For example:
-
 % dupd scan --path $HOME
 
 This will scan all files in your home directory and in all contained
@@ -12,7 +10,8 @@ subdirectories. The duplicates found will be saved in a database file
 $HOME/.dupd_sqlite.
 
 The --path option can be repeated multiple times in order to scan
-multiple directory hierarchies.
+multiple directory hierarchies. If no --path option is given it defaults
+to the current directory.
 
 Additional options are available:
 
@@ -212,7 +211,7 @@ better file name and/or location.
 
 Optionally, the shell script can create either soft or hard links from
 each removed file to the copy being kept. The options are mutually
-exclusive (if both given, the last one takes precedence).
+exclusive (if both given, --hardlink takes precedence).
 
 --link           create symlinks for deleted files
 --hardlink       create hard links for deleted files
