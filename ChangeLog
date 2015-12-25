@@ -1,3 +1,16 @@
+2015-12-24  Jyri J. Virkki  <jyri@virkki.com>
+
+	* Version 1.2
+	* Add --exclude-path option to file and peers.
+	* Add --link and --hardlink options to rmsh.
+	* Support --minisize on scan. Change the minsize default to 1 byte.
+	* Add short options to the more commonly useful options.
+	* Some stats cleanup, additional stats, option to save stats file.
+	* Remove hardcoded limit for max duplicates of one file.
+	* Various performance improvements, YMMV.
+	  See http://www.virkki.com/jyri/articles/index.php/some-dupd-performance-improvements/
+	* Reduced memory usage.
+
 2014-12-30  Jyri J. Virkki  <jyri@virkki.com>
 
 	* Version 1.1
