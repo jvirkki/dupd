@@ -32,6 +32,7 @@
 #include "main.h"
 #include "md5.h"
 #include "stats.h"
+#include "utils.h"
 
 #define DEFAULT_PATH_CAPACITY 10
 #define DEFAULT_HASH_DEPTH 6
@@ -144,32 +145,6 @@ static void reset_hash_list(struct hash_list * hl)
     p->next_index = 0;
     p = p->next;
   }
-}
-
-
-/** ***************************************************************************
- * Compare two memory buffers similar to memcmp().
- *
- * For small buffers like the 16 bytes compared in add_hash_list(), this can
- * be faster than memcmp().
- *
- * Parameters:
- *    b1 - Pointer to first buffer
- *    b2 - Pointer to second buffer
- *    n  - Length of these buffers (number of bytes to compare)
- *
- * Return: 0 if identical, 1 if different
- *
- */
-static inline int dupd_memcmp(const char * b1, const char * b2, size_t n)
-{
-  while (n) {
-    if (*b1++ != *b2++) {
-      return 1;
-    }
-    n--;
-  }
-  return 0;
 }
 
 
