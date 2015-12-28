@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source common
+
+DESC="ls ignoring uniques with --no-unique"
+
+$DUPD_CMD scan --path `pwd`/files -q --uniques
+checkrv $?
+
+$DUPD_CMD ls -q --no-unique --cut `pwd`/files/ --path `pwd`/files/ > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.08
+checkrv $?
+
+tdone

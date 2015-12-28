@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source common
+
+DESC="license option"
+
+$DUPD_CMD license
+checkrv $?
+
+tdone

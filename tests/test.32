@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source common
+
+DESC="help flag"
+
+$DUPD_CMD -h
+checkrv $?
+
+tdone

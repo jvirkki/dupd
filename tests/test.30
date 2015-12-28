@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source common
+
+DESC="usage option"
+
+$DUPD_CMD usage
+checkrv $?
+
+tdone

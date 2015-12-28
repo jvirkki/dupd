@@ -1,0 +1,21 @@
+#!/bin/bash
+
+source common
+
+DESC="generate stats"
+
+rm -f stats.out
+
+$DUPD_CMD scan --path `pwd`/files2 -q --stats-file stats.out
+checkrv $?
+
+if [ -e stats.out ]; then
+    echo "OK ${DESC}"
+else
+    echo "FAIL ${DESC}"
+    exit 1
+fi
+
+rm -f stats.out
+
+tdone

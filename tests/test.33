@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source common
+
+DESC="version option"
+
+$DUPD_CMD version > report
+checkrv $?
+
+diff ../version report
+checkrv $?
+
+tdone
