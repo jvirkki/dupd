@@ -84,7 +84,7 @@ static void initialize_database(sqlite3 * dbh)
                         "each_size INTEGER, paths TEXT)");
 
   single_statement(dbh, "CREATE TABLE meta "
-                        "(separator TEXT, hidden INTEGER)");
+                        "(separator TEXT, hidden INTEGER, version TEXT)");
 
   if (save_uniques) {
     single_statement(dbh, "CREATE TABLE files (path TEXT)");
@@ -93,7 +93,8 @@ static void initialize_database(sqlite3 * dbh)
   // Save settings to meta table for future reference
 
   static sqlite3_stmt * stmt;
-  const char * sql = "INSERT INTO meta (separator,hidden) VALUES(?,?)";
+  const char * sql = "INSERT INTO meta (separator, hidden, version) "
+                     "VALUES (?, ?, ?)";
 
   int rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -103,6 +104,9 @@ static void initialize_database(sqlite3 * dbh)
 
   rv = sqlite3_bind_int(stmt, 2, scan_hidden);
   rvchk(rv, SQLITE_OK, "Can't bind hidden: %s\n", dbh);
+
+  rv = sqlite3_bind_text(stmt, 3, DUPD_VERSION, -1, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind version: %s\n", dbh);
 
   rv = sqlite3_step(stmt);
   rvchk(rv, SQLITE_DONE, "tried to set meta data: %s\n", dbh);
@@ -181,7 +185,7 @@ sqlite3 * open_database(char * path, int newdb)
   // Load meta info from database
 
   sqlite3_stmt * statement = NULL;
-  char * sql = "SELECT separator,hidden FROM meta";
+  char * sql = "SELECT separator, hidden, version FROM meta";
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -209,6 +213,17 @@ sqlite3 * open_database(char * path, int newdb)
   scan_hidden = sqlite3_column_int(statement, 1);
   if (verbosity >= 4) {
     printf("Set scan_hidden from db to %d\n", scan_hidden);
+  }
+
+  char * db_version = (char *)sqlite3_column_text(statement, 2);
+  if (strcmp(db_version, DUPD_VERSION)) {
+    printf("\n\n");
+    printf("*** WARNING: database version %s\n", db_version);
+    printf("*** does not match dupd version %s\n", DUPD_VERSION);
+    printf("*** Will continue running and hope for the best but\n");
+    printf("*** data may be incorrect and/or dupd may crash!\n");
+    printf("*** Recommendation is to re-run dupd scan first.\n");
+    printf("\n\n");
   }
 
   sqlite3_finalize(statement);
