@@ -22,6 +22,10 @@ BUILD_OS:=$(shell uname)
 VERSION:=$(shell cat version)
 OPTGEN:=$(shell which optgen | head -c1)
 
+ifeq ($(LCOV_OUTPUT_DIR),)
+LCOV_OUTPUT_DIR=./lcov.out
+endif
+
 BUILD=$(TOP)/build
 INC=
 LIB=
@@ -95,6 +99,11 @@ gcov:
 		ln -s ../src . && \
 		gcov -bf *.c | tee gcov.output)
 	@echo Remember to make clean to remove instrumented objects
+
+lcov: gcov
+	lcov --capture --directory build --output-file lcov.info
+	genhtml lcov.info --output-directory $(LCOV_OUTPUT_DIR)
+	rm -f lcov.info
 
 # If optgen is not present, skip option handling code generation.
 # This allows compiling dupd without optgen present. The downside is
