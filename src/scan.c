@@ -70,8 +70,15 @@ void walk_dir(sqlite3 * dbh, const char * path,
   STRUCT_STAT new_stat_info;
 
   while ((entry = readdir(dir))) {
-    if (!strncmp(".", entry->d_name, 1) || !strncmp("..", entry->d_name, 2)) {
+
+    char first = entry->d_name[0];
+    if (!scan_hidden && first == '.') {
       continue;
+    }
+
+    if (first == '.') {
+      if (entry->d_name[1] == 0) { continue; }
+      if (entry->d_name[1] == '.' && entry->d_name[2] == 0) { continue; }
     }
 
     snprintf(newpath, PATH_MAX, "%s/%s", path, entry->d_name);

@@ -67,6 +67,7 @@ int have_uniques = 0;
 int no_unique = 0;
 char * stats_file = NULL;
 int rmsh_link = 0;
+int scan_hidden = 0;
 int path_separator = '`';
 char * path_sep_string = NULL;
 
@@ -220,6 +221,7 @@ static void process_args(int argc, char * argv[])
   if (options[OPT_no_unique]) { no_unique = 1; }
   if (options[OPT_skip_two]) { opt_compare_two = 0; }
   if (options[OPT_skip_three]) { opt_compare_three = 0; }
+  if (options[OPT_hidden]) { scan_hidden = 1; }
 
   intermediate_blocks = opt_int(options[OPT_intblocks], intermediate_blocks);
 

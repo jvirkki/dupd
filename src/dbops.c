@@ -84,16 +84,16 @@ static void initialize_database(sqlite3 * dbh)
                         "each_size INTEGER, paths TEXT)");
 
   single_statement(dbh, "CREATE TABLE meta "
-                        "(separator TEXT)");
+                        "(separator TEXT, hidden INTEGER)");
 
   if (save_uniques) {
     single_statement(dbh, "CREATE TABLE files (path TEXT)");
   }
 
-  // Save current path_separator into meta table for future reference
+  // Save settings to meta table for future reference
 
   static sqlite3_stmt * stmt;
-  const char * sql = "INSERT INTO meta (separator) VALUES(?)";
+  const char * sql = "INSERT INTO meta (separator,hidden) VALUES(?,?)";
 
   int rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -101,8 +101,11 @@ static void initialize_database(sqlite3 * dbh)
   rv = sqlite3_bind_text(stmt, 1, path_sep_string, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind separator: %s\n", dbh);
 
+  rv = sqlite3_bind_int(stmt, 2, scan_hidden);
+  rvchk(rv, SQLITE_OK, "Can't bind hidden: %s\n", dbh);
+
   rv = sqlite3_step(stmt);
-  rvchk(rv, SQLITE_DONE, "tried to set separator: %s\n", dbh);
+  rvchk(rv, SQLITE_DONE, "tried to set meta data: %s\n", dbh);
 
   sqlite3_finalize(stmt);
 }
@@ -175,10 +178,10 @@ sqlite3 * open_database(char * path, int newdb)
     sqlite3_finalize(statement);
   }
 
-  // Load path separator set in database
+  // Load meta info from database
 
   sqlite3_stmt * statement = NULL;
-  char * sql = "SELECT separator FROM meta";
+  char * sql = "SELECT separator,hidden FROM meta";
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -201,6 +204,11 @@ sqlite3 * open_database(char * path, int newdb)
   if (verbosity >= 4) {
     printf("Set path_separator from db to %c (%s)\n",
            path_separator, path_sep_string);
+  }
+
+  scan_hidden = sqlite3_column_int(statement, 1);
+  if (verbosity >= 4) {
+    printf("Set scan_hidden from db to %d\n", scan_hidden);
   }
 
   sqlite3_finalize(statement);

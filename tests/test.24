@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source common
+
+DESC="scan hidden"
+
+$DUPD_CMD scan --path `pwd`/files2  --hidden -q
+checkrv $?
+
+$DUPD_CMD dups --cut `pwd`/files2/ --path `pwd`/files2/ > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.24
+checkrv $?
+
+tdone

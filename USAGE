@@ -15,6 +15,9 @@ to the current directory.
 
 Additional options are available:
 
+--hidden           Include hidden files and directories in the scan.
+                   By default these are not included.
+
 --uniques          Save in a separate table the paths of all files found to
                    be unique while searching for duplicates. This will
                    increase the size of the database (possibly by a lot)

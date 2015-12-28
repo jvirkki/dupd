@@ -192,6 +192,13 @@ extern char * path_sep_string;
 
 
 /** ***************************************************************************
+ * If true, include hidden files and directories in the scan.
+ *
+ */
+extern int scan_hidden;
+
+
+/** ***************************************************************************
  * If true, generate links in rmsh operation.
  *
  */
