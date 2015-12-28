@@ -385,10 +385,10 @@ int is_known_unique(sqlite3 * dbh, char * path)
   while (rv != SQLITE_DONE) {
     rv = sqlite3_step(stmt_is_known_unique);
     if (rv == SQLITE_DONE) { continue; }
-    if (rv != SQLITE_ROW) {
+    if (rv != SQLITE_ROW) {                                  // LCOV_EXCL_START
       printf("Error reading duplicates table!\n");
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     got_path = (char *)sqlite3_column_text(stmt_is_known_unique, 0);
     if (!strcmp(got_path, path)) {

@@ -96,7 +96,6 @@ static void show_help()
   printf("%% dupd operation options\n");
   printf("\n");
   opt_show_help();
-  exit(0);
 }
 
 

@@ -55,18 +55,22 @@ int file_exists(const char * path)
 int get_file_info(const char * path, STRUCT_STAT * info)
 {
   if (path == NULL || path[0] == 0) {
+    // LCOV_EXCL_START
     printf("get_file_info called on null or empty path!\n");
     exit(1);
+    // LCOV_EXCL_STOP
   }
 
   int rv = LSTAT(path, info);
   if (rv) {
+    // LCOV_EXCL_START
     if (verbosity >= 4) {
       char line[PATH_MAX];
       snprintf(line, PATH_MAX, "stat %s", path);
       perror(line);
     }
     return -1;
+    // LCOV_EXCL_STOP
   }
 
   return 0;

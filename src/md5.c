@@ -49,18 +49,20 @@ int md5(const char * path, char * output, uint64_t blocks,
            bsize, blocks, skip, path);
   }
 
-  if (bsize > MAX_BLOCK) {
+
+  if (bsize > MAX_BLOCK) {                                   // LCOV_EXCL_START
+
     printf("error: md5 requested block size too big. max is %d\n", MAX_BLOCK);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   int file = open(path, O_RDONLY);
-  if (file < 0) {
+  if (file < 0) {                                            // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("MD5: Error opening [%s]\n", path);
     }
     return(-1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   if (skip > 0) {
     lseek(file, skip * bsize, SEEK_SET);
