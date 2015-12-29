@@ -24,7 +24,7 @@
 #include "copying.h"
 
 
-void show_license()                                          // LCOV_EXCL_START
+void show_license()
 {
   printf("                    GNU GENERAL PUBLIC LICENSE\n");
   printf("                       Version 3, 29 June 2007\n");
@@ -700,5 +700,4 @@ void show_license()                                          // LCOV_EXCL_START
   printf("the library.  If this is what you want to do, use the GNU Lesser General\n");
   printf("Public License instead of this License.  But first, please read\n");
   printf("<http://www.gnu.org/philosophy/why-not-lgpl.html>.\n");
-  exit(0);
-}                                                            // LCOV_EXCL_STOP
+}

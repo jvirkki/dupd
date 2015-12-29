@@ -77,10 +77,10 @@ void init_path_block()
 {
   block_size = file_count * avg_path_len;
   path_block = (char *)malloc(block_size);
-  if (path_block == NULL) {
+  if (path_block == NULL) {                                  // LCOV_EXCL_START
     printf("Unable to allocate path block!\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   if (verbosity >= 4) {
     printf("Allocated %ld bytes for the path block.\n", block_size);

@@ -7,11 +7,11 @@ DESC="ls ignoring uniques with --no-unique"
 $DUPD_CMD scan --path `pwd`/files -q --uniques
 checkrv $?
 
-$DUPD_CMD ls -q --no-unique --cut `pwd`/files/ --path `pwd`/files/ > nreport
+$DUPD_CMD ls -v --no-unique --cut `pwd`/files/ --path `pwd`/files/ > nreport
 checkrv $?
 
 sort nreport > report
-diff report output.08
+diff report output.29
 checkrv $?
 
 tdone

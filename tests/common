@@ -28,6 +28,15 @@ checkrv () {
     fi
 }
 
+checkerr () {
+    if [ "$1" != "1" ]; then
+        echo "FAIL ${DESC}"
+        exit 1
+    else
+        echo "OK ${DESC}"
+    fi
+}
+
 tdone () {
     rm -f report nreport
 }

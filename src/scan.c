@@ -48,10 +48,10 @@ void walk_dir(sqlite3 * dbh, const char * path,
 {
   int rv;
 
-  if (path == NULL || path[0] == 0) {
+  if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
     printf("walk_dir called on null or empty path!\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   if (verbosity >= 4) {
     printf("\nDIR: [%s]\n", path);
@@ -132,11 +132,11 @@ void walk_dir(sqlite3 * dbh, const char * path,
         }
         stats_files_ignored++;
       }
-    } else { // if error from stat
+    } else { // if error from stat                              LCOV_EXCL_START
       if (verbosity >= 1) {
         printf("SKIP (error) [%s]\n", newpath);
       }
-      stats_files_error++;
+      stats_files_error++;                                   // LCOV_EXCL_STOP
     }
   }
 

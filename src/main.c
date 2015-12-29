@@ -173,10 +173,10 @@ static void process_args(int argc, char * argv[])
     exit(0);
   }
 
-  if (rv != OPTGEN_OK) {
+  if (rv != OPTGEN_OK) {                                     // LCOV_EXCL_START
     printf("error parsing command line arguments\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   if (options[OPT_quiet]) { verbosity = -99; }
 
@@ -265,6 +265,7 @@ static void process_args(int argc, char * argv[])
 int main(int argc, char * argv[])
 {
   long t1 = get_current_time_millis();
+  int rv = 0;
 
   process_args(argc, argv);
 
@@ -274,19 +275,19 @@ int main(int argc, char * argv[])
     case COMMAND_report:    operation_report();          break;
     case COMMAND_uniques:   operation_uniques();         break;
     case COMMAND_license:   show_license();              break;
-    case COMMAND_version:   printf(DUPD_VERSION "\n");   exit(0);
+    case COMMAND_version:   printf(DUPD_VERSION "\n");   break;
     case COMMAND_dups:      operation_dups();            break;
     case COMMAND_file:      operation_file();            break;
     case COMMAND_ls:        operation_ls();              break;
     case COMMAND_rmsh:      operation_shell_script();    break;
-    case COMMAND_usage:     show_usage();                exit(0);
-    case COMMAND_help:      show_help();                 exit(0);
-    case OPTGEN_NO_COMMAND: show_help();                 exit(1);
+    case COMMAND_usage:     show_usage();                break;
+    case COMMAND_help:      show_help();                 break;
+    case OPTGEN_NO_COMMAND: show_help();                 rv = 1; break;
 
-    default:
+    default:                                                 // LCOV_EXCL_START
       printf("error: unknown operation [%d]\n", operation);
-      exit(1);
-  }
+      rv = 1;
+  }                                                          // LCOV_EXCL_STOP
 
   if (free_file_path) { free(file_path); }
   if (free_db_path) { free(db_path); }
@@ -311,5 +312,5 @@ int main(int argc, char * argv[])
   // Call return() instead of exit() just to make valgrind mark as
   // an error any reachable allocations. That makes them show up
   // when running the tests.
-  return(0);
+  return(rv);
 }

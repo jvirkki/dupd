@@ -51,7 +51,6 @@ int md5(const char * path, char * output, uint64_t blocks,
 
 
   if (bsize > MAX_BLOCK) {                                   // LCOV_EXCL_START
-
     printf("error: md5 requested block size too big. max is %d\n", MAX_BLOCK);
     exit(1);
   }                                                          // LCOV_EXCL_STOP

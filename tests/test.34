@@ -1,0 +1,12 @@
+#!/bin/bash
+
+source common
+
+# This test is for code coverage mainly, edge case of giving valid global
+# flag that is not help (-h) but no command to act on.
+DESC="global flag with no command"
+
+$DUPD_CMD -q
+checkerr $?
+
+tdone

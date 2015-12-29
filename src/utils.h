@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 

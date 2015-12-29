@@ -128,18 +128,18 @@ sqlite3 * open_database(char * path, int newdb)
 
   if (newdb && rv == 1) {       /* need to delete old one */
     rv = unlink(path);
-    if (rv != 0) {
+    if (rv != 0) {                                           // LCOV_EXCL_START
       char line[PATH_MAX];
       snprintf(line, PATH_MAX, "unlink %s", path);
       perror(line);
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
   }
 
-  if (!newdb && rv == 0) {
+  if (!newdb && rv == 0) {                                   // LCOV_EXCL_START
     printf("Unable to open %s for reading...\n", path);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   rv = sqlite3_open(path, &dbh);
   rvchk(rv, SQLITE_OK, "Can't open database: %s\n", dbh);
@@ -168,10 +168,10 @@ sqlite3 * open_database(char * path, int newdb)
     while (rv != SQLITE_DONE) {
       rv = sqlite3_step(statement);
       if (rv == SQLITE_DONE) { continue; }
-      if (rv != SQLITE_ROW) {
+      if (rv != SQLITE_ROW) {                                // LCOV_EXCL_START
         printf("Error reading duplicates table!\n");
         exit(1);
-      }
+      }                                                      // LCOV_EXCL_STOP
 
       table_name = (char *)sqlite3_column_text(statement, 0);
       if (!strcmp(table_name, "files")) {
@@ -191,10 +191,10 @@ sqlite3 * open_database(char * path, int newdb)
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
 
   rv = sqlite3_step(statement);
-  if (rv != SQLITE_ROW) {
+  if (rv != SQLITE_ROW) {                                    // LCOV_EXCL_START
     printf("Error reading meta table!\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   char * sep = (char *)sqlite3_column_text(statement, 0);
   if (strlen(sep) != 1) {
@@ -216,7 +216,7 @@ sqlite3 * open_database(char * path, int newdb)
   }
 
   char * db_version = (char *)sqlite3_column_text(statement, 2);
-  if (strcmp(db_version, DUPD_VERSION)) {
+  if (strcmp(db_version, DUPD_VERSION)) {                    // LCOV_EXCL_START
     printf("\n\n");
     printf("*** WARNING: database version %s\n", db_version);
     printf("*** does not match dupd version %s\n", DUPD_VERSION);
@@ -224,7 +224,7 @@ sqlite3 * open_database(char * path, int newdb)
     printf("*** data may be incorrect and/or dupd may crash!\n");
     printf("*** Recommendation is to re-run dupd scan first.\n");
     printf("\n\n");
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   sqlite3_finalize(statement);
 
@@ -238,12 +238,9 @@ sqlite3 * open_database(char * path, int newdb)
  */
 void close_database(sqlite3 * dbh)
 {
-  if (dbh == NULL) {
-    if (verbosity >= 4) {
-      printf("warning: ignoring attempt to close NULL database\n");
-    }
+  if (dbh == NULL) {                                         // LCOV_EXCL_START
     return;
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   // Need to finalize all prepared statements in order to close db cleanly.
   if (stmt_is_known_unique != NULL) {
@@ -270,9 +267,9 @@ void close_database(sqlite3 * dbh)
     return;
   }
 
-  if (verbosity >= 1) {
+  if (verbosity >= 1) {                                      // LCOV_EXCL_START
     printf("warning: unable to close database!\n");
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 /** ***************************************************************************
@@ -301,11 +298,11 @@ void commit_transaction(sqlite3 * dbh)
  */
 void rvchk(int rv, int code, char * line, sqlite3 * dbh)
 {
-  if (rv != code) {
+  if (rv != code) {                                          // LCOV_EXCL_START
     printf(line, sqlite3_errmsg(dbh));
     close_database(dbh);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 
@@ -461,15 +458,15 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     printf("get_known_duplicates(%s)\n", path);
   }
 
-  if (path == NULL) {
+  if (path == NULL) {                                        // LCOV_EXCL_START
     printf("error: no file specified\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
-  if (known_dup_path_list == NULL) {
+  if (known_dup_path_list == NULL) {                         // LCOV_EXCL_START
     printf("error: init_get_known_duplicates() not called\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   if (stmt_get_known_duplicates == NULL) {
     rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_get_known_duplicates, NULL);
@@ -485,16 +482,16 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
   while (rv != SQLITE_DONE) {
     rv = sqlite3_step(stmt_get_known_duplicates);
     if (rv == SQLITE_DONE) { continue; }
-    if (rv != SQLITE_ROW) {
+    if (rv != SQLITE_ROW) {                                  // LCOV_EXCL_START
       printf("Error reading duplicates table!\n");
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     char * p = (char *)sqlite3_column_text(stmt_get_known_duplicates, 0);
-    if (strlen(p) + 1 > ONE_MB_BYTES) {
+    if (strlen(p) + 1 > ONE_MB_BYTES) {                      // LCOV_EXCL_START
       printf("error: no one expects a path list this long: %zu\n", strlen(p));
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
     strcpy(path_list, p);
 
     if (verbosity >= 5) {
@@ -506,11 +503,11 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
       if (path_list[i] == path_separator) { separators++; }
     }
 
-    if (separators < 1) {
+    if (separators < 1) {                                    // LCOV_EXCL_START
       printf("error: db has a duplicate set with no duplicates?\n");
       printf("%s\n", path_list);
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     *dups = separators;
 
@@ -581,10 +578,10 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     return(NULL);
   }
 
-  if (copied != *dups) {
+  if (copied != *dups) {                                     // LCOV_EXCL_START
     printf("error: dups: %d  i: %d\n", *dups, copied);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   sqlite3_reset(stmt_get_known_duplicates);
 

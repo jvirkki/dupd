@@ -30,7 +30,7 @@
 if ($ENV{'DUPD_VALGRIND'}) {
     $ENV{'DUPD_CMD'} =
         "valgrind --error-exitcode=1 --tool=memcheck " .
-        "--leak-check=full ../dupd";
+        "--leak-check=full --show-reachable=yes ../dupd";
 } else {
     $ENV{'DUPD_CMD'} = "../dupd";
 }

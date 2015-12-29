@@ -224,12 +224,12 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
 
   char md5out[16];
   int rv = md5(path, md5out, blocks, bsize, skip);
-  if (rv != 0) {
+  if (rv != 0) {                                             // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("SKIP [%s]: Unable to compute hash\n", path);
       return;
     }
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   struct hash_list * p = hl;
   struct hash_list * tail = hl;
@@ -242,7 +242,9 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
       if (p->next_index == p->capacity) {
         // Found correct node but need more space in path list
         p->capacity = p->capacity * 2;
-        p->pathptrs = (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
+        p->pathptrs =
+          (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
+
         if (verbosity >= 5) {
           printf("Had to increase path capacity to %d\n", p->capacity);
         }
