@@ -199,6 +199,14 @@ extern int scan_hidden;
 
 
 /** ***************************************************************************
+ * If true, use smaller defaults for memory buffers. This is useful only
+ * for testing in order to force reallocations earlier.
+ *
+ */
+extern int x_small_buffers;
+
+
+/** ***************************************************************************
  * If true, generate links in rmsh operation.
  *
  */

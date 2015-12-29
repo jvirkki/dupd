@@ -136,8 +136,8 @@ void walk_dir(sqlite3 * dbh, const char * path,
       if (verbosity >= 1) {
         printf("SKIP (error) [%s]\n", newpath);
       }
-      stats_files_error++;                                   // LCOV_EXCL_STOP
-    }
+      stats_files_error++;
+    }                                                        // LCOV_EXCL_STOP
   }
 
   closedir(dir);

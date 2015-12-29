@@ -4,10 +4,10 @@ source common
 
 DESC="ls ignoring uniques with --no-unique"
 
-$DUPD_CMD scan --path `pwd`/files -q --uniques
+$DUPD_CMD scan --path `pwd`/files -q --uniques --x-small-buffers
 checkrv $?
 
-$DUPD_CMD ls -v --no-unique --cut `pwd`/files/ --path `pwd`/files/ > nreport
+$DUPD_CMD ls --x-small-buffers -v --no-unique --cut `pwd`/files/ --path `pwd`/files/ > nreport
 checkrv $?
 
 sort nreport > report
