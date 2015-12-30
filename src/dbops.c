@@ -350,6 +350,16 @@ void unique_to_db(sqlite3 * dbh, char * path, char * msg)
   const char * sql = "INSERT INTO files (path) VALUES (?)";
   int rv;
 
+  if (path == NULL) {                                        // LCOV_EXCL_START
+    printf("error: unique_to_db: path is null\n");
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
+  if (path[0] == 0) {                                        // LCOV_EXCL_START
+    printf("error: unique_to_db: path is empty\n");
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
   if (stmt_unique_to_db == NULL) {
     rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_unique_to_db, NULL);
     rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);

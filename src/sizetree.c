@@ -112,7 +112,7 @@ static void check_uniques(sqlite3 * dbh, struct size_node * node)
   int path_count = (int)*(char *)((node->paths + sizeof(char *)));
 
   if (path_count == 1) {
-    char * path = node->paths + 2 * sizeof(char *);
+    char * path = node->paths + 3 * sizeof(char *);
     unique_to_db(dbh, path, "by-size");
   }
 
