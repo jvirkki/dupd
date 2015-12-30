@@ -1,0 +1,24 @@
+#!/bin/bash
+
+source common
+
+DESC="scan more files"
+
+for ((i=1; i<=20000; i++));
+do
+    echo $i > files3/tmp.$i
+done
+
+$DUPD_CMD scan --path `pwd`/files3  --uniques --x-small-buffers -q
+checkrv $?
+
+$DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.40
+checkrv $?
+
+rm -f files3/tmp.*
+
+tdone
