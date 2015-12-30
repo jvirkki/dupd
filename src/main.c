@@ -139,10 +139,10 @@ int opt_add_path(char * arg, int command)
   }
 
   start_path_count++;
-  if (start_path_count == MAX_START_PATH) {
+  if (start_path_count == MAX_START_PATH) {                  // LCOV_EXCL_START
     printf("error: exceeded max number of --path elements\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   start_path[start_path_count] = NULL;
 

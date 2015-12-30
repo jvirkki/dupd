@@ -95,9 +95,6 @@ void add_to_size_list(long size, char * path_list)
 void process_size_list(sqlite3 * dbh)
 {
   if (size_list_head == NULL) {
-    if (verbosity >= 2) {
-      printf("Size list empty!\n");
-    }
     return;
   }
 

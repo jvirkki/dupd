@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source common
+
+DESC="scan with silly pathsep"
+
+$DUPD_CMD scan --pathsep a -p `pwd`/files2
+checkrv $?
+
+$DUPD_CMD report --cut `pwd`/files2/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.40
+checkrv $?
+
+tdone

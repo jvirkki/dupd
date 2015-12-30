@@ -102,7 +102,8 @@ gcov:
 
 lcov: gcov
 	lcov --capture --directory build --output-file lcov.info
-	genhtml lcov.info --output-directory $(LCOV_OUTPUT_DIR)
+	genhtml lcov.info --no-branch-coverage \
+		--output-directory $(LCOV_OUTPUT_DIR)
 	rm -f lcov.info
 
 # If optgen is not present, skip option handling code generation.

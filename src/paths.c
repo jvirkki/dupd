@@ -132,11 +132,12 @@ char * insert_first_path(char * path)
     dump_path_list("AFTER insert_first_path", -1, rv);
   }
 
-  if (next_entry > path_block_end) {
+  if (next_entry > path_block_end) {                         // LCOV_EXCL_START
     printf("error: path block too small!\n");
     printf("See --file-count and --avg-size options.\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
+
   return rv;
 }
 

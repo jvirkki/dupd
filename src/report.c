@@ -97,8 +97,8 @@ static int is_duplicate(char * path, char * self, char * hash)
 
   if (md5(path, hash2, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);              // LCOV_EXCL_START
-    return(0);                                               // LCOV_EXCL_STOP
-  }
+    return(0);
+  }                                                          // LCOV_EXCL_STOP
 
   if (memcmp(hash, hash2, 16)) {
     if (verbosity >= 4) { printf("file no longer a duplicate: %s\n", path); }
@@ -148,8 +148,8 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
 
   if (md5(path, hash, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);              // LCOV_EXCL_START
-    exit(1);                                                 // LCOV_EXCL_STOP
-  }
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
   for (int i = 0; i < dups; i++) { status[i] = STATUS_UNKNOWN; }
 
@@ -215,10 +215,6 @@ void operation_report()
 
     path_list = (char *)sqlite3_column_text(statement, 0);
     unsigned long total = sqlite3_column_int(statement, 1);
-
-    if (verbosity >= 5) {
-      printf("size (%lu) [%s]\n", total, path_list);
-    }
 
     if (total >= minimum_file_size) {
       printf("%lu total bytes used by duplicates:\n", total);

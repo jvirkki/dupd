@@ -32,6 +32,7 @@
 
 static char * * known_dup_path_list = NULL;
 static int known_dup_path_list_size = 512;
+static int known_dup_path_list_first = 1;
 static sqlite3_stmt * stmt_is_known_unique = NULL;
 static sqlite3_stmt * stmt_duplicate_to_db = NULL;
 static sqlite3_stmt * stmt_unique_to_db = NULL;
@@ -197,10 +198,11 @@ sqlite3 * open_database(char * path, int newdb)
   }                                                          // LCOV_EXCL_STOP
 
   char * sep = (char *)sqlite3_column_text(statement, 0);
-  if (strlen(sep) != 1) {
+
+  if (strlen(sep) != 1) {                                    // LCOV_EXCL_START
     printf("error: meta.separator not a single char: %s\n", sep);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   strcpy(path_sep_string, sep);
   path_separator = (int)path_sep_string[0];
@@ -433,12 +435,15 @@ int is_known_unique(sqlite3 * dbh, char * path)
  */
 void init_get_known_duplicates()
 {
-  if (verbosity >= 5) {
-    printf("init_get_known_duplicates()\n");
-  }
-
   if (known_dup_path_list != NULL) {
     return;
+  }
+
+  // Only override size for --x-small-buffers once because size gets reset
+  // as needed and then we need to observe it.
+  if (known_dup_path_list_first && x_small_buffers) {
+    known_dup_path_list_size = 3;
+    known_dup_path_list_first = 0;
   }
 
   known_dup_path_list =

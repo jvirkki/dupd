@@ -4,7 +4,7 @@ source common
 
 DESC="scan -v -v"
 
-$DUPD_CMD scan --path `pwd`/files -v -v
+$DUPD_CMD scan --path `pwd`/files -v -v > /dev/null
 checkrv $?
 
 $DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport

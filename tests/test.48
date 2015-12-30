@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source common
+
+DESC="verbose ls with small buffers"
+
+$DUPD_CMD scan --path `pwd`/files -q --uniques --x-small-buffers
+checkrv $?
+
+$DUPD_CMD ls -v -v -v -v -v --x-small-buffers -v --no-unique --cut `pwd`/files/ --path `pwd`/files/ > /dev/null
+checkrv $?
+
+tdone

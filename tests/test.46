@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source common
+
+DESC="--uniques and --nodb are incompatible"
+
+$DUPD_CMD scan --uniques --nodb > /dev/null
+checkerr $?
+
+tdone

@@ -60,7 +60,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
   DIR * dir = opendir(path);
   if (dir == NULL) {
     if (verbosity >= 3) {
-      perror(path);
+      perror(path);                                          //  LCOV_EXCL_LINE
     }
     return;
   }

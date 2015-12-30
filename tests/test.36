@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source common
+
+DESC="scan files with -v -v -v -v"
+
+# Exercises very verbose scan output code paths
+$DUPD_CMD scan --x-small-buffers -v -v -v -v -p `pwd`/files > /dev/null
+checkrv $?
+
+tdone

@@ -2,9 +2,9 @@
 
 source common
 
-DESC="scan with --intblocks 5"
+DESC="scan with --intblocks 5 -v -v -v -v -v"
 
-$DUPD_CMD scan --path `pwd`/files -q --intblocks 5 --uniques
+$DUPD_CMD scan --path `pwd`/files --intblocks 5 -v -v -v -v -v > /dev/null
 checkrv $?
 
 $DUPD_CMD ls --cut `pwd`/files/ --path `pwd`/files/ > nreport

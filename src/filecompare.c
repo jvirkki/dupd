@@ -107,21 +107,21 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
   }
 
   int file1 = open(path1, O_RDONLY);
-  if (file1 < 0) {
+  if (file1 < 0) {                                           // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("Error opening [%s]\n", path1);
     }
     return;
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   int file2 = open(path2, O_RDONLY);
-  if (file2 < 0) {
+  if (file2 < 0) {                                           // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("Error opening [%s]\n", path2);
     }
     close(file1);
     return;
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   compare_two_open_files(dbh, path1, file1, path2, file2, size, 0);
 }
@@ -142,31 +142,31 @@ void compare_three_files(sqlite3 * dbh,
   int file[4];
 
   file[1] = open(path1, O_RDONLY);
-  if (file[1] < 0) {
+  if (file[1] < 0) {                                         // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("Error opening [%s]\n", path1);
     }
     return;
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   file[2] = open(path2, O_RDONLY);
-  if (file[2] < 0) {
+  if (file[2] < 0) {                                         // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("Error opening [%s]\n", path2);
     }
     close(file[1]);
     return;
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   file[3] = open(path3, O_RDONLY);
-  if (file[3] < 0) {
+  if (file[3] < 0) {                                         // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("Error opening [%s]\n", path3);
     }
     close(file[1]);
     close(file[2]);
     return;
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   ssize_t bytes[4] = { 0, 0, 0, 0 };
   int i;
@@ -240,9 +240,11 @@ void compare_three_files(sqlite3 * dbh,
       compare_two_open_files(dbh, path1, file[1], path2, file[2], size, bread);
       return;
     }
-
+                                                             // LCOV_EXCL_START
+    // Shouldn't get here
     printf("error: d12=%d   d23=%d   d13=%d\n", d12, d23, d13);
     exit(1);
+                                                             // LCOV_EXCL_STOP
   }
 
   close(file[1]);

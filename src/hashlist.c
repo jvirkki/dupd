@@ -34,7 +34,7 @@
 #include "stats.h"
 #include "utils.h"
 
-#define DEFAULT_PATH_CAPACITY 10
+#define DEFAULT_PATH_CAPACITY 42
 #define DEFAULT_HASH_DEPTH 6
 
 static char * path_buffer = NULL;
@@ -89,7 +89,8 @@ static struct hash_list * init_hash_list()
 {
   struct hash_list * head = new_hash_list_node();
   struct hash_list * p = head;
-  for (int n = 1; n < DEFAULT_HASH_DEPTH; n++) {
+  int depth = x_small_buffers ? 1 : DEFAULT_HASH_DEPTH;
+  for (int n = 1; n < depth; n++) {
     struct hash_list * next_node = new_hash_list_node();
     p->next = next_node;
     p = next_node;
@@ -154,9 +155,9 @@ static void reset_hash_list(struct hash_list * hl)
  */
 void init_hash_lists()
 {
-  assert(hl_one == NULL);
-  assert(hl_partial == NULL);
-  assert(hl_full == NULL);
+  assert(hl_one == NULL);                                    // LCOV_EXCL_LINE
+  assert(hl_partial == NULL);                                // LCOV_EXCL_LINE
+  assert(hl_full == NULL);                                   // LCOV_EXCL_LINE
 
   hl_one = init_hash_list();
   hl_full = init_hash_list();
@@ -165,6 +166,14 @@ void init_hash_lists()
   // if it has been enabled.
   if (intermediate_blocks > 0) {
     hl_partial = init_hash_list();
+  }
+
+  if (x_small_buffers) {
+    path_buffer = (char *)malloc(1 * PATH_MAX);
+    path_buffer_size = 1;
+  } else {
+    path_buffer = (char *)malloc(DEFAULT_PATH_CAPACITY * PATH_MAX);
+    path_buffer_size = DEFAULT_PATH_CAPACITY;
   }
 }
 
@@ -219,8 +228,8 @@ struct hash_list * get_hash_list(int kind)
 void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
                    int bsize, uint64_t skip)
 {
-  assert(hl != NULL);
-  assert(path != NULL);
+  assert(hl != NULL);                                        // LCOV_EXCL_LINE
+  assert(path != NULL);                                      // LCOV_EXCL_LINE
 
   char md5out[16];
   int rv = md5(path, md5out, blocks, bsize, skip);
@@ -245,6 +254,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
         p->pathptrs =
           (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
 
+        hashlist_path_realloc++;
         if (verbosity >= 5) {
           printf("Had to increase path capacity to %d\n", p->capacity);
         }
@@ -269,6 +279,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
     struct hash_list * new_node = init_hash_list();
     tail->next = new_node;
     p = new_node;
+    hash_list_len_inc++;
     if (verbosity >= 5) {
       printf("Had to increase hash node list length!\n");
     }
@@ -329,20 +340,16 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
       }
 
       if (write_db) {
-        if (path_buffer == NULL) {
-          path_buffer = (char *)malloc((p->next_index + 2) * PATH_MAX);
-          path_buffer_size = p->next_index + 2;
-        } else {
+        if (p->next_index > path_buffer_size) {
+          path_buffer_size *= 2;
           if (p->next_index > path_buffer_size) {
-            path_buffer_size *= 2;
-            if (p->next_index > path_buffer_size) {
-              path_buffer_size = p->next_index + 2;
-            }
-            path_buffer = (char *)realloc(path_buffer,
-                                          path_buffer_size * PATH_MAX);
-            if (verbosity >= 5) {
-              printf("Had to increase path_buffer to %d\n", path_buffer_size);
-            }
+            path_buffer_size = p->next_index + 2;
+          }
+          path_buffer = (char *)realloc(path_buffer,
+                                        path_buffer_size * PATH_MAX);
+          path_buffer_realloc++;
+          if (verbosity >= 5) {
+            printf("Had to increase path_buffer to %d\n", path_buffer_size);
           }
         }
 

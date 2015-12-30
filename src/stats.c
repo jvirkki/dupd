@@ -61,6 +61,9 @@ long stats_avg_file_size = 0;
 long stats_time_scan = 0;
 long stats_time_process = 0;
 long stats_time_total = 0;
+int path_buffer_realloc = 0;
+int hashlist_path_realloc = 0;
+int hash_list_len_inc = 0;
 
 
 /** ***************************************************************************
@@ -81,6 +84,11 @@ void report_size_list()
 void report_stats()
 {
   if (verbosity >= 2) {
+    printf("\n");
+    printf("path_buffer reallocs: %d\n", path_buffer_realloc);
+    printf("hashlist_path reallocs: %d\n", hashlist_path_realloc);
+    printf("hash_list lenght increases: %d\n", hash_list_len_inc);
+
     printf("\n");
     printf("Size sets with two files, hash list skipped: %d times\n",
            stats_two_file_compare);
@@ -192,6 +200,9 @@ void save_stats()
   fprintf(fp, "hash_one_max_blocks %d\n", hash_one_max_blocks);
   fprintf(fp, "hash_block_size %d\n", hash_block_size);
   fprintf(fp, "intermediate_blocks %d\n", intermediate_blocks);
+  fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
+  fprintf(fp, "hashlist_path_realloc: %d\n", hashlist_path_realloc);
+  fprintf(fp, "hash_list_len_inc %d\n", hash_list_len_inc);
   fprintf(fp, "\n");
   fclose(fp);
 }

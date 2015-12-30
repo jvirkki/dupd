@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source common
+
+DESC="scan relative path"
+
+$DUPD_CMD scan --path files2
+checkerr $?
+
+tdone

@@ -36,9 +36,7 @@ int file_exists(const char * path)
   STRUCT_STAT pathinfo;
 
   int rv = get_file_info(path, &pathinfo);
-  if (rv < 0) {
-    return 0;
-  }
+  if (rv < 0) { return 0; }                                  // LCOV_EXCL_LINE
 
   if (S_ISREG(pathinfo.st_mode)) {
     return 1;
@@ -60,12 +58,11 @@ int get_file_info(const char * path, STRUCT_STAT * info)
   }                                                          // LCOV_EXCL_STOP
 
   int rv = LSTAT(path, info);
+
   if (rv) {                                                  // LCOV_EXCL_START
-    if (verbosity >= 4) {
-      char line[PATH_MAX];
-      snprintf(line, PATH_MAX, "stat %s", path);
-      perror(line);
-    }
+    char line[PATH_MAX];
+    snprintf(line, PATH_MAX, "stat %s", path);
+    perror(line);
     return -1;
   }                                                          // LCOV_EXCL_STOP
 

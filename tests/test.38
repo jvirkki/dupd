@@ -1,0 +1,16 @@
+#!/bin/bash
+
+source common
+
+DESC="uniques table reports with -v -v -v -v -v"
+
+$DUPD_CMD scan --uniques --path `pwd`/files2 -q
+checkrv $?
+
+$DUPD_CMD ls -p `pwd`/files2 -v -v -v -v -v > /dev/null
+checkrv $?
+
+$DUPD_CMD file --file `pwd`/files2/lonely/unique_size -v -v -v -v -v -v > /dev/null
+checkrv $?
+
+tdone
