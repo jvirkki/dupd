@@ -34,7 +34,8 @@
 #include "stats.h"
 #include "utils.h"
 
-#define DEFAULT_PATH_CAPACITY 42
+#define DEFAULT_PATH_CAPACITY 2 /* smaller is generally faster */
+#define DEFAULT_PATH_BUFFER 10
 #define DEFAULT_HASH_DEPTH 6
 
 static char * path_buffer = NULL;
@@ -172,8 +173,8 @@ void init_hash_lists()
     path_buffer = (char *)malloc(1 * PATH_MAX);
     path_buffer_size = 1;
   } else {
-    path_buffer = (char *)malloc(DEFAULT_PATH_CAPACITY * PATH_MAX);
-    path_buffer_size = DEFAULT_PATH_CAPACITY;
+    path_buffer = (char *)malloc(DEFAULT_PATH_BUFFER * PATH_MAX);
+    path_buffer_size = DEFAULT_PATH_BUFFER;
   }
 }
 
