@@ -21,4 +21,8 @@ checkrv $?
 
 rm -f files3/tmp.*
 
+# On OS X bash can't handle the rm above. As a backup, remove tmp
+# files individually now.
+find files3 -name "tmp.*" -exec rm {} \;
+
 tdone
