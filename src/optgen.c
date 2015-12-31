@@ -17,6 +17,8 @@
 #include "optgen.h"
 #include "main_opt.h"
 
+// LCOV_EXCL_START
+
 char * numstring[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
 
 // For each option, list the commands which accept it
@@ -34,6 +36,7 @@ int option_uniques[] = { 1 };
 int option_stats_file[] = { 1 };
 int option_minsize[] = { 1, 2 };
 int option_pathsep[] = { 1 };
+int option_hidden[] = { 1 };
 int option_cut[] = { 2, 3, 4, 5, 6 };
 int option_file[] = { 3 };
 int option_exclude_path[] = { 3, 4, 5, 6 };
@@ -44,6 +47,7 @@ int option_quiet[] = { 12 };
 int option_db[] = { 12 };
 int option_no_unique[] = { 12 };
 int option_help[] = { 12 };
+int option_x_small_buffers[] = { 12 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -428,13 +432,34 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
+    if ((l == 8 && !strncmp("--hidden", argv[pos], 8))) {
+      if (options[14] == NULL) {
+        options[14] = numstring[0];
+      } else {
+        options[14] = numstring[atoi(options[14])];
+      }
+      pos++;
+      // strict_options: is hidden allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_hidden) / sizeof(option_hidden)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_hidden[cc] == *command) { ok = 1; }
+        if (option_hidden[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'hidden' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
     if ((l == 5 && !strncmp("--cut", argv[pos], 5))||
         (l == 2 && !strncmp("-c", argv[pos], 2))) {
       if (argv[pos+1] == NULL) {
         printf("error: no value for arg --cut\n");
         exit(1);
       }
-      options[14] = argv[pos+1];
+      options[15] = argv[pos+1];
       pos += 2;
       // strict_options: is cut allowed?
       int ok = 0;
@@ -456,7 +481,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --file\n");
         exit(1);
       }
-      options[15] = argv[pos+1];
+      options[16] = argv[pos+1];
       pos += 2;
       // strict_options: is file allowed?
       int ok = 0;
@@ -478,7 +503,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --exclude-path\n");
         exit(1);
       }
-      options[16] = argv[pos+1];
+      options[17] = argv[pos+1];
       pos += 2;
       // strict_options: is exclude_path allowed?
       int ok = 0;
@@ -496,10 +521,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--link", argv[pos], 6))||
         (l == 2 && !strncmp("-L", argv[pos], 2))) {
-      if (options[17] == NULL) {
-        options[17] = numstring[0];
+      if (options[18] == NULL) {
+        options[18] = numstring[0];
       } else {
-        options[17] = numstring[atoi(options[17])];
+        options[18] = numstring[atoi(options[18])];
       }
       pos++;
       // strict_options: is link allowed?
@@ -518,10 +543,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 10 && !strncmp("--hardlink", argv[pos], 10))||
         (l == 2 && !strncmp("-H", argv[pos], 2))) {
-      if (options[18] == NULL) {
-        options[18] = numstring[0];
+      if (options[19] == NULL) {
+        options[19] = numstring[0];
       } else {
-        options[18] = numstring[atoi(options[18])];
+        options[19] = numstring[atoi(options[19])];
       }
       pos++;
       // strict_options: is hardlink allowed?
@@ -540,10 +565,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 9 && !strncmp("--verbose", argv[pos], 9))||
         (l == 2 && !strncmp("-v", argv[pos], 2))) {
-      if (options[19] == NULL) {
-        options[19] = numstring[0];
+      if (options[20] == NULL) {
+        options[20] = numstring[0];
       } else {
-        options[19] = numstring[atoi(options[19])];
+        options[20] = numstring[atoi(options[20])];
       }
       pos++;
       // strict_options: is verbose allowed?
@@ -562,10 +587,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 7 && !strncmp("--quiet", argv[pos], 7))||
         (l == 2 && !strncmp("-q", argv[pos], 2))) {
-      if (options[20] == NULL) {
-        options[20] = numstring[0];
+      if (options[21] == NULL) {
+        options[21] = numstring[0];
       } else {
-        options[20] = numstring[atoi(options[20])];
+        options[21] = numstring[atoi(options[21])];
       }
       pos++;
       // strict_options: is quiet allowed?
@@ -588,7 +613,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --db\n");
         exit(1);
       }
-      options[21] = argv[pos+1];
+      options[22] = argv[pos+1];
       pos += 2;
       // strict_options: is db allowed?
       int ok = 0;
@@ -605,10 +630,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 11 && !strncmp("--no-unique", argv[pos], 11))) {
-      if (options[22] == NULL) {
-        options[22] = numstring[0];
+      if (options[23] == NULL) {
+        options[23] = numstring[0];
       } else {
-        options[22] = numstring[atoi(options[22])];
+        options[23] = numstring[atoi(options[23])];
       }
       pos++;
       // strict_options: is no_unique allowed?
@@ -627,10 +652,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--help", argv[pos], 6))||
         (l == 2 && !strncmp("-h", argv[pos], 2))) {
-      if (options[23] == NULL) {
-        options[23] = numstring[0];
+      if (options[24] == NULL) {
+        options[24] = numstring[0];
       } else {
-        options[23] = numstring[atoi(options[23])];
+        options[24] = numstring[atoi(options[24])];
       }
       pos++;
       // strict_options: is help allowed?
@@ -643,6 +668,27 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'help' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 17 && !strncmp("--x-small-buffers", argv[pos], 17))) {
+      if (options[25] == NULL) {
+        options[25] = numstring[0];
+      } else {
+        options[25] = numstring[atoi(options[25])];
+      }
+      pos++;
+      // strict_options: is x_small_buffers allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_x_small_buffers) / sizeof(option_x_small_buffers)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_x_small_buffers[cc] == *command) { ok = 1; }
+        if (option_x_small_buffers[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'x_small_buffers' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -699,6 +745,7 @@ void opt_show_help()
   printf("     --stats-file FILE   save stats to this file\n");
   printf("  -m --minsize SIZE      min size of files to scan\n");
   printf("     --pathsep CHAR      change internal path separator to CHAR\n");
+  printf("     --hidden            include hidden files and dirs in scan\n");
   printf("\n");
   printf("report   show duplicate report from last scan\n");
   printf("  -c --cut PATHSEG      remove 'PATHSEG' from report paths\n");
@@ -737,10 +784,12 @@ void opt_show_help()
   printf("version  show version and exit\n");
   printf("\n");
   printf("General options:\n");
-  printf("  -v --verbose     increase verbosity (may be repeated for more)\n");
-  printf("  -q --quiet       quiet, supress all output except fatal errors\n");
-  printf("  -d --db PATH     path to dupd database file\n");
-  printf("     --no-unique   ignore unique table even if present\n");
-  printf("  -h --help        show brief usage info\n");
+  printf("  -v --verbose          increase verbosity (may be repeated for more)\n");
+  printf("  -q --quiet            quiet, supress all output except fatal errors\n");
+  printf("  -d --db PATH          path to dupd database file\n");
+  printf("     --no-unique        ignore unique table even if present\n");
+  printf("  -h --help             show brief usage info\n");
+  printf("     --x-small-buffers  for testing only, not useful otherwise\n");
   printf("\n");
 }
+// LCOV_EXCL_STOP
