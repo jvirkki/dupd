@@ -600,19 +600,14 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 
   sqlite3_reset(stmt_get_known_duplicates);
 
-  if (*dups > 0) {
-    if (verbosity >= 5) {
-      printf("get_known_duplicates: dups=%d\n", *dups);
-      for (int i = 0; i < *dups; i++) {
-        printf("-> %s\n", known_dup_path_list[i]);
-      }
+  if (verbosity >= 5) {
+    printf("get_known_duplicates: dups=%d\n", *dups);
+    for (int i = 0; i < *dups; i++) {
+      printf("-> %s\n", known_dup_path_list[i]);
     }
-    return(known_dup_path_list);
-
-  } else {
-    printf("get_known_duplicates: dups=0\n");
-    return(NULL);
   }
+
+  return(known_dup_path_list);
 }
 
 
