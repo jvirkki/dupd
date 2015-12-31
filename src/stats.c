@@ -85,11 +85,6 @@ void report_stats()
 {
   if (verbosity >= 2) {
     printf("\n");
-    printf("path_buffer reallocs: %d\n", path_buffer_realloc);
-    printf("hashlist_path reallocs: %d\n", hashlist_path_realloc);
-    printf("hash_list lenght increases: %d\n", hash_list_len_inc);
-
-    printf("\n");
     printf("Size sets with two files, hash list skipped: %d times\n",
            stats_two_file_compare);
     printf("Size sets with three files, hash list skipped: %d times\n",
