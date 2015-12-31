@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source common
+
+DESC="scan 2-compare differentiates"
+
+$DUPD_CMD scan --path `pwd`/files4 -v -v -v --uniques > /dev/null
+checkrv $?
+
+$DUPD_CMD report --cut `pwd`/files4/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.50
+checkrv $?
+
+tdone

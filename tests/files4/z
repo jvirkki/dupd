@@ -1,0 +1,8 @@
+    if (d12 && !d23) {          // 1 is different
+      close(file[1]);
+      if (save_uniques) {
+        unique_to_db(dbh, path1, "3-compare1");
+      }
+      compare_two_open_files(dbh, path2, file[2], path3, file[3], size, bread);
+      return;
+    }

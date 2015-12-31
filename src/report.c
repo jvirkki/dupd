@@ -84,9 +84,10 @@ static int is_duplicate(char * path, char * self, char * hash)
 {
   char hash2[16];
 
-  if (!strcmp(path, self)) {
-    return(0);
-  }
+  if (!strcmp(path, self)) {                                 // LCOV_EXCL_START
+    printf("is_duplicate: path [%s] == self [%s]\n", path, self);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
   if (verbosity >= 4) { printf("is_duplicate? [%s]\n", path); }
 
@@ -146,6 +147,11 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     printf("reverify_duplicates(path=%s, dups=%d)\n", path, dups);
   }
 
+  if (shortcircuit) {
+    printf("shortcircuit not tested\n");                     // LCOV_EXCL_START
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
   if (md5(path, hash, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);              // LCOV_EXCL_START
     exit(1);
@@ -166,7 +172,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
       status[i] = STATUS_DUPLICATE;
       current_dups++;
       if (shortcircuit) {
-        return(current_dups);
+        return(current_dups);                                // LCOV_EXCL_LINE
       }
 
     } else {
@@ -325,9 +331,9 @@ static int file_callback(sqlite3 * dbh, long size, char * path)
         print_path("             ---: ", dup_paths[i]);
         break;
       default:
-        printf("error: unknown status\n");
+        printf("error: file_callback: unknown status\n");    // LCOV_EXCL_START
         exit(1);
-      }
+      }                                                      // LCOV_EXCL_STOP
     }
   }
 

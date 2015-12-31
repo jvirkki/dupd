@@ -9,7 +9,7 @@ do
     echo $i > files3/tmp.$i
 done
 
-$DUPD_CMD scan --path `pwd`/files3  --uniques --x-small-buffers -q
+$DUPD_CMD scan --path `pwd`/files3  --uniques --x-small-buffers -v > /dev/null
 checkrv $?
 
 $DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport

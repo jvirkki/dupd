@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source common
+
+DESC="file command where dup has changed"
+
+cp files5/afile files5/b
+
+$DUPD_CMD scan --path `pwd`/files5 -q
+checkrv $?
+
+echo more >> files5/b
+
+$DUPD_CMD file --file files5/afile -v -v -v  | grep UNIQUE
+checkrv $?
+
+rm -f files5/b
+
+tdone
