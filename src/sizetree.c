@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -58,7 +58,7 @@ static struct size_node * new_node(long size, char * path)
 
 
 /** ***************************************************************************
- * Add the give size and path below the given node (recursively as needed).
+ * Add the given size and path below the given node.
  * If no matching size node is found, create a new_node().
  *
  * Parameters:
@@ -70,28 +70,32 @@ static struct size_node * new_node(long size, char * path)
  */
 static void add_below(struct size_node * node, long size, char * path)
 {
-  if (size < node->size) {
-    if (node->left != NULL) {
-      add_below(node->left, size, path);
-    } else {
-      node->left = new_node(size, path);
+  struct size_node * p = node;
+
+  while (1) {
+    int s = (int)size - p->size;
+
+    if (!s) {
+      insert_end_path(path, size, p->paths);
+      return;
     }
-    return;
-  }
 
-  if (size > node->size) {
-    if (node->right != NULL) {
-      add_below(node->right, size, path);
+    if (s > 0) {
+      if (p->left == NULL) {
+        p->left = new_node(size, path);
+        return;
+      } else {
+        p = p->left;
+      }
     } else {
-      node->right = new_node(size, path);
+      if (p->right == NULL) {
+        p->right = new_node(size, path);
+        return;
+      } else {
+        p = p->right;
+      }
     }
-    return;
   }
-
-  // If we got here means we have this size already so append the current
-  // path to the end of the existing path list.
-
-  insert_end_path(path, size, node->paths);
 }
 
 
