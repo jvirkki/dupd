@@ -13,7 +13,7 @@
 
 #include <stdlib.h>
 
-#define COUNT_OPTIONS 26
+#define COUNT_OPTIONS 27
 
 // nodb (--nodb) : do not generate database file
 #define OPT_nodb 0
@@ -60,38 +60,41 @@
 // hidden (--hidden) : include hidden files and dirs in scan
 #define OPT_hidden 14
 
+// no_thread_scan (--no-thread-scan) : do scan phase in a single thread
+#define OPT_no_thread_scan 15
+
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 15
+#define OPT_cut 16
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 16
+#define OPT_file 17
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 17
+#define OPT_exclude_path 18
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 18
+#define OPT_link 19
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 19
+#define OPT_hardlink 20
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 20
+#define OPT_verbose 21
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 21
+#define OPT_quiet 22
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 22
+#define OPT_db 23
 
 // no_unique (--no-unique) : ignore unique table even if present
-#define OPT_no_unique 23
+#define OPT_no_unique 24
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 24
+#define OPT_help 25
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 25
+#define OPT_x_small_buffers 26
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
