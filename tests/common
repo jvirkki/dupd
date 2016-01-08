@@ -1,5 +1,5 @@
 #
-#  Copyright 2014-2015 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2014-2016 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -35,6 +35,13 @@ checkerr () {
     else
         echo "OK ${DESC}"
     fi
+}
+
+check_nreport () {
+    DESC="${DESC}: verifying against $1"
+    sort nreport > report
+    diff report $1
+    checkrv $?
 }
 
 tdone () {

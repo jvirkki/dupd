@@ -2,16 +2,14 @@
 
 source common
 
-DESC="scan with -q --uniques"
-
+DESC="scan(files) -q --uniques"
 $DUPD_CMD scan --path `pwd`/files -q --uniques
 checkrv $?
 
+DESC="generate report"
 $DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.01
-checkrv $?
+check_nreport output.01
 
 tdone

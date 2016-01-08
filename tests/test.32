@@ -4,7 +4,7 @@ source common
 
 DESC="help flag"
 
-$DUPD_CMD -h
+$DUPD_CMD -h > /dev/null
 checkrv $?
 
 tdone

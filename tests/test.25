@@ -2,7 +2,7 @@
 
 source common
 
-DESC="generate stats"
+DESC="scan(files2): generate stats"
 
 rm -f stats.out
 

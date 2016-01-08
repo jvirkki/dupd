@@ -2,16 +2,15 @@
 
 source common
 
-DESC="scan where intermediate hashlist removes all dup candidates"
+DESC="scan(files4): intblocks removes all dup candidates"
 
 $DUPD_CMD scan --path `pwd`/files4 -v -v -v --intblocks 8 > /dev/null
 checkrv $?
 
+DESC="generate report"
 $DUPD_CMD report --cut `pwd`/files4/ | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.50
-checkrv $?
+check_nreport output.50
 
 tdone

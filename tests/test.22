@@ -3,7 +3,6 @@
 source common
 
 DESC="scan nonexistent path"
-
 $DUPD_CMD scan --path /nosuchdirectory -v > nreport
 checkrv $?
 

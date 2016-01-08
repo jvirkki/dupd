@@ -2,15 +2,14 @@
 
 source common
 
-DESC="nonexistent file is unique in many"
-
+DESC="scan(files)"
 $DUPD_CMD scan --path `pwd`/files -q
 checkrv $?
 
-$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ > report
+DESC="file: non-existent file"
+$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ > nreport
 checkrv $?
 
-diff report output.15
-checkrv $?
+check_nreport output.15
 
 tdone

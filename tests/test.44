@@ -2,15 +2,14 @@
 
 source common
 
-DESC="relative --file"
-
+DESC="scan(files2)"
 $DUPD_CMD scan --path `pwd`/files2 -q
 checkrv $?
 
-$DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ > report
+DESC="file with relative --file"
+$DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ > nreport
 checkrv $?
 
-diff report output.44
-checkrv $?
+check_nreport output.44
 
 tdone

@@ -2,11 +2,11 @@
 
 source common
 
-DESC="relative --exclude-path"
-
+DESC="scan(files2)"
 $DUPD_CMD scan --path `pwd`/files2 -q
 checkrv $?
 
+DESC="file with relative --exclude-path"
 $DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ --exclude-path files2/path1 > /dev/null
 checkerr $?
 

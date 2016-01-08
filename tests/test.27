@@ -2,13 +2,13 @@
 
 source common
 
-DESC="generate rmsh, soft links"
-
 rm -f rmsh.sh
 
+DESC="scan(files2)"
 $DUPD_CMD scan --path `pwd`/files2 -q
 checkrv $?
 
+DESC="generate rmsh, soft links"
 $DUPD_CMD rmsh --link > rmsh.sh
 
 if [ -e rmsh.sh ]; then

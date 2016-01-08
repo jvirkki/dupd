@@ -2,16 +2,15 @@
 
 source common
 
-DESC="ls with --uniques"
 
+DESC="scan(files)"
 $DUPD_CMD scan --path `pwd`/files -q --uniques
 checkrv $?
 
+DESC="ls with --uniques"
 $DUPD_CMD ls --cut `pwd`/files/ --path `pwd`/files/ > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.08
-checkrv $?
+check_nreport output.08
 
 tdone

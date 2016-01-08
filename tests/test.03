@@ -3,15 +3,13 @@
 source common
 
 DESC="scan -v -v"
-
 $DUPD_CMD scan --path `pwd`/files -v -v > /dev/null
 checkrv $?
 
+DESC="generate report"
 $DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.01
-checkrv $?
+check_nreport output.01
 
 tdone

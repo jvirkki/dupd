@@ -2,15 +2,15 @@
 
 source common
 
-DESC="dup is unique if we exclude path of dups"
+DESC="scan(files)"
 
 $DUPD_CMD scan --path `pwd`/files -q
 checkrv $?
 
-$DUPD_CMD file --file `pwd`/files/many/ma.1 --cut `pwd`/files/ --exclude-path `pwd`/files/many/ | sort > report
+DESC="file: excluding path of its duplicates"
+$DUPD_CMD file --file `pwd`/files/many/ma.1 --cut `pwd`/files/ --exclude-path `pwd`/files/many/ > nreport
 checkrv $?
 
-diff report output.17
-checkrv $?
+check_nreport output.17
 
 tdone

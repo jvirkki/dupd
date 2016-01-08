@@ -2,7 +2,7 @@
 
 source common
 
-DESC="scan more files"
+DESC="scan(files4): 20K files"
 
 for ((i=1; i<=20000; i++));
 do
@@ -12,26 +12,26 @@ done
 $DUPD_CMD scan --path `pwd`/files3  --uniques --x-small-buffers -v > /dev/null
 checkrv $?
 
+DESC="generate report"
 $DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.40
-checkrv $?
+check_nreport output.40
 
+
+#-----------------------------
 # This time with threaded scan
 
-DESC="scan more files single threaded"
+DESC="scan(files4): 20K files no-thread-scan"
 
 $DUPD_CMD scan --path `pwd`/files3  --uniques --x-small-buffers -v -v -v -v -v -v --no-thread-scan > /dev/null
 checkrv $?
 
+DESC="generate report"
 $DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.40
-checkrv $?
+check_nreport output.40
 
 rm -f files3/tmp.*
 

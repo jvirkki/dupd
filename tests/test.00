@@ -4,7 +4,7 @@ source common
 
 DESC="no options"
 
-$DUPD_CMD
+$DUPD_CMD > /dev/null
 checkrv $?
 
 tdone

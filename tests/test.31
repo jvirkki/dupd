@@ -4,7 +4,7 @@ source common
 
 DESC="license option"
 
-$DUPD_CMD license
+$DUPD_CMD license > /dev/null
 checkrv $?
 
 tdone

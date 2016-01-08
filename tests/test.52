@@ -2,15 +2,15 @@
 
 source common
 
-DESC="file command where dup has been deleted"
-
 cp files5/afile files5/b
 
+DESC="scan(files5)"
 $DUPD_CMD scan --path `pwd`/files5 -q
 checkrv $?
 
 rm -f files5/b
 
+DESC="file command where dup has been deleted"
 $DUPD_CMD file --file files5/afile -v -v | grep UNIQUE
 checkrv $?
 

@@ -2,13 +2,13 @@
 
 source common
 
-DESC="generate rmsh, hard links"
-
 rm -f rmsh.sh
 
+DESC="scan(files2)"
 $DUPD_CMD scan --path `pwd`/files2 -q
 checkrv $?
 
+DESC="generate rmsh, hard links"
 $DUPD_CMD rmsh --hardlink > rmsh.sh
 
 if [ -e rmsh.sh ]; then

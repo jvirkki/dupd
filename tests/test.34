@@ -6,7 +6,7 @@ source common
 # flag that is not help (-h) but no command to act on.
 DESC="global flag with no command"
 
-$DUPD_CMD -q
+$DUPD_CMD -q > /dev/null
 checkerr $?
 
 tdone

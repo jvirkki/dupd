@@ -11,11 +11,10 @@ DESC="scan with --uniques matching unique size file"
 $DUPD_CMD scan --path `pwd`/files2 --uniques -v -v -v | grep "Unique file (by-size)"
 checkrv $?
 
+DESC="uniques report"
 $DUPD_CMD uniques --cut `pwd`/files2/ --path `pwd`/files2/ > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.35
-checkrv $?
+check_nreport output.35
 
 tdone

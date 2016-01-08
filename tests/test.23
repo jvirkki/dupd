@@ -7,11 +7,10 @@ DESC="scan from two paths"
 $DUPD_CMD scan --path `pwd`/files2/path1 -p `pwd`/files2/path2 -q
 checkrv $?
 
+DESC="dups report"
 $DUPD_CMD dups --cut `pwd`/files2/ --path `pwd`/files2/ > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.23
-checkrv $?
+check_nreport output.23
 
 tdone

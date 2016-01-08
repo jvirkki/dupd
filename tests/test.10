@@ -2,16 +2,15 @@
 
 source common
 
-DESC="dups without --uniques"
+DESC="scan(files)"
 
 $DUPD_CMD scan --path `pwd`/files -q
 checkrv $?
 
+DESC="dups without --uniques"
 $DUPD_CMD dups --cut `pwd`/files/ --path `pwd`/files/ > nreport
 checkrv $?
 
-sort nreport > report
-diff report output.10
-checkrv $?
+check_nreport output.10
 
 tdone

@@ -2,18 +2,17 @@
 
 source common
 
-DESC="new file is unique in many"
-
+DESC="scan(files)"
 $DUPD_CMD scan --path `pwd`/files -q
 checkrv $?
 
+DESC="file: on a new file"
 echo hi > files/many/ma
-$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ > report
+$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ > nreport
 checkrv $?
 
 rm -f files/many/ma
 
-diff report output.15
-checkrv $?
+check_nreport output.15
 
 tdone
