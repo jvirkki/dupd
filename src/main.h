@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -204,6 +204,13 @@ extern int scan_hidden;
  *
  */
 extern int x_small_buffers;
+
+
+/** ***************************************************************************
+ * If true, add to sizetree (while scanning) in a separate thread.
+ *
+ */
+extern int threaded_sizetree;
 
 
 /** ***************************************************************************

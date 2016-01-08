@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -71,6 +71,7 @@ int scan_hidden = 0;
 int path_separator = '`';
 char * path_sep_string = NULL;
 int x_small_buffers = 0;
+int threaded_sizetree = 1;
 
 
 /** ***************************************************************************
@@ -223,6 +224,7 @@ static void process_args(int argc, char * argv[])
   if (options[OPT_skip_two]) { opt_compare_two = 0; }
   if (options[OPT_skip_three]) { opt_compare_three = 0; }
   if (options[OPT_hidden]) { scan_hidden = 1; }
+  if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
 
   intermediate_blocks = opt_int(options[OPT_intblocks], intermediate_blocks);
 

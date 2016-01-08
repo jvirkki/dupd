@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -27,7 +27,7 @@
  * Add the given path to the size tree. Also adds the path to the path list.
  *
  * Parameters:
- *    dbh  - sqlite3 database handle.
+ *    dbh  - sqlite3 database handle (not used, set to NULL)..
  *    size - Size of this file.
  *    path - Path of this file.
  *
@@ -35,6 +35,23 @@
  *
  */
 int add_file(sqlite3 * dbh, long size, char * path);
+
+
+/** ***************************************************************************
+ * Asynchronously add the given path to the size tree. Also adds the path
+ * to the path list.
+ *
+ * This is equivalent to add_file(), used when running in threaded scan mode.
+ *
+ * Parameters:
+ *    dbh  - sqlite3 database handle (not used, set to NULL).
+ *    size - Size of this file.
+ *    path - Path of this file.
+ *
+ * Return: none (int to comply with callback prototype)
+ *
+ */
+int add_queue(sqlite3 * dbh, long size, char * path);
 
 
 /** ***************************************************************************
@@ -49,6 +66,28 @@ int add_file(sqlite3 * dbh, long size, char * path);
  *
  */
 void find_unique_sizes(sqlite3 * dbh);
+
+
+/** ***************************************************************************
+ * Initialize.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void init_sizetree();
+
+
+/** ***************************************************************************
+ * When running in threaded scan mode, indicate that scan operation is done.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void scan_done();
 
 
 /** ***************************************************************************

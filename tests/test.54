@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source common
+
+DESC="single threaded scan"
+
+$DUPD_CMD scan --path `pwd`/files -v -v -v -v -v -v --no-thread-scan > /dev/null
+checkrv $?
+
+$DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.01
+checkrv $?
+
+tdone

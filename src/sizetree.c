@@ -17,10 +17,13 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "dbops.h"
+#include "main.h"
 #include "paths.h"
 #include "sizetree.h"
 
@@ -32,6 +35,26 @@ struct size_node {
 };
 
 static struct size_node * tip = NULL;
+
+struct stat_queue {
+  int end;
+  long size;
+  char path[PATH_MAX];
+  struct stat_queue * next;
+};
+
+#define STAT_QUEUE_LENGTH 500
+#define STAT_QUEUE_COUNT 2
+#define THREAD_IDLE -2
+static struct stat_queue queue[STAT_QUEUE_COUNT];
+static struct stat_queue * producer_next;
+static struct stat_queue * worker_next;
+static int producer_queue;
+static int worker_queue;
+static pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t queue_producer_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t queue_worker_cond = PTHREAD_COND_INITIALIZER;
+static pthread_t worker_thread;
 
 
 /** ***************************************************************************
@@ -126,6 +149,98 @@ static void check_uniques(sqlite3 * dbh, struct size_node * node)
 
 
 /** ***************************************************************************
+ * Worker thread for inserting files to the sizetree if using threaded scan.
+ *
+ * The scan operation queues files via add_queue() into its queue and this
+ * worker thread reads them from its queue to add them via add_file(). The
+ * scanner and this worker exchange queues as they are done with them.
+ *
+ * Parameters:
+ *    arg  - Unused.
+ *
+ * Return: none
+ *
+ */
+static void * worker_main(void * arg)
+{
+  (void)arg;
+  int done = 0;
+
+  if (verbosity >= 3) {
+    printf("[sizetree worker] thread created\n");
+  }
+
+  // On startup we don't have a queue yet because the scanner has not added
+  // any files yet which is why worker_queue starts as -1. After the scanner
+  // fills up the first queue it will set worker_queue to zero and we can
+  // then start working.
+
+  pthread_mutex_lock(&queue_lock);
+  while (worker_queue == -1) {
+    pthread_cond_wait(&queue_worker_cond, &queue_lock);
+  }
+  pthread_mutex_unlock(&queue_lock);
+
+  if (verbosity >= 3) {
+    printf("[sizetree worker] thread starting\n");
+  }
+
+  while (!done) {
+    if (verbosity >= 5) {
+      printf("[sizetree worker] processing queue %d\n", worker_queue);
+    }
+
+    // Work through the current queue to its end (or to the path marked end)
+    while (!done && worker_next != NULL) {
+      if (worker_next->end) {
+        if (verbosity >= 3) {
+          printf("[sizetree worker] reached END flag: DONE\n");
+        }
+        done = 1;
+
+      } else {
+        add_file(NULL, worker_next->size, worker_next->path);
+        worker_next = worker_next->next;
+      }
+    }
+
+    if (verbosity >= 5) {
+      printf("[sizetree worker] finished queue %d\n", worker_queue);
+    }
+
+    // Having finished this queue, worker wants the next one. However,
+    // the scanner may (almost certainly) still be filling it so we need
+    // to check and wait until the scanner has moved on.
+
+    if (!done) {
+      int want = (worker_queue + 1) % STAT_QUEUE_COUNT;
+
+      pthread_mutex_lock(&queue_lock);
+      worker_queue = THREAD_IDLE;
+      while (want == producer_queue) {
+        if (verbosity >= 5) {
+          printf("[sizetree worker] want queue %d, scan still has it\n", want);
+        }
+        pthread_cond_wait(&queue_worker_cond, &queue_lock);
+      }
+
+      worker_queue = want;
+      worker_next = &queue[worker_queue];
+
+      pthread_cond_signal(&queue_producer_cond);
+      pthread_mutex_unlock(&queue_lock);
+    }
+  }
+
+  if (verbosity >= 3) {
+    printf("[sizetree worker] exiting\n");
+  }
+
+  return NULL;
+}
+
+
+/** ***************************************************************************
  * Free one node and its children.
  *
  */
@@ -159,6 +274,92 @@ int add_file(sqlite3 * dbh, long size, char * path)
  * Public function, see header file.
  *
  */
+int add_queue(sqlite3 * dbh, long size, char * path)
+{
+  (void)dbh;                    /* not used */
+
+  if (verbosity >= 6) {
+    printf("add_queue (%d): %s\n", producer_queue, path);
+  }
+
+  // Just add it to the end of the queue scanner currently owns.
+
+  producer_next->size = size;
+  strcpy(producer_next->path, path);
+  producer_next = producer_next->next;
+
+  // If we reached the end of this queue, need to move to the next one.
+
+  if (producer_next == NULL) {
+    pthread_mutex_lock(&queue_lock);
+
+    // The first time around the worker has been idle waiting for the
+    // first queue to be filled once. Let it know it can start.
+
+    if (worker_queue == -1) {
+      worker_queue = 0;
+      worker_next = &queue[0];
+    }
+
+    // This is the queue scanner wants to start filling next but it might
+    // be in use by the worker thread.
+
+    int want = (producer_queue + 1) % STAT_QUEUE_COUNT;
+    producer_queue = THREAD_IDLE;;
+
+    while (want == worker_queue) {
+      if (verbosity >= 4) {
+        printf("scan wants queue %d but worker has it, waiting...\n", want);
+      }
+      pthread_cond_wait(&queue_producer_cond, &queue_lock);
+    }
+
+    producer_queue = want;
+    producer_next = &queue[producer_queue];
+
+    if (verbosity >= 5) {
+      printf("scan switched to queue %d\n", producer_queue);
+    }
+
+    pthread_cond_signal(&queue_worker_cond);
+    pthread_mutex_unlock(&queue_lock);
+  }
+
+  return(-2);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void scan_done()
+{
+  producer_next->end = 1;
+  producer_queue = THREAD_IDLE;
+
+  pthread_mutex_lock(&queue_lock);
+
+  // If scanner didn't even fill one queue, worker is still waiting to start
+  if (worker_queue == -1) {
+    worker_queue = 0;
+    worker_next = &queue[0];
+  }
+
+  pthread_cond_signal(&queue_worker_cond);
+  pthread_mutex_unlock(&queue_lock);
+
+  if (verbosity >= 4) {
+    printf("waiting for sizetree worker thread to finish...\n");
+  }
+  pthread_join(worker_thread, NULL);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void find_unique_sizes(sqlite3 * dbh)
 {
   if (tip == NULL) {
@@ -173,11 +374,59 @@ void find_unique_sizes(sqlite3 * dbh)
  * Public function, see header file.
  *
  */
+void init_sizetree()
+{
+  int i;
+  int n;
+  struct stat_queue * p;
+
+  if (threaded_sizetree) {
+    for (i = 0; i < STAT_QUEUE_COUNT; i++) {
+      p = &queue[i];
+      for (n = 1; n < STAT_QUEUE_LENGTH; n++) {
+        p->next = (struct stat_queue *)malloc(sizeof(struct stat_queue));
+        p->next->end = 0;
+        p = p->next;
+        p->next = NULL;
+      }
+    }
+
+    producer_queue = 0;
+    producer_next = &queue[0];
+
+    worker_queue = -1;
+    worker_next = NULL;
+
+    if (pthread_create(&worker_thread, NULL, worker_main, NULL)) {
+                                                             // LCOV_EXCL_START
+      printf("error: unable to create sizetree worker thread!\n");
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void free_size_tree()
 {
-  if (tip == NULL) {
-    return;
+  struct stat_queue * p;
+  struct stat_queue * t;
+  int i;
+
+  if (tip != NULL) {
+    free_node(tip);
   }
 
-  free_node(tip);
+  for (i = 0; i < STAT_QUEUE_COUNT; i++) {
+    t = &queue[i];
+    t = t->next;
+    while (t != NULL) {
+      p = t;
+      t = t->next;
+      free(p);
+    }
+  }
 }

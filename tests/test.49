@@ -19,6 +19,20 @@ sort nreport > report
 diff report output.40
 checkrv $?
 
+# This time with threaded scan
+
+DESC="scan more files single threaded"
+
+$DUPD_CMD scan --path `pwd`/files3  --uniques --x-small-buffers -v -v -v -v -v -v --no-thread-scan > /dev/null
+checkrv $?
+
+$DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+sort nreport > report
+diff report output.40
+checkrv $?
+
 rm -f files3/tmp.*
 
 # On OS X bash can't handle the rm above. As a backup, remove tmp

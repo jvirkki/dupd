@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -156,6 +156,7 @@ void scan()
   init_path_block();
   init_hash_lists();
   init_filecompare();
+  init_sizetree();
 
   if (write_db) {
     dbh = open_database(db_path, 1);
@@ -166,11 +167,19 @@ void scan()
 
   long t1 = get_current_time_millis();
   for (int i=0; start_path[i] != NULL; i++) {
-    walk_dir(dbh, start_path[i], add_file);
+    if (threaded_sizetree) {
+      walk_dir(dbh, start_path[i], add_queue);
+    } else {
+      walk_dir(dbh, start_path[i], add_file);
+    }
   }
 
   if (verbosity >= 1) {
     printf("Files scanned: %ld\n", stats_files_count);
+  }
+
+  if (threaded_sizetree) {
+    scan_done();
   }
 
   if (stats_files_count == 0) {
