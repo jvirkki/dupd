@@ -53,7 +53,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  if (verbosity >= 4) {
+  if (verbosity >= 6) {
     printf("\nDIR: [%s]\n", path);
   }
 
@@ -103,7 +103,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
       }
 
       if (S_ISREG(new_stat_info.st_mode)) {
-        if (verbosity >= 4) {
+        if (verbosity >= 8) {
           printf("FILE: [%s]\n", newpath);
         }
 
@@ -198,8 +198,15 @@ void scan()
     printf("Files with stat errors: %d\n", stats_files_error);
     printf("File scan completed in %ldms\n", stats_time_scan);
     report_size_list();
-    printf("Longest path list %d\n", stats_max_pathlist);
+    printf("Longest path list %d (file size: %ld)\n",
+           stats_max_pathlist, stats_max_pathlist_size);
   }
+
+  if (stats_max_pathlist > stats_files_count) {
+                                                             // LCOV_EXCL_START
+    printf("error: longest path list is larger than total files scanned!\n");
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
   if (save_uniques) {
     if (verbosity >= 3) {

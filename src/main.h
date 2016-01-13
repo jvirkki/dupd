@@ -23,7 +23,7 @@
 
 /** ***************************************************************************
  * Verbosity is 1 by default, increased by one for every -v command
- *  line argument. Higher values produce more diagnostic noise:
+ * line argument. Higher values produce more diagnostic noise:
  *
  *  0 = No output (-q option)
  *  1 = (Default) Brief end-user status lines only.
@@ -34,6 +34,18 @@
  *
  */
 extern int verbosity;
+
+
+/** ***************************************************************************
+ * Verbosity for thread state messages, increased by one for every -V command
+ * line argument. Higher values produce more diagnostic noise:
+ *
+ *  0 = No output (default)
+ *  1 = Thread state info.
+ *  2 = Additional state variables.
+ *
+ */
+extern int thread_verbosity;
 
 
 /** ***************************************************************************
@@ -204,6 +216,13 @@ extern int scan_hidden;
  *
  */
 extern int x_small_buffers;
+
+
+/** ***************************************************************************
+ * If true, enable behavior(s) that only make sense while testing.
+ *
+ */
+extern int only_testing;
 
 
 /** ***************************************************************************

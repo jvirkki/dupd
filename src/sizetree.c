@@ -21,11 +21,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "dbops.h"
 #include "main.h"
 #include "paths.h"
 #include "sizetree.h"
+#include "stats.h"
+#include "utils.h"
 
 struct size_node {
   long size;
@@ -43,18 +46,58 @@ struct stat_queue {
   struct stat_queue * next;
 };
 
-#define STAT_QUEUE_LENGTH 500
-#define STAT_QUEUE_COUNT 2
-#define THREAD_IDLE -2
-static struct stat_queue queue[STAT_QUEUE_COUNT];
+#define QUEUE_COUNT 4
+static struct stat_queue queue[QUEUE_COUNT];
+#define STAT_QUEUE_LENGTH 50
+
+#define PRODUCER_DONE 42
+#define WORKER_NOT_STARTED 43
+#define WORKER_DONE 44
+#define WORKING 45
+#define WANT_QUEUE 46
+#define PRODUCER 47
+#define WORKER 48
+#define NOBODY 49
+
+static int current_producer_queue;
+static int current_worker_queue;
+static int last_owner[QUEUE_COUNT];
 static struct stat_queue * producer_next;
-static struct stat_queue * worker_next;
-static int producer_queue;
-static int worker_queue;
+static long queue_added[QUEUE_COUNT];
+static long queue_removed[QUEUE_COUNT];
+
 static pthread_mutex_t queue_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t queue_producer_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t queue_worker_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t worker_thread;
+
+#define PRINT_INFO  { if (thread_verbosity >= 2) { \
+      printf("%scurrent_worker_queue=%s, current_producer_queue=%s\n",  \
+             spaces, queue_state(current_worker_queue),                 \
+             queue_state(current_worker_queue)); } }
+
+
+/** ***************************************************************************
+ * Return string description of a queue state.
+ *
+ */
+static char * queue_state(int s)
+{
+  switch (s) {
+  case PRODUCER_DONE:      return "PRODUCER_DONE";
+  case WORKER_NOT_STARTED: return "WORKER_NOT_STARTED";
+  case WORKER_DONE:        return "WORKER_DONE";
+  case WORKING:            return "WORKING";
+  case WANT_QUEUE:         return "WANT_QUEUE";
+  case 0: return "Q0";
+  case 1: return "Q1";
+  case 2: return "Q2";
+  case 3: return "Q3";
+  default:
+    printf("Bad queue state %d\n", s);
+    exit(1);
+  }
+}
 
 
 /** ***************************************************************************
@@ -165,78 +208,106 @@ static void * worker_main(void * arg)
 {
   (void)arg;
   int done = 0;
+  char * spaces = "                                        [worker] ";
+  struct stat_queue * worker_next;
+  int want_queue = 0;
 
-  if (verbosity >= 3) {
-    printf("[sizetree worker] thread created\n");
-  }
-
-  // On startup we don't have a queue yet because the scanner has not added
-  // any files yet which is why worker_queue starts as -1. After the scanner
-  // fills up the first queue it will set worker_queue to zero and we can
-  // then start working.
-
-  pthread_mutex_lock(&queue_lock);
-  while (worker_queue == -1) {
-    pthread_cond_wait(&queue_worker_cond, &queue_lock);
-  }
-  pthread_mutex_unlock(&queue_lock);
-
-  if (verbosity >= 3) {
-    printf("[sizetree worker] thread starting\n");
+  if (thread_verbosity) {
+    printf("%sthread created\n", spaces);
   }
 
   while (!done) {
-    if (verbosity >= 5) {
-      printf("[sizetree worker] processing queue %d\n", worker_queue);
+
+    // Before working through a queue, need to get one first.
+    pthread_mutex_lock(&queue_lock);
+
+    while (want_queue == current_producer_queue ||
+           last_owner[want_queue] == WORKER) {
+      if (thread_verbosity) {
+        printf("%sWant Q%d, not available, WAIT\n", spaces, want_queue);
+        PRINT_INFO;
+      }
+      pthread_cond_signal(&queue_producer_cond);
+      pthread_cond_wait(&queue_worker_cond, &queue_lock);
     }
 
+    current_worker_queue = want_queue;
+
+    if (last_owner[current_worker_queue] != PRODUCER) {
+      printf("worker got Q%d but last_owner=%d\n",
+             current_worker_queue, last_owner[current_worker_queue]);
+      exit(1);
+    }
+
+    last_owner[current_worker_queue] = WORKER;
+
+    if (thread_verbosity) {
+      printf("%sTook Q%d\n", spaces, current_worker_queue);
+      PRINT_INFO;
+    }
+
+    pthread_mutex_unlock(&queue_lock);
+
     // Work through the current queue to its end (or to the path marked end)
+
+    if (thread_verbosity) {
+      printf("%sProcessing Q%d\n", spaces, current_worker_queue);
+      PRINT_INFO;
+    }
+
+    worker_next = &queue[current_worker_queue];
+
     while (!done && worker_next != NULL) {
       if (worker_next->end) {
-        if (verbosity >= 3) {
-          printf("[sizetree worker] reached END flag: DONE\n");
+        if (thread_verbosity) {
+          printf("%sGot END flag: DONE\n", spaces);
+          PRINT_INFO;
         }
         done = 1;
 
       } else {
         add_file(NULL, worker_next->size, worker_next->path);
+        queue_removed[current_worker_queue]++;
         worker_next = worker_next->next;
       }
     }
 
-    if (verbosity >= 5) {
-      printf("[sizetree worker] finished queue %d\n", worker_queue);
+    if (thread_verbosity) {
+      printf("%sFinished queue %d, removed from it %ld so far\n", spaces,
+             current_worker_queue, queue_removed[current_worker_queue]);
+      PRINT_INFO;
     }
 
-    // Having finished this queue, worker wants the next one. However,
-    // the scanner may (almost certainly) still be filling it so we need
-    // to check and wait until the scanner has moved on.
+    if (only_testing) {
+      slow_down(10, 100);
+      slow_down(100, 1000);
+    }
 
     if (!done) {
-      int want = (worker_queue + 1) % STAT_QUEUE_COUNT;
+      want_queue = (current_worker_queue + 1) % QUEUE_COUNT;
 
       pthread_mutex_lock(&queue_lock);
-      worker_queue = THREAD_IDLE;
-      while (want == producer_queue) {
-        if (verbosity >= 5) {
-          printf("[sizetree worker] want queue %d, scan still has it\n", want);
-        }
-        pthread_cond_wait(&queue_worker_cond, &queue_lock);
+
+      if (queue_added[current_worker_queue] !=
+          queue_removed[current_worker_queue]) {
+        printf("Q%d: added (%ld) != removed (%ld)\n",
+               current_worker_queue,
+               queue_added[current_worker_queue],
+               queue_removed[current_worker_queue]);
+        exit(1);
       }
 
-      worker_queue = want;
-      worker_next = &queue[worker_queue];
-
+      current_worker_queue = WANT_QUEUE;
       pthread_cond_signal(&queue_producer_cond);
       pthread_mutex_unlock(&queue_lock);
     }
   }
 
-  if (verbosity >= 3) {
-    printf("[sizetree worker] exiting\n");
+  if (thread_verbosity) {
+    printf("%sthread finished\n", spaces);
   }
 
-  return NULL;
+  return(NULL);
 }
 
 
@@ -277,52 +348,60 @@ int add_file(sqlite3 * dbh, long size, char * path)
 int add_queue(sqlite3 * dbh, long size, char * path)
 {
   (void)dbh;                    /* not used */
+  static char * spaces = "[scan] ";
 
   if (verbosity >= 6) {
-    printf("add_queue (%d): %s\n", producer_queue, path);
+    printf("%sadd_queue (%d): %s\n", spaces, current_producer_queue, path);
   }
 
-  // Just add it to the end of the queue scanner currently owns.
-
+  // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;
   strcpy(producer_next->path, path);
   producer_next = producer_next->next;
+  queue_added[current_producer_queue]++;
 
-  // If we reached the end of this queue, need to move to the next one.
+  // Unless we've hit the end of this queue, that's all for now...
+  if (producer_next != NULL) {
+    return(-2);
+  }
 
-  if (producer_next == NULL) {
-    pthread_mutex_lock(&queue_lock);
+  if (only_testing) {
+    slow_down(10, 100);
+    slow_down(100, 1000);
+  }
 
-    // The first time around the worker has been idle waiting for the
-    // first queue to be filled once. Let it know it can start.
+  // If we did reach the end of this queue, need to move to the next one.
+  if (thread_verbosity) {
+    printf("%sFinished filling Q%d\n", spaces, current_producer_queue);
+    PRINT_INFO;
+  }
 
-    if (worker_queue == -1) {
-      worker_queue = 0;
-      worker_next = &queue[0];
+  int want = (current_producer_queue + 1) % QUEUE_COUNT;
+
+  pthread_mutex_lock(&queue_lock);
+
+  current_producer_queue = WANT_QUEUE;
+
+  while (want == current_worker_queue || last_owner[want] == PRODUCER) {
+    if (thread_verbosity) {
+      printf("%sWant Q%d, not available, WAIT\n", spaces, want);
+      PRINT_INFO;
     }
-
-    // This is the queue scanner wants to start filling next but it might
-    // be in use by the worker thread.
-
-    int want = (producer_queue + 1) % STAT_QUEUE_COUNT;
-    producer_queue = THREAD_IDLE;;
-
-    while (want == worker_queue) {
-      if (verbosity >= 4) {
-        printf("scan wants queue %d but worker has it, waiting...\n", want);
-      }
-      pthread_cond_wait(&queue_producer_cond, &queue_lock);
-    }
-
-    producer_queue = want;
-    producer_next = &queue[producer_queue];
-
-    if (verbosity >= 5) {
-      printf("scan switched to queue %d\n", producer_queue);
-    }
-
     pthread_cond_signal(&queue_worker_cond);
-    pthread_mutex_unlock(&queue_lock);
+    pthread_cond_wait(&queue_producer_cond, &queue_lock);
+  }
+
+  current_producer_queue = want;
+  last_owner[current_producer_queue] = PRODUCER;
+
+  pthread_cond_signal(&queue_worker_cond);
+  pthread_mutex_unlock(&queue_lock);
+
+  producer_next = &queue[current_producer_queue];
+
+  if (thread_verbosity) {
+    printf("%sTook Q%d\n", spaces, current_producer_queue);
+    PRINT_INFO;
   }
 
   return(-2);
@@ -335,24 +414,53 @@ int add_queue(sqlite3 * dbh, long size, char * path)
  */
 void scan_done()
 {
-  producer_next->end = 1;
-  producer_queue = THREAD_IDLE;
+  static char * spaces = "[scan] ";
 
   pthread_mutex_lock(&queue_lock);
 
-  // If scanner didn't even fill one queue, worker is still waiting to start
-  if (worker_queue == -1) {
-    worker_queue = 0;
-    worker_next = &queue[0];
+  if (thread_verbosity) {
+    printf("scan_done: END in %s\n", queue_state(current_producer_queue));
+    PRINT_INFO;
   }
+
+  producer_next->end = 1;       // tells worker this will the last entry
+  current_producer_queue = PRODUCER_DONE;
 
   pthread_cond_signal(&queue_worker_cond);
   pthread_mutex_unlock(&queue_lock);
 
-  if (verbosity >= 4) {
-    printf("waiting for sizetree worker thread to finish...\n");
+  if (thread_verbosity) {
+    printf("Waiting for sizetree worker thread to finish...\n");
   }
+
   pthread_join(worker_thread, NULL);
+
+  // Verify counts for sanity checking...
+  long removed = 0;
+  long added = 0;
+  for (int i = 0; i < QUEUE_COUNT; i++) {
+    if (thread_verbosity) {
+      printf("Q%d: added %ld, removed %ld\n",
+             i, queue_added[i], queue_removed[i]);
+    }
+    removed += queue_removed[i];
+    added += queue_added[i];
+  }
+
+  if (thread_verbosity) {
+    printf("Total added %ld, removed %ld\n", added, removed);
+  }
+
+  if (added != removed) {
+    printf("Files added in queues (%ld) != removed (%ld)\n", added, removed);
+    exit(1);
+  }
+
+  if (removed != stats_files_count) {
+    printf("files processed in queues (%ld) != files scanned (%ld) !!!\n",
+           removed, stats_files_count);
+    exit(1);
+  }
 }
 
 
@@ -381,7 +489,10 @@ void init_sizetree()
   struct stat_queue * p;
 
   if (threaded_sizetree) {
-    for (i = 0; i < STAT_QUEUE_COUNT; i++) {
+    for (i = 0; i < QUEUE_COUNT; i++) {
+      queue_removed[i] = 0;
+      queue_added[i] = 0;
+      last_owner[i] = NOBODY;
       p = &queue[i];
       for (n = 1; n < STAT_QUEUE_LENGTH; n++) {
         p->next = (struct stat_queue *)malloc(sizeof(struct stat_queue));
@@ -391,11 +502,13 @@ void init_sizetree()
       }
     }
 
-    producer_queue = 0;
+    // Assign Q0 to producer initially.
+    current_producer_queue = 0;
     producer_next = &queue[0];
+    last_owner[0] = PRODUCER;
 
-    worker_queue = -1;
-    worker_next = NULL;
+    // Worker can't start yet.
+    current_worker_queue = WORKER_NOT_STARTED;
 
     if (pthread_create(&worker_thread, NULL, worker_main, NULL)) {
                                                              // LCOV_EXCL_START
@@ -420,7 +533,7 @@ void free_size_tree()
     free_node(tip);
   }
 
-  for (i = 0; i < STAT_QUEUE_COUNT; i++) {
+  for (i = 0; i < QUEUE_COUNT; i++) {
     t = &queue[i];
     t = t->next;
     while (t != NULL) {

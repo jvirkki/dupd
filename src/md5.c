@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -44,7 +44,7 @@ int md5(const char * path, char * output, uint64_t blocks,
 {
   int counter = blocks;
 
-  if (verbosity >= 5) {
+  if (verbosity >= 8) {
     printf("md5: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
            bsize, blocks, skip, path);
   }

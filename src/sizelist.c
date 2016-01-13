@@ -73,6 +73,10 @@ static struct size_list * new_size_list_entry(long size, char * path_list)
  */
 void add_to_size_list(long size, char * path_list)
 {
+  if (size < 0) {
+    printf("add_to_size_list: bad size! %ld\n", size);        // LCOV_EXCL_LINE
+  }
+
   stats_size_list_avg = stats_size_list_avg +
     ( (size - stats_size_list_avg) / (stats_size_list_count + 1) );
 
@@ -115,9 +119,14 @@ void process_size_list(sqlite3 * dbh)
 
     node = pl_get_first_entry(path_list_head);
 
-    if (verbosity >= 3) {
+    if (verbosity >= 2) {
+      if (verbosity >= 4) { printf("\n"); }
       printf("Processing %d/%d (%d files of size %ld)\n",
              count, stats_size_list_count, path_count, size_node->size);
+      if (size_node->size < 0) {
+        printf("Or not, since size makes no sense!\n");       // LCOV_EXCL_LINE
+        exit(1);                                              // LCOV_EXCL_LINE
+      }
     }
 
     // If we only have two files of this size, compare them directly
@@ -165,7 +174,7 @@ void process_size_list(sqlite3 * dbh)
     } while (node != NULL);
 
     if (verbosity >= 4) { printf("Done building first hash list.\n"); }
-    if (verbosity >= 5) {
+    if (verbosity >= 6) {
       printf("Contents of hash list hl_one:\n");
       print_hash_list(hl_one);
     }
@@ -202,7 +211,7 @@ void process_size_list(sqlite3 * dbh)
       filter_hash_list(hl_one, intermediate_blocks,
                        hash_block_size, hl_partial, 0);
 
-      if (verbosity >= 5) {
+      if (verbosity >= 6) {
         printf("Contents of hash list hl_partial:\n");
         print_hash_list(hl_partial);
       }
@@ -237,7 +246,7 @@ void process_size_list(sqlite3 * dbh)
     struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
     filter_hash_list(hl_previous, 0, hash_block_size,
                      hl_full, intermediate_blocks);
-    if (verbosity >= 5) {
+    if (verbosity >= 6) {
       printf("Contents of hash list hl_full:\n");
       print_hash_list(hl_full);
     }

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -28,6 +28,7 @@ extern uint64_t stats_total_bytes_read;
 extern uint64_t stats_total_bytes_hashed;
 extern uint64_t stats_comparison_bytes_read;
 extern uint32_t stats_max_pathlist;
+extern long stats_max_pathlist_size;
 extern int stats_most_dups;
 extern int stats_all_blocks_count;
 extern int stats_duplicate_files;

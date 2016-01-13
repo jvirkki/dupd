@@ -46,6 +46,7 @@ static int free_start_path = 0;
 static int free_db_path = 0;
 static int free_file_path = 0;
 int verbosity = 1;
+int thread_verbosity = 0;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
 int write_db = 1;
@@ -71,6 +72,7 @@ int scan_hidden = 0;
 int path_separator = '`';
 char * path_sep_string = NULL;
 int x_small_buffers = 0;
+int only_testing = 0;
 int threaded_sizetree = 1;
 
 
@@ -181,9 +183,11 @@ static void process_args(int argc, char * argv[])
   }                                                          // LCOV_EXCL_STOP
 
   if (options[OPT_x_small_buffers]) { x_small_buffers = 1; }
+  if (options[OPT_testing]) { only_testing = 1; }
   if (options[OPT_quiet]) { verbosity = -99; }
 
   verbosity += opt_count(options[OPT_verbose]);
+  thread_verbosity += opt_count(options[OPT_verbose_threads]);
 
   path_separator = opt_char(options[OPT_pathsep], path_separator);
 

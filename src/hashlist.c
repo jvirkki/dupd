@@ -36,7 +36,7 @@
 
 #define DEFAULT_PATH_CAPACITY 2 /* smaller is generally faster */
 #define DEFAULT_PATH_BUFFER 10
-#define DEFAULT_HASH_DEPTH 6
+#define DEFAULT_HASHLIST_ENTRIES 6
 
 static char * path_buffer = NULL;
 static int path_buffer_size = 0;
@@ -90,8 +90,8 @@ static struct hash_list * init_hash_list()
 {
   struct hash_list * head = new_hash_list_node();
   struct hash_list * p = head;
-  int depth = x_small_buffers ? 1 : DEFAULT_HASH_DEPTH;
-  for (int n = 1; n < depth; n++) {
+  int entries = x_small_buffers ? 1 : DEFAULT_HASHLIST_ENTRIES;
+  for (int n = 1; n < entries; n++) {
     struct hash_list * next_node = new_hash_list_node();
     p->next = next_node;
     p = next_node;
@@ -243,10 +243,12 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
 
   struct hash_list * p = hl;
   struct hash_list * tail = hl;
+  int hl_len = 0;
 
   // Find the node which contains the paths for this hash, if it exists.
 
   while (p != NULL && p->hash_valid) {
+    hl_len++;
     if (!dupd_memcmp(p->hash, md5out, 16)) {
 
       if (p->next_index == p->capacity) {
@@ -282,7 +284,8 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
     p = new_node;
     hash_list_len_inc++;
     if (verbosity >= 5) {
-      printf("Had to increase hash node list length!\n");
+      printf("Had to increase hash node list length to %d\n",
+             hl_len + DEFAULT_HASHLIST_ENTRIES);
     }
   }
 
@@ -382,10 +385,12 @@ void print_hash_list(struct hash_list * src)
 {
   struct hash_list * p = src;
   while (p != NULL) {
-    printf("hash_valid: %d, has_dups: %d, next_index: %d\n",
-           p->hash_valid, p->has_dups, p->next_index);
-    for (int j=0; j < p->next_index; j++) {
-      printf("  [%s]\n", *(p->pathptrs + j));
+    if (verbosity >= 9 || (verbosity >= 6 && p->hash_valid)) {
+      printf("hash_valid: %d, has_dups: %d, next_index: %d\n",
+             p->hash_valid, p->has_dups, p->next_index);
+      for (int j=0; j < p->next_index; j++) {
+        printf("  [%s]\n", *(p->pathptrs + j));
+      }
     }
     p = p->next;
   }

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -80,6 +80,19 @@ int get_file_info(const char * path, STRUCT_STAT * info);
  *
  */
 long get_current_time_millis();
+
+
+/** ***************************************************************************
+ * For testing, slow down a bit, maybe.
+ *
+ * Parameters:
+ *    prob         - 1 in prob chance of sleeping.
+ *    max_delay_ms - Maximum delay in milliseconds.
+ *
+ * Return: milliseconds slept
+ *
+ */
+long slow_down(int prob, int max_delay_ms);
 
 
 /** ***************************************************************************

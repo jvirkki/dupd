@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -79,4 +79,20 @@ long get_current_time_millis()
   struct timeval tp;
   gettimeofday(&tp, NULL);
   return (tp.tv_sec * 1000L) + (tp.tv_usec / 1000L);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+long slow_down(int prob, int max_delay_ms)
+{
+  if (rand() % prob == 0) {
+    srand((int)get_current_time_millis());
+    long millis = 1 + (rand() % max_delay_ms);
+    usleep(1000 * millis);
+    return millis;
+  }
+  return 0;
 }

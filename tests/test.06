@@ -2,8 +2,8 @@
 
 source common
 
-DESC="scan -v -v -v -v -v"
-$DUPD_CMD scan --path `pwd`/files -v -v -v -v -v > /dev/null
+DESC="scan -v -v -v -v -v -v -v"
+$DUPD_CMD scan --path `pwd`/files -v -v -v -v -v -v -v --testing > /dev/null
 checkrv $?
 
 DESC="generate report"

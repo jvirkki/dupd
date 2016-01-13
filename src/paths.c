@@ -48,22 +48,35 @@ static void dump_path_list(const char * line, long size, char * head)
 
   printf("  head: %p\n", head);
 
-  char * last_elem = *(char **)head;
+  char * last_elem = pl_get_last_entry(head);
   printf("  last_elem: %p\n", last_elem);
 
-  char * list_len_ptr = head + 1 * sizeof(char *);
-  uint32_t list_len = (uint32_t)*(uint32_t *)list_len_ptr;
+  uint32_t list_len = pl_get_path_count(head);
   printf("  list_len: %d\n", (int)list_len);
 
-  char * first_elem = head + 2 * sizeof(char *);
+  char * first_elem = pl_get_first_entry(head);
   printf("  first_elem: %p\n", first_elem);
+
+  uint32_t counted = 1;
 
   char * here = first_elem;
   while (here != NULL) {
-    printf("   [%s]\n", here + sizeof(char *));
-    printf("   next: %p\n", *(char **)here);
-    here = *(char **)here;
+    if (counted < 2 || verbosity >= 7) {
+      printf("   [%s]\n", here + sizeof(char *));
+      printf("   next: %p\n", *(char **)here);
+    }
+    counted++;
+    here = pl_entry_get_next(here);
   }
+
+  counted--;
+  printf("counted entries: %d\n", counted);
+  if (counted != list_len) {
+                                                             // LCOV_EXCL_START
+    printf("list_len (%d) != counted entries (%d)\n", list_len, counted);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
   printf("-----\n\n\n");
 }
 
@@ -190,6 +203,7 @@ void insert_end_path(char * path, long size, char * head)
 
   if (path_count > stats_max_pathlist) {
     stats_max_pathlist = path_count;
+    stats_max_pathlist_size = size;
   }
 }
 
