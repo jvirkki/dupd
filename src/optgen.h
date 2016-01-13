@@ -13,7 +13,7 @@
 
 #include <stdlib.h>
 
-#define COUNT_OPTIONS 27
+#define COUNT_OPTIONS 29
 
 // nodb (--nodb) : do not generate database file
 #define OPT_nodb 0
@@ -81,20 +81,26 @@
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
 #define OPT_verbose 21
 
+// verbose_threads (-V,--verbose-threads) : increase thread verbosity (may be repeated for more)
+#define OPT_verbose_threads 22
+
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 22
+#define OPT_quiet 23
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 23
+#define OPT_db 24
 
 // no_unique (--no-unique) : ignore unique table even if present
-#define OPT_no_unique 24
+#define OPT_no_unique 25
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 25
+#define OPT_help 26
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 26
+#define OPT_x_small_buffers 27
+
+// testing (--testing) : for testing only, not useful otherwise
+#define OPT_testing 28
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

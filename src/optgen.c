@@ -44,11 +44,13 @@ int option_exclude_path[] = { 3, 4, 5, 6 };
 int option_link[] = { 7 };
 int option_hardlink[] = { 7 };
 int option_verbose[] = { 12 };
+int option_verbose_threads[] = { 12 };
 int option_quiet[] = { 12 };
 int option_db[] = { 12 };
 int option_no_unique[] = { 12 };
 int option_help[] = { 12 };
 int option_x_small_buffers[] = { 12 };
+int option_testing[] = { 12 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -607,12 +609,34 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 7 && !strncmp("--quiet", argv[pos], 7))||
-        (l == 2 && !strncmp("-q", argv[pos], 2))) {
+    if ((l == 17 && !strncmp("--verbose-threads", argv[pos], 17))||
+        (l == 2 && !strncmp("-V", argv[pos], 2))) {
       if (options[22] == NULL) {
         options[22] = numstring[0];
       } else {
         options[22] = numstring[atoi(options[22])];
+      }
+      pos++;
+      // strict_options: is verbose_threads allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_verbose_threads) / sizeof(option_verbose_threads)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_verbose_threads[cc] == *command) { ok = 1; }
+        if (option_verbose_threads[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'verbose_threads' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 7 && !strncmp("--quiet", argv[pos], 7))||
+        (l == 2 && !strncmp("-q", argv[pos], 2))) {
+      if (options[23] == NULL) {
+        options[23] = numstring[0];
+      } else {
+        options[23] = numstring[atoi(options[23])];
       }
       pos++;
       // strict_options: is quiet allowed?
@@ -635,7 +659,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --db\n");
         exit(1);
       }
-      options[23] = argv[pos+1];
+      options[24] = argv[pos+1];
       pos += 2;
       // strict_options: is db allowed?
       int ok = 0;
@@ -652,10 +676,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 11 && !strncmp("--no-unique", argv[pos], 11))) {
-      if (options[24] == NULL) {
-        options[24] = numstring[0];
+      if (options[25] == NULL) {
+        options[25] = numstring[0];
       } else {
-        options[24] = numstring[atoi(options[24])];
+        options[25] = numstring[atoi(options[25])];
       }
       pos++;
       // strict_options: is no_unique allowed?
@@ -674,10 +698,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--help", argv[pos], 6))||
         (l == 2 && !strncmp("-h", argv[pos], 2))) {
-      if (options[25] == NULL) {
-        options[25] = numstring[0];
+      if (options[26] == NULL) {
+        options[26] = numstring[0];
       } else {
-        options[25] = numstring[atoi(options[25])];
+        options[26] = numstring[atoi(options[26])];
       }
       pos++;
       // strict_options: is help allowed?
@@ -695,10 +719,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 17 && !strncmp("--x-small-buffers", argv[pos], 17))) {
-      if (options[26] == NULL) {
-        options[26] = numstring[0];
+      if (options[27] == NULL) {
+        options[27] = numstring[0];
       } else {
-        options[26] = numstring[atoi(options[26])];
+        options[27] = numstring[atoi(options[27])];
       }
       pos++;
       // strict_options: is x_small_buffers allowed?
@@ -711,6 +735,27 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'x_small_buffers' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 9 && !strncmp("--testing", argv[pos], 9))) {
+      if (options[28] == NULL) {
+        options[28] = numstring[0];
+      } else {
+        options[28] = numstring[atoi(options[28])];
+      }
+      pos++;
+      // strict_options: is testing allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_testing) / sizeof(option_testing)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_testing[cc] == *command) { ok = 1; }
+        if (option_testing[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'testing' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -807,12 +852,14 @@ void opt_show_help()
   printf("version  show version and exit\n");
   printf("\n");
   printf("General options:\n");
-  printf("  -v --verbose          increase verbosity (may be repeated for more)\n");
-  printf("  -q --quiet            quiet, supress all output except fatal errors\n");
-  printf("  -d --db PATH          path to dupd database file\n");
-  printf("     --no-unique        ignore unique table even if present\n");
-  printf("  -h --help             show brief usage info\n");
-  printf("     --x-small-buffers  for testing only, not useful otherwise\n");
+  printf("  -v --verbose             increase verbosity (may be repeated for more)\n");
+  printf("  -V --verbose-threads     increase thread verbosity (may be repeated for more)\n");
+  printf("  -q --quiet               quiet, supress all output except fatal errors\n");
+  printf("  -d --db PATH             path to dupd database file\n");
+  printf("     --no-unique           ignore unique table even if present\n");
+  printf("  -h --help                show brief usage info\n");
+  printf("     --x-small-buffers     for testing only, not useful otherwise\n");
+  printf("     --testing             for testing only, not useful otherwise\n");
   printf("\n");
 }
 // LCOV_EXCL_STOP
