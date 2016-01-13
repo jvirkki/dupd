@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -17,7 +17,6 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -109,27 +108,28 @@ void free_path_block()
  */
 char * insert_first_path(char * path)
 {
-  char * rv = next_entry;
+  char * head = next_entry;
+  char * new_entry = pl_get_first_entry(head);
 
   // See paths.h for documentation on structure
 
+  // Initialize ListSize (to 1)
+  pl_init_path_count(head);
+
   // PTR2LAST - Set to point to self since we're the first and last elem now
-  *(char **)(rv + 0 * sizeof(char *)) = (char *)(rv + 2 * sizeof(char *));
+  pl_entry_set_next(head, new_entry);
 
-  // ListSize - Now 1 since we're adding the first and only elem
-  *(char **)(rv + 1 * sizeof(char *)) = (char *)1;
+  // And update PTR2NEXT of the new (now last) entry we just added to NULL
+  pl_entry_set_next(new_entry, NULL);
 
-  // PTR2NEXT - NULL, no other elements yet
-  *(char **)(rv + 2 * sizeof(char *)) = NULL;
-
-  // path string...
-  strcpy((char *)(rv + 3 * sizeof(char *)), path);
+  // Copy path string to new entry
+  strcpy(pl_entry_get_path(new_entry), path);
 
   // Update top of free space to point beyond the space we just used up
-  next_entry = next_entry + (3 * sizeof(char *)) + 1 + strlen(path);
+  next_entry = new_entry + sizeof(char *) + strlen(path) + 1;
 
   if (verbosity > 6) {
-    dump_path_list("AFTER insert_first_path", -1, rv);
+    dump_path_list("AFTER insert_first_path", -1, head);
   }
 
   if (next_entry > path_block_end) {                         // LCOV_EXCL_START
@@ -138,7 +138,7 @@ char * insert_first_path(char * path)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  return rv;
+  return head;
 }
 
 
@@ -148,43 +148,41 @@ char * insert_first_path(char * path)
  */
 void insert_end_path(char * path, long size, char * head)
 {
-  char * last_elem = *(char **)head;
-  char * list_len = head + 1 * sizeof(char *);
-  char * first_elem = head + 2 * sizeof(char *);
-  char * second_elem = *(char **)(head + 2 * sizeof(char *));
   char * prior = NULL;
+  char * new_entry = next_entry;
 
-  if (second_elem == NULL) {
-    // This means we are now adding the second element to this path list.
-    // Which means we have a size which is a candidate for duplicate
-    // processing later, so add it to the size list.
+  if (pl_get_path_count(head) == 1) {
+
+    // If there is only one entry in this path list, it means we are
+    // adding the second element to this path list. Which in turn means
+    // we have just identified a size which is a candidate for duplicate
+    // processing later, so add it to the size list now.
+
     add_to_size_list(size, head);
-    prior = first_elem;
+    prior = pl_get_first_entry(head);
 
   } else {
-    // Jump to the end of the path list
-    prior = last_elem;
+    // Just jump to the end of the path list
+    prior = pl_get_last_entry(head);
   }
 
-  // PTR2LAST - Set to point to next_entry, where the new entry will be
-  *(char **)head = next_entry;
+  // Update PTR2LAST to point to the new last entry
+  pl_entry_set_next(head, new_entry);
 
-  // PTR2NEXT - Set previous last element to point to new element as well
-  *(char **)prior = next_entry;
+  // Update prior (previous last) PTR2NEXT to also point to the new last entry
+  pl_entry_set_next(prior, new_entry);
 
-  // path string...
-  strcpy(next_entry + sizeof(char *), path);
+  // And update PTR2NEXT of the new (now last) entry we just added to NULL
+  pl_entry_set_next(new_entry, NULL);
 
-  // PTR2NEXT - Next of new elem
-  *(char **)next_entry = NULL;
+  // Copy path string to new entry
+  strcpy(pl_entry_get_path(new_entry), path);
 
   // Increase ListSize of this path list
-  uint32_t path_count = (uint32_t)*(uint32_t *)list_len;
-  path_count++;
-  *(uint32_t *)list_len = path_count;
+  uint32_t path_count = pl_increase_path_count(head);
 
   // Update top of free space to point beyond the space we just used up
-  next_entry = next_entry + sizeof(char *) + strlen(path) + 1;
+  next_entry = new_entry + sizeof(char *) + strlen(path) + 1;
 
   if (verbosity >= 6) {
     dump_path_list("AFTER insert_end_path", size, head);

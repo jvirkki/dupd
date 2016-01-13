@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -20,6 +20,7 @@
 #ifndef _DUPD_PATHS_H
 #define _DUPD_PATHS_H
 
+#include <inttypes.h>
 
 /** ***************************************************************************
  * Functions to manage the path lists.
@@ -106,6 +107,133 @@ void insert_end_path(char * path, long size, char * head);
  *
  */
 void report_path_block_usage();
+
+
+/** ***************************************************************************
+ * Return pointer to the first entry of a pathlist.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *
+ * Return: pointer to first entry
+ *
+ */
+static inline char * pl_get_first_entry(char * head)
+{
+  return head + 2 * sizeof(char *);
+}
+
+
+/** ***************************************************************************
+ * Return pointer to the last entry of a pathlist.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *
+ * Return: pointer to last entry
+ *
+ */
+static inline char * pl_get_last_entry(char * head)
+{
+  return *(char **)head;
+}
+
+
+/** ***************************************************************************
+ * Initialize path count to one in a new pathlist.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *
+ * Return: none
+ *
+ */
+static inline void pl_init_path_count(char * head)
+{
+  char * list_len = head + sizeof(char *);
+  *(uint32_t *)list_len = 1;
+}
+
+
+/** ***************************************************************************
+ * Return the number of entries in this pathlist.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *
+ * Return: number of entries
+ *
+ */
+static inline uint32_t pl_get_path_count(char * head)
+{
+  char * list_len = head + sizeof(char *);
+  return(uint32_t)*(uint32_t *)list_len;
+}
+
+
+/** ***************************************************************************
+ * Increase the number of entries in this pathlist by one.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *
+ * Return: updated number of entries
+ *
+ */
+static inline uint32_t pl_increase_path_count(char * head)
+{
+  char * list_len = head + 1 * sizeof(char *);
+  uint32_t path_count = (uint32_t)*(uint32_t *)list_len;
+  path_count++;
+  *(uint32_t *)list_len = path_count;
+  return path_count;
+}
+
+
+/** ***************************************************************************
+ * Given an entry, set its next pointer.
+ *
+ * Parameters:
+ *    entry - The entry to update.
+ *    next  - The next entry to point at.
+ *
+ * Return: none
+ *
+ */
+static inline void pl_entry_set_next(char * entry, char * next)
+{
+  *(char **)entry = next;
+}
+
+
+/** ***************************************************************************
+ * Return pointer to the path string of an entry.
+ *
+ * Parameters:
+ *    entry - The entry
+ *
+ * Return: pointer to path string location
+ *
+ */
+static inline char * pl_entry_get_path(char * entry)
+{
+  return entry + sizeof(char *);
+}
+
+
+/** ***************************************************************************
+ * Return pointer to the next entry given an entry.
+ *
+ * Parameters:
+ *    entry - The entry
+ *
+ * Return: pointer to next entry (or NULL)
+ *
+ */
+static inline char * pl_entry_get_next(char * entry)
+{
+  return *(char **)entry;
+}
 
 
 #endif
