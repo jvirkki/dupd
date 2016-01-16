@@ -20,6 +20,8 @@
 #ifndef _DUPD_SCAN_H
 #define _DUPD_SCAN_H
 
+#define SCAN_SIZE_UNKNOWN -42
+
 
 /** ***************************************************************************
  * Initialize memory structures for scan.

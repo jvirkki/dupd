@@ -39,6 +39,11 @@
 #include "utils.h"
 
 
+#define D_DIR 1
+#define D_FILE 2
+#define D_OTHER 3
+#define D_ERROR 4
+
 static char * scan_list = NULL;
 static int scan_list_capacity = 0;
 static int scan_list_pos = -1;
@@ -77,11 +82,17 @@ void free_scanlist()
 void walk_dir(sqlite3 * dbh, const char * path,
               int (*process_file)(sqlite3 *, long, char *))
 {
+#ifndef DIRENT_HAS_TYPE
+  STRUCT_STAT new_stat_info;
+  int rv;
+#endif
+
   struct dirent * entry;
   char newpath[PATH_MAX];
   char current[PATH_MAX];
-  STRUCT_STAT new_stat_info;
-  int rv;
+
+  long size;
+  long type;
 
   if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
     printf("walk_dir called on null or empty path!\n");
@@ -125,74 +136,85 @@ void walk_dir(sqlite3 * dbh, const char * path,
 
       if (strchr(entry->d_name, path_separator)) {
         if (verbosity >= 1) {
-          printf("SKIP (due to %c) [%s/%s]\n", path_separator, current, entry->d_name);
+          printf("SKIP (due to %c) [%s/%s]\n",
+                 path_separator, current, entry->d_name);
         }
         continue;
       }
 
       snprintf(newpath, PATH_MAX, "%s/%s", current, entry->d_name);
+
+      // If DIRENT_HAS_TYPE, we can get the type of the file from entry->d_type
+      // which means we can skip doing stat() on it here and instead let
+      // the worker thread do it. That means we won't know the size of the file
+      // yet but that's ok. If so, set it to SCAN_SIZE_UNKNOWN to let the
+      // worker thread know it'll have to get the size.
+
+#ifdef DIRENT_HAS_TYPE
+      size = SCAN_SIZE_UNKNOWN;
+      type = D_OTHER;
+      if (entry->d_type == DT_REG) {
+        type = D_FILE;
+      } else if (entry->d_type == DT_DIR) {
+        type = D_DIR;
+      }
+#else
       rv = get_file_info(newpath, &new_stat_info);
+      size = new_stat_info.st_size;
+      if (rv != 0) {
+        type = D_ERROR;
+      } else if (S_ISDIR(new_stat_info.st_mode)) {
+        type = D_DIR;
+      } else if (S_ISREG(new_stat_info.st_mode)) {
+        type = D_FILE;
+      } else {
+        type = D_OTHER;
+      }
+#endif
 
-      if (rv == 0) {
+      switch(type) {
 
+      case D_DIR:
         // If 'newpath' is a directory, save it in scan_list for later
-        if (S_ISDIR(new_stat_info.st_mode)) {
-          scan_list_pos++;
-          if (scan_list_pos > scan_list_usage_max) {
-            scan_list_usage_max = scan_list_pos;
-          }
-          if (scan_list_pos == scan_list_capacity) {
-            scan_list_resizes++;
-            scan_list_capacity *= 2;
-            scan_list = (char *)realloc(scan_list, PATH_MAX * scan_list_capacity);
-            if (verbosity >= 5) {
-              printf("Had to increase scan_list_capacity to %d\n", scan_list_capacity);
-            }
-          }
-          strcpy(scan_list + PATH_MAX * scan_list_pos, newpath);
-          if (verbosity >= 8) {
-            printf("queued dir at %d: %s\n", scan_list_pos, newpath);
-          }
-          continue;
+        scan_list_pos++;
+        if (scan_list_pos > scan_list_usage_max) {
+          scan_list_usage_max = scan_list_pos;
         }
+        if (scan_list_pos == scan_list_capacity) {
+          scan_list_resizes++;
+          scan_list_capacity *= 2;
+          scan_list =
+            (char *)realloc(scan_list, PATH_MAX * scan_list_capacity);
+          if (verbosity >= 5) {
+            printf("Had to increase scan_list_capacity to %d\n",
+                   scan_list_capacity);
+          }
+        }
+        strcpy(scan_list + PATH_MAX * scan_list_pos, newpath);
+        if (verbosity >= 8) {
+          printf("queued dir at %d: %s\n", scan_list_pos, newpath);
+        }
+        break;
 
+      case D_FILE:
         // If it is a file, just process it now
-        if (S_ISREG(new_stat_info.st_mode)) {
-          if (verbosity >= 8) {
-            printf("FILE: [%s]\n", newpath);
-          }
+        (*process_file)(dbh, size, newpath);
+        break;
 
-          if (new_stat_info.st_size > minimum_file_size) {
-            (*process_file)(dbh, new_stat_info.st_size, newpath);
-            stats_total_bytes += new_stat_info.st_size;
-            stats_files_count++;
-            stats_avg_file_size = stats_avg_file_size +
-              ((new_stat_info.st_size - stats_avg_file_size)/stats_files_count);
-
-            if (verbosity >= 2) {
-              if ((stats_files_count % 5000) == 0) {
-                printf("Files scanned: %ld\n", stats_files_count);
-              }
-            }
-          } else {
-            if (verbosity >= 4) {
-              printf("SKIP (too small: %zu): [%s]\n",
-                     (size_t)new_stat_info.st_size, newpath);
-            }
-          }
-
-        } else { // if not regular file
-          if (verbosity >= 4) {
-            printf("SKIP (not file) [%s]\n", newpath);
-          }
-          stats_files_ignored++;
+      case D_OTHER:
+        if (verbosity >= 4) {
+          printf("SKIP (not file) [%s]\n", newpath);
         }
-      } else { // if error from stat                              LCOV_EXCL_START
-        if (verbosity >= 1) {
+        stats_files_ignored++;
+        break;
+
+      case D_ERROR:
+        if (verbosity >= 1) {                                // LCOV_EXCL_START
           printf("SKIP (error) [%s]\n", newpath);
         }
         stats_files_error++;
-      }                                                        // LCOV_EXCL_STOP
+        break;
+      }                                                      // LCOV_EXCL_STOP
     }
     closedir(dir);
   }

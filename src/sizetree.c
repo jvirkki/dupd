@@ -26,6 +26,7 @@
 #include "dbops.h"
 #include "main.h"
 #include "paths.h"
+#include "scan.h"
 #include "sizetree.h"
 #include "stats.h"
 #include "utils.h"
@@ -330,6 +331,48 @@ static void free_node(struct size_node * node)
 int add_file(sqlite3 * dbh, long size, char * path)
 {
   (void)dbh;                    /* not used */
+  static STRUCT_STAT new_stat_info;
+
+  if (verbosity >= 8) {
+    printf("FILE: [%s]\n", path);
+  }
+
+  // If size is SCAN_SIZE_UNKNOWN, it means the producer thread did not
+  // stat() the file during scan, so we'll need to do it now.
+
+  if (size == SCAN_SIZE_UNKNOWN) {
+
+    int rv = get_file_info(path, &new_stat_info);
+    if (rv != 0) {
+      if (verbosity >= 1) {                                 // LCOV_EXCL_START
+        printf("SKIP (error) [%s]\n", path);
+      }
+      stats_files_error++;
+      return(-2);
+    }                                                       // LCOV_EXCL_STOP
+
+    size = new_stat_info.st_size;
+  }
+
+  stats_files_count++;
+
+  if (size > minimum_file_size) {
+    stats_total_bytes += size;
+    stats_avg_file_size = stats_avg_file_size +
+      ((size - stats_avg_file_size)/stats_files_count);
+
+    if (verbosity >= 2) {
+      if ((stats_files_count % 5000) == 0) {
+        printf("Files scanned: %ld\n", stats_files_count);
+      }
+    }
+  } else {
+    if (verbosity >= 4) {
+      printf("SKIP (too small: %zu): [%s]\n", (size_t)size, path);
+    }
+    return(-2);
+  }
+
   if (tip == NULL) {
     tip = new_node(size, path);
     return(-2);
