@@ -306,6 +306,7 @@ int main(int argc, char * argv[])
   free_hash_lists();
   free_size_list();
   free_filecompare();
+  free_scanlist();
 
   stats_time_total = get_current_time_millis() - t1;
 

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -19,6 +19,28 @@
 
 #ifndef _DUPD_SCAN_H
 #define _DUPD_SCAN_H
+
+
+/** ***************************************************************************
+ * Initialize memory structures for scan.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void init_scanlist();
+
+
+/** ***************************************************************************
+ * Free memory initialized with init_scanlist()
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void free_scanlist();
 
 
 /** ***************************************************************************

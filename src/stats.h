@@ -61,6 +61,8 @@ extern long stats_time_total;
 extern int path_buffer_realloc;
 extern int hashlist_path_realloc;
 extern int hash_list_len_inc;
+extern int scan_list_usage_max;
+extern int scan_list_resizes;
 
 
 /** ***************************************************************************

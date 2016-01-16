@@ -41,7 +41,7 @@ static char * path_block_end;
  * Debug function. Dumps the path list for a given size starting from head.
  *
  */
-static void dump_path_list(const char * line, long size, char * head)
+void dump_path_list(const char * line, long size, char * head)
 {
   printf("----- dump_size_list for size %ld -----\n", size);
   printf("%s\n", line);

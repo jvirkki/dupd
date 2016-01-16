@@ -74,8 +74,10 @@ static struct size_list * new_size_list_entry(long size, char * path_list)
 void add_to_size_list(long size, char * path_list)
 {
   if (size < 0) {
-    printf("add_to_size_list: bad size! %ld\n", size);        // LCOV_EXCL_LINE
-  }
+    printf("add_to_size_list: bad size! %ld\n", size);       // LCOV_EXCL_START
+    dump_path_list("bad size", size, path_list);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
   stats_size_list_avg = stats_size_list_avg +
     ( (size - stats_size_list_avg) / (stats_size_list_count + 1) );

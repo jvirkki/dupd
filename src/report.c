@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -371,6 +371,7 @@ void operation_ls()
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
+  init_scanlist();
   walk_dir(dbh, start_path[0], file_callback);
   close_database(dbh);
   free_get_known_duplicates();
@@ -388,6 +389,7 @@ void operation_uniques()
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
+  init_scanlist();
   walk_dir(dbh, start_path[0], file_callback);
   close_database(dbh);
   free_get_known_duplicates();
@@ -405,6 +407,7 @@ void operation_dups()
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
+  init_scanlist();
   walk_dir(dbh, start_path[0], file_callback);
   close_database(dbh);
   free_get_known_duplicates();

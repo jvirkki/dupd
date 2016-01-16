@@ -44,6 +44,13 @@
 
 
 /** ***************************************************************************
+ * Debug function. Dumps the path list for a given size starting from head.
+ *
+ */
+void dump_path_list(const char * line, long size, char * head);
+
+
+/** ***************************************************************************
  * Initialize path_block data structures.
  *
  * Parameters: none
