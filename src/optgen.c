@@ -858,8 +858,6 @@ void opt_show_help()
   printf("  -d --db PATH             path to dupd database file\n");
   printf("     --no-unique           ignore unique table even if present\n");
   printf("  -h --help                show brief usage info\n");
-  printf("     --x-small-buffers     for testing only, not useful otherwise\n");
-  printf("     --testing             for testing only, not useful otherwise\n");
   printf("\n");
 }
 // LCOV_EXCL_STOP
