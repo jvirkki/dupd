@@ -51,7 +51,7 @@ extern int stats_three_file_compare;
 extern int stats_two_file_compare;
 extern int stats_uniques_saved;
 extern long stats_size_list_avg;
-extern long stats_files_count;
+extern uint32_t stats_files_count;
 extern int stats_files_ignored;
 extern int stats_files_error;
 extern long stats_avg_file_size;

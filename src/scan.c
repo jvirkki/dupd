@@ -91,7 +91,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
   char newpath[PATH_MAX];
   char current[PATH_MAX];
 
-  long size;
+  off_t size;
   long type;
 
   if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
@@ -253,7 +253,7 @@ void scan()
   }
 
   if (verbosity >= 1) {
-    printf("Files scanned: %ld\n", stats_files_count);
+    printf("Files scanned: %" PRIu32 "\n", stats_files_count);
   }
 
   if (threaded_sizetree) {

@@ -34,7 +34,7 @@
  * Return: none (int to comply with callback prototype)
  *
  */
-int add_file(sqlite3 * dbh, long size, char * path);
+int add_file(sqlite3 * dbh, off_t size, char * path);
 
 
 /** ***************************************************************************
@@ -51,7 +51,7 @@ int add_file(sqlite3 * dbh, long size, char * path);
  * Return: none (int to comply with callback prototype)
  *
  */
-int add_queue(sqlite3 * dbh, long size, char * path);
+int add_queue(sqlite3 * dbh, off_t size, char * path);
 
 
 /** ***************************************************************************

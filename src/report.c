@@ -220,7 +220,7 @@ void operation_report()
     }                                                        // LCOV_EXCL_STOP
 
     path_list = (char *)sqlite3_column_text(statement, 0);
-    unsigned long total = sqlite3_column_int(statement, 1);
+    off_t total = sqlite3_column_int(statement, 1);
 
     if (total >= minimum_file_size) {
       printf("%lu total bytes used by duplicates:\n", total);
@@ -261,7 +261,7 @@ void operation_report()
  *    1+ - Number of duplicates identified.
  *
  */
-static int file_callback(sqlite3 * dbh, long size, char * path)
+static int file_callback(sqlite3 * dbh, off_t size, char * path)
 {
   (void)size;                   /* not used */
   char * unique_pfx = "";

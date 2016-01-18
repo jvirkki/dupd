@@ -47,7 +47,7 @@
  * Debug function. Dumps the path list for a given size starting from head.
  *
  */
-void dump_path_list(const char * line, long size, char * head);
+void dump_path_list(const char * line, off_t size, char * head);
 
 
 /** ***************************************************************************
@@ -102,7 +102,7 @@ char * insert_first_path(char * path);
  * Return: none
  *
  */
-void insert_end_path(char * path, long size, char * head);
+void insert_end_path(char * path, off_t size, char * head);
 
 
 /** ***************************************************************************

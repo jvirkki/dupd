@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -55,7 +55,7 @@ void free_size_list();
  * Return: An intialized/allocated size list node.
  *
  */
-void add_to_size_list(long size, char * path_list);
+void add_to_size_list(off_t size, char * path_list);
 
 
 /** ***************************************************************************

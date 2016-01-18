@@ -55,7 +55,7 @@ int stats_three_file_compare = 0;
 int stats_two_file_compare = 0;
 int stats_uniques_saved = 0;
 long stats_size_list_avg = 0;
-long stats_files_count = 0;
+uint32_t stats_files_count = 0;
 int stats_files_ignored = 0;
 int stats_files_error = 0;
 long stats_avg_file_size = 0;
@@ -187,7 +187,7 @@ void save_stats()
   fprintf(fp, "stats_two_file_compare %d\n", stats_two_file_compare);
   fprintf(fp, "stats_uniques_saved %d\n", stats_uniques_saved);
   fprintf(fp, "stats_size_list_avg %ld\n", stats_size_list_avg);
-  fprintf(fp, "stats_files_count %ld\n", stats_files_count);
+  fprintf(fp, "stats_files_count %" PRIu32 "\n", stats_files_count);
   fprintf(fp, "stats_files_ignored %d\n", stats_files_ignored);
   fprintf(fp, "stats_files_error %d\n", stats_files_error);
   fprintf(fp, "stats_avg_file_size %ld\n", stats_avg_file_size);

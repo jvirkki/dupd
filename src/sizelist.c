@@ -40,7 +40,7 @@ static struct size_list * size_list_head;
 static struct size_list * size_list_tail;
 
 struct size_list {
-  long size;
+  off_t size;
   char * path_list;
   struct size_list * next;
 };
@@ -57,7 +57,7 @@ struct size_list {
  * Return: An intialized/allocated size list node.
  *
  */
-static struct size_list * new_size_list_entry(long size, char * path_list)
+static struct size_list * new_size_list_entry(off_t size, char * path_list)
 {
   struct size_list * e = (struct size_list *)malloc(sizeof(struct size_list));
   e->size = size;
@@ -71,7 +71,7 @@ static struct size_list * new_size_list_entry(long size, char * path_list)
  * Public function, see header file.
  *
  */
-void add_to_size_list(long size, char * path_list)
+void add_to_size_list(off_t size, char * path_list)
 {
   if (size < 0) {
     printf("add_to_size_list: bad size! %ld\n", size);       // LCOV_EXCL_START

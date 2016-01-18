@@ -32,7 +32,7 @@
 #include "utils.h"
 
 struct size_node {
-  long size;
+  off_t size;
   char * paths;
   struct size_node * left;
   struct size_node * right;
@@ -42,7 +42,7 @@ static struct size_node * tip = NULL;
 
 struct stat_queue {
   int end;
-  long size;
+  off_t size;
   char path[PATH_MAX];
   struct stat_queue * next;
 };
@@ -113,7 +113,7 @@ static char * queue_state(int s)
  * Return: ptr to the node created
  *
  */
-static struct size_node * new_node(long size, char * path)
+static struct size_node * new_node(off_t size, char * path)
 {
   struct size_node * n = (struct size_node *)malloc(sizeof(struct size_node));
   n->left = NULL;
@@ -135,12 +135,12 @@ static struct size_node * new_node(long size, char * path)
  * Return: none
  *
  */
-static void add_below(struct size_node * node, long size, char * path)
+static void add_below(struct size_node * node, off_t size, char * path)
 {
   struct size_node * p = node;
 
   while (1) {
-    int s = (int)size - p->size;
+    off_t s = size - p->size;
 
     if (!s) {
       insert_end_path(path, size, p->paths);
@@ -328,7 +328,7 @@ static void free_node(struct size_node * node)
  * Public function, see header file.
  *
  */
-int add_file(sqlite3 * dbh, long size, char * path)
+int add_file(sqlite3 * dbh, off_t size, char * path)
 {
   (void)dbh;                    /* not used */
   static STRUCT_STAT new_stat_info;
@@ -356,19 +356,23 @@ int add_file(sqlite3 * dbh, long size, char * path)
 
   stats_files_count++;
 
-  if (size > minimum_file_size) {
+  if (size >= minimum_file_size) {
     stats_total_bytes += size;
     stats_avg_file_size = stats_avg_file_size +
       ((size - stats_avg_file_size)/stats_files_count);
 
     if (verbosity >= 2) {
       if ((stats_files_count % 5000) == 0) {
-        printf("Files scanned: %ld\n", stats_files_count);
+        printf("Files scanned: %" PRIu32 "\n", stats_files_count);
       }
     }
   } else {
     if (verbosity >= 4) {
-      printf("SKIP (too small: %zu): [%s]\n", (size_t)size, path);
+      printf("SKIP (too small: %lld): [%s]\n", (long long)size, path);
+    }
+    if (size < 0) {
+      printf("Bad size! %lld: [%s]\n", (long long)size, path);
+      exit(1);
     }
     return(-2);
   }
@@ -388,7 +392,7 @@ int add_file(sqlite3 * dbh, long size, char * path)
  * Public function, see header file.
  *
  */
-int add_queue(sqlite3 * dbh, long size, char * path)
+int add_queue(sqlite3 * dbh, off_t size, char * path)
 {
   (void)dbh;                    /* not used */
   static char * spaces = "[scan] ";
@@ -479,8 +483,8 @@ void scan_done()
   pthread_join(worker_thread, NULL);
 
   // Verify counts for sanity checking...
-  long removed = 0;
-  long added = 0;
+  uint32_t removed = 0;
+  uint32_t added = 0;
   for (int i = 0; i < QUEUE_COUNT; i++) {
     if (thread_verbosity) {
       printf("Q%d: added %ld, removed %ld\n",
@@ -491,16 +495,16 @@ void scan_done()
   }
 
   if (thread_verbosity) {
-    printf("Total added %ld, removed %ld\n", added, removed);
+    printf("Total added %" PRIu32 ", removed %" PRIu32 "\n", added, removed);
   }
 
   if (added != removed) {
-    printf("Files added in queues (%ld) != removed (%ld)\n", added, removed);
+    printf("added (%" PRIu32 ") != removed (%" PRIu32 ")\n", added, removed);
     exit(1);
   }
 
   if (removed != stats_files_count) {
-    printf("files processed in queues (%ld) != files scanned (%ld) !!!\n",
+    printf("files processed (%" PRIu32 ") != files scanned (%"PRIu32") !!!\n",
            removed, stats_files_count);
     exit(1);
   }
