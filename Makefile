@@ -50,9 +50,10 @@ endif
 endif
 
 ifeq ($(BUILD_OS),SunOS)
+CFLAGS=-m64
 OBJCP=gobjcopy
 USAGE=$(BUILD)/usage.o
-USAGE_ARCH=-O elf32-i386 -B i386
+USAGE_ARCH=-O elf64-x86-64 -B i386
 endif
 
 ifeq ($(BUILD_OS),Darwin)
@@ -69,7 +70,7 @@ endif
 
 
 dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
-	$(CCC) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
+	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
 	mkdir -p $(BUILD)
