@@ -104,7 +104,7 @@ static struct hash_list * init_hash_list()
  * Free all entries in this hash list.
  *
  * Parameters:
- *    hl - Pointer to the head of the list to reset.
+ *    hl - Pointer to the head of the list to free.
  *
  * Return: none
  *
@@ -123,7 +123,7 @@ static void free_hash_list(struct hash_list * hl)
 
 
 /** ***************************************************************************
- * Reset a hash list so it is empty of data but keeps all its
+ * Reset a hash list node so it is empty of data but keeps all its
  * allocated space. This allows reusing the same hash list for new
  * data so we don't have to allocate a new one.
  *
@@ -139,14 +139,10 @@ static void reset_hash_list(struct hash_list * hl)
     return;
   }
 
-  struct hash_list * p = hl;
-  while (p != NULL) {
-    p->has_dups = 0;
-    p->hash_valid = 0;
-    p->hash[0] = 0;
-    p->next_index = 0;
-    p = p->next;
-  }
+  hl->has_dups = 0;
+  hl->hash_valid = 0;
+  hl->hash[0] = 0;
+  hl->next_index = 0;
 }
 
 
@@ -209,12 +205,15 @@ struct hash_list * get_hash_list(int kind)
   switch (kind) {
   case HASH_LIST_ONE:
     reset_hash_list(hl_one);
+    reset_hash_list(hl_one->next);
     return hl_one;
   case HASH_LIST_PARTIAL:
     reset_hash_list(hl_partial);
+    reset_hash_list(hl_partial->next);
     return hl_partial;
   case HASH_LIST_FULL:
     reset_hash_list(hl_full);
+    reset_hash_list(hl_full->next);
     return hl_full;
   default:
     return NULL;
@@ -294,6 +293,14 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
   p->hash_valid = 1;
   p->pathptrs[p->next_index] = path;
   p->next_index++;
+
+  // If there are additional hash list entries beyond this one (from a prior
+  // run) mark the next one invalid because it likely contains stale data.
+  p = p->next;
+  if (p != NULL) {
+    reset_hash_list(p);
+  }
+
   return;
 }
 
@@ -306,9 +313,9 @@ void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
                       struct hash_list * destination, uint64_t skip)
 {
   struct hash_list * p = src;
-  while (p != NULL) {
+  while (p != NULL && p->hash_valid) {
 
-    if (p->hash_valid && (p->next_index > 1)) {
+    if (p->next_index > 1) {
       // have two or more files with same hash here.. might be duplicates...
       // promote them to new hash list
       for (int j=0; j < p->next_index; j++) {
@@ -328,9 +335,9 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
                                  struct hash_list * hl, off_t size)
 {
   struct hash_list * p = hl;
-  while (p != NULL) {
+  while (p != NULL && p->hash_valid) {
 
-    if (p->hash_valid && (p->next_index > 1)) {
+    if (p->next_index > 1) {
 
       stats_duplicate_sets++;
       stats_duplicate_files += p->next_index;
@@ -384,7 +391,7 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
 void print_hash_list(struct hash_list * src)
 {
   struct hash_list * p = src;
-  while (p != NULL) {
+  while (p != NULL && p->hash_valid) {
     if (verbosity >= 9 || (verbosity >= 6 && p->hash_valid)) {
       printf("hash_valid: %d, has_dups: %d, next_index: %d\n",
              p->hash_valid, p->has_dups, p->next_index);
@@ -404,8 +411,8 @@ void print_hash_list(struct hash_list * src)
 void record_uniques(sqlite3 * dbh, struct hash_list * src)
 {
   struct hash_list * p = src;
-  while (p != NULL) {
-    if (p->hash_valid && (p->next_index == 1)) {
+  while (p != NULL && p->hash_valid) {
+    if (p->next_index == 1) {
       unique_to_db(dbh, *(p->pathptrs), "hashlist");
     }
     p = p->next;
