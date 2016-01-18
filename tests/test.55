@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source common
+
+DESC="scan(files3): large files"
+
+if hash truncate 2>/dev/null; then
+    truncate -s 2203588743 files3/fileA
+    truncate -s 2203588743 files3/fileB
+    truncate -s 4294967296 files3/fileC
+    truncate -s 4294967296 files3/fileD
+else
+    echo "SKIP ${DESC} - missing truncate"
+    exit 0
+fi
+
+$DUPD_CMD scan --path `pwd`/files3 -v -v > /dev/null
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.55
+
+rm -f files3/file?
+
+tdone

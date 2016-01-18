@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -201,7 +202,7 @@ void operation_report()
   char * path_list;
   char * pos = NULL;
   char * token;
-  unsigned long long used = 0;
+  uint64_t used = 0;
 
   if (verbosity >= 1) {
     printf("Duplicate report from database %s:\n\n", db_path);
@@ -220,11 +221,11 @@ void operation_report()
     }                                                        // LCOV_EXCL_STOP
 
     path_list = (char *)sqlite3_column_text(statement, 0);
-    unsigned long total = sqlite3_column_int(statement, 1);
+    off_t total = sqlite3_column_int64(statement, 1);
 
     if (total >= minimum_file_size) {
       printf("%lu total bytes used by duplicates:\n", total);
-      used += total;
+      used += (uint64_t)total;
       if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
         print_path("  ", token);
         while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
@@ -240,7 +241,7 @@ void operation_report()
   unsigned long mb = kb / 1024;
   unsigned long gb = mb / 1024;
 
-  printf("Total used: %llu bytes (%llu KiB, %lu MiB, %lu GiB)\n",
+  printf("Total used: %" PRIu64 " bytes (%llu KiB, %lu MiB, %lu GiB)\n",
          used, kb, mb, gb);
 
   sqlite3_finalize(statement);

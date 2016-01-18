@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -326,7 +326,7 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
   rv = sqlite3_bind_int(stmt_duplicate_to_db, 1, count);
   rvchk(rv, SQLITE_OK, "Can't bind count: %s\n", dbh);
 
-  rv = sqlite3_bind_int(stmt_duplicate_to_db, 2, size);
+  rv = sqlite3_bind_int64(stmt_duplicate_to_db, 2, (sqlite3_int64)size);
   rvchk(rv, SQLITE_OK, "Can't bind file size: %s\n", dbh);
 
   rv = sqlite3_bind_text(stmt_duplicate_to_db, 3, paths, -1, SQLITE_STATIC);
