@@ -80,7 +80,7 @@ void free_scanlist()
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path,
-              int (*process_file)(sqlite3 *, long, char *))
+              int (*process_file)(sqlite3 *, off_t, char *))
 {
 #ifndef DIRENT_HAS_TYPE
   STRUCT_STAT new_stat_info;
