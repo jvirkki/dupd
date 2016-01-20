@@ -34,7 +34,7 @@
 #include "stats.h"
 #include "utils.h"
 
-#define DEFAULT_PATH_CAPACITY 2 /* smaller is generally faster */
+#define DEFAULT_PATH_CAPACITY 4
 #define DEFAULT_PATH_BUFFER 10
 #define DEFAULT_HASHLIST_ENTRIES 6
 
