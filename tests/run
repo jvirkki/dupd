@@ -52,10 +52,14 @@ if (@ARGV) {
 
 foreach (@testname) {
     print("\n---------- $_ --------------------\n");
-    $rv = system("./$_");
-    if ($rv != 0) {
-        $rv = $rv >> 8;
-        print("\nerror: $_ exit code: $rv\n");
-        exit(1);
+    if (-e "./$_") {
+        $rv = system("./$_");
+        if ($rv != 0) {
+            $rv = $rv >> 8;
+            print("\nerror: $_ exit code: $rv\n");
+            exit(1);
+        }
+    } else {
+        print("ignore: no such test!\n");
     }
 }
