@@ -60,6 +60,15 @@ Additional options are available:
                    allows changing it to something else that might work better
                    for your file set.
 
+--no-thread-scan   Do filesystem scan phase in a single thread. The default
+                   is to have two threads, one which traverses the directory
+                   tree and the other one which builds the internal data
+                   structures. The default is generally always faster.
+
+--no-thread-hash   Do the hash and compare phase in a single thread. The
+                   default is to have two threads, one which reads data from
+                   disk and the other one which hashes and compares.
+
 The remaining scan options can be used to experiment with alternate
 scanning thresholds. In most cases these will not provide significant
 performance difference.
@@ -88,8 +97,9 @@ For size groups of four or more files, dupd will first read and hash a
 small amount of data from each. This is effective at quickly
 discarding different files from the list of potential duplicates.
 
-By default, dupd will read a 512 byte block, or up to two blocks (1K)
-if the file is smaller than that. These defaults can be changed with:
+By default, dupd will first read a --firstblocksize byte block, or up
+to --firstblocks blocks if the file is smaller than that. The defaults
+can vary based on other options. Override defaults with:
 
 --firstblocksize N  Number of bytes in the initial block read.
 --firstblocks N     Maximum number of blocks to read in the first pass.

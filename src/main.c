@@ -55,9 +55,9 @@ char * cut_path = NULL;
 char * exclude_path = NULL;
 int exclude_path_len = 0;
 off_t minimum_file_size = 1;
-int hash_one_max_blocks = 2;
+int hash_one_max_blocks = 4;
 int intermediate_blocks = 0;
-int hash_one_block_size = 512;
+int hash_one_block_size = 2048;
 int hash_block_size = 8192;
 int opt_compare_two = 1;
 int opt_compare_three = 1;
@@ -74,6 +74,7 @@ char * path_sep_string = NULL;
 int x_small_buffers = 0;
 int only_testing = 0;
 int threaded_sizetree = 1;
+int threaded_hashcompare = 1;
 
 
 /** ***************************************************************************
@@ -229,6 +230,7 @@ static void process_args(int argc, char * argv[])
   if (options[OPT_skip_three]) { opt_compare_three = 0; }
   if (options[OPT_hidden]) { scan_hidden = 1; }
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
+  if (options[OPT_no_thread_hash]) { threaded_hashcompare = 0; }
 
   intermediate_blocks = opt_int(options[OPT_intblocks], intermediate_blocks);
 
@@ -302,9 +304,9 @@ int main(int argc, char * argv[])
   if (free_start_path) { free(start_path[0]); }
   if (path_sep_string) { free(path_sep_string); }
   free_size_tree();
+  free_size_list();
   free_path_block();
   free_hash_lists();
-  free_size_list();
   free_filecompare();
   free_scanlist();
 

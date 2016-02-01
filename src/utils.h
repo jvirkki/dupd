@@ -121,4 +121,34 @@ static inline int dupd_memcmp(const char * b1, const char * b2, size_t n)
 }
 
 
+/** ***************************************************************************
+ * Read data from disk.
+ *
+ * Parameters:
+ *    path   - Path to file to read.
+ *    output - Caller-provided buffer to store the data read from disk.
+ *    bytes  - Read this many bytes.
+ *    skip   - Skip this many bytes (start reading file from byte skip+1).
+ *
+ * Return: number of bytes read (might be less than 'bytes' requested).
+ *
+ */
+ssize_t read_file_bytes(char * path, char * output,
+                        uint64_t bytes, uint64_t skip);
+
+
+/** ***************************************************************************
+ * Dump memory region to stdout, for debugging.
+ *
+ * Parameters:
+ *    text  - Output prefix text.
+ *    ptr   - Pointer to starting location.
+ *    bytes - Print this many bytes.
+ *
+ * Return: none
+ *
+ */
+void memdump(char * text, char * ptr, int bytes);
+
+
 #endif

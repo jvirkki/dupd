@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -95,4 +96,49 @@ long slow_down(int prob, int max_delay_ms)
     return millis;
   }
   return 0;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+ssize_t read_file_bytes(char * path, char * output,
+                        uint64_t bytes, uint64_t skip)
+{
+  int file = open(path, O_RDONLY);
+  if (file < 0) {                                            // LCOV_EXCL_START
+    if (verbosity >= 1) {
+      printf("Error opening [%s]\n", path);
+    }
+    return(-1);
+  }                                                          // LCOV_EXCL_STOP
+
+  if (skip > 0) {
+    lseek(file, skip, SEEK_SET);
+  }
+
+  ssize_t got = read(file, output, bytes);
+  close(file);
+  return got;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void memdump(char * text, char * ptr, int bytes)
+{
+  int i;
+
+  if (text != NULL) {
+    printf("%s: ", text);
+  }
+
+  for (i=0; i<bytes; i++) {
+    printf("%02x ", *((unsigned char *)ptr+i));
+  }
+
+  printf("\n");
 }

@@ -233,6 +233,13 @@ extern int threaded_sizetree;
 
 
 /** ***************************************************************************
+ * If true, read from disk (while hashing and comparing) in a separate thread.
+ *
+ */
+extern int threaded_hashcompare;
+
+
+/** ***************************************************************************
  * If true, generate links in rmsh operation.
  *
  */

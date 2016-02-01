@@ -62,8 +62,9 @@ void dump_path_list(const char * line, off_t size, char * head)
   char * here = first_elem;
   while (here != NULL) {
     if (counted < 2 || verbosity >= 7) {
-      printf("   [%s]\n", here + sizeof(char *));
-      printf("   next: %p\n", *(char **)here);
+      printf("   buffer: %p\n", pl_entry_get_buffer(here));
+      printf("   [%s]\n", pl_entry_get_path(here));
+      printf("   next: %p\n", pl_entry_get_next(here));
     }
     counted++;
     here = pl_entry_get_next(here);
@@ -135,11 +136,14 @@ char * insert_first_path(char * path)
   // And update PTR2NEXT of the new (now last) entry we just added to NULL
   pl_entry_set_next(new_entry, NULL);
 
+  // Set the byte buffer to NULL, nothing read yet
+  pl_entry_set_buffer(new_entry, NULL);
+
   // Copy path string to new entry
   strcpy(pl_entry_get_path(new_entry), path);
 
   // Update top of free space to point beyond the space we just used up
-  next_entry = new_entry + sizeof(char *) + strlen(path) + 1;
+  next_entry = new_entry + (2 * sizeof(char *)) + strlen(path) + 1;
 
   if (verbosity > 6) {
     dump_path_list("AFTER insert_first_path", -1, head);
@@ -188,6 +192,9 @@ void insert_end_path(char * path, off_t size, char * head)
   // And update PTR2NEXT of the new (now last) entry we just added to NULL
   pl_entry_set_next(new_entry, NULL);
 
+  // Set the byte buffer to NULL, nothing read yet
+  pl_entry_set_buffer(new_entry, NULL);
+
   // Copy path string to new entry
   strcpy(pl_entry_get_path(new_entry), path);
 
@@ -195,7 +202,7 @@ void insert_end_path(char * path, off_t size, char * head)
   uint32_t path_count = pl_increase_path_count(head);
 
   // Update top of free space to point beyond the space we just used up
-  next_entry = new_entry + sizeof(char *) + strlen(path) + 1;
+  next_entry = new_entry + (2 * sizeof(char *)) + strlen(path) + 1;
 
   if (verbosity >= 6) {
     dump_path_list("AFTER insert_end_path", size, head);

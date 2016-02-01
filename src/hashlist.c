@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -147,6 +147,85 @@ static void reset_hash_list(struct hash_list * hl)
 
 
 /** ***************************************************************************
+ * Adds a new file (path) to a given hash list. The hash list capacity gets
+ * expanded if necessary to hold the new file.
+ *
+ * Parameters:
+ *     hl   - Add file to this hash list.
+ *     path - Path of the file to add.
+ *     md5  - The hash of this file (full or partial depending on round).
+ *
+ * Return: none.
+ *
+ */
+static void add_to_hash_list(struct hash_list * hl, char * path, char md5[16])
+{
+  struct hash_list * p = hl;
+  struct hash_list * tail = hl;
+  int hl_len = 0;
+
+  // Find the node which contains the paths for this hash, if it exists.
+
+  while (p != NULL && p->hash_valid) {
+    hl_len++;
+    if (!dupd_memcmp(p->hash, md5, 16)) {
+
+      if (p->next_index == p->capacity) {
+        // Found correct node but need more space in path list
+        p->capacity = p->capacity * 2;
+        p->pathptrs =
+          (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
+
+        hashlist_path_realloc++;
+        if (verbosity >= 5) {
+          printf("Had to increase path capacity to %d\n", p->capacity);
+        }
+      }
+
+      // Add new path to existing node
+      p->pathptrs[p->next_index] = path;
+      if (p->next_index) {
+        hl->has_dups = 1;
+      }
+      p->next_index++;
+      return;
+    }
+    tail = p;
+    p = p->next;
+  }
+
+  // Got here if no hash match found (first time we see this hash).
+
+  // If we don't have a unused node available, need to add a new node to list
+  if (p == NULL) {
+    struct hash_list * new_node = init_hash_list();
+    tail->next = new_node;
+    p = new_node;
+    hash_list_len_inc++;
+    if (verbosity >= 5) {
+      printf("Had to increase hash node list length to %d\n",
+             hl_len + DEFAULT_HASHLIST_ENTRIES);
+    }
+  }
+
+  // Populate new node...
+  memcpy(p->hash, md5, 16);
+  p->hash_valid = 1;
+  p->pathptrs[p->next_index] = path;
+  p->next_index++;
+
+  // If there are additional hash list entries beyond this one (from a prior
+  // run) mark the next one invalid because it likely contains stale data.
+  p = p->next;
+  if (p != NULL) {
+    reset_hash_list(p);
+  }
+
+  return;
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
  *
  */
@@ -226,7 +305,7 @@ struct hash_list * get_hash_list(int kind)
  *
  */
 void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
-                   int bsize, uint64_t skip)
+                   int bsize, off_t skip)
 {
   assert(hl != NULL);                                        // LCOV_EXCL_LINE
   assert(path != NULL);                                      // LCOV_EXCL_LINE
@@ -240,68 +319,24 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
     }
   }                                                          // LCOV_EXCL_STOP
 
-  struct hash_list * p = hl;
-  struct hash_list * tail = hl;
-  int hl_len = 0;
+  add_to_hash_list(hl, path, md5out);
+}
 
-  // Find the node which contains the paths for this hash, if it exists.
 
-  while (p != NULL && p->hash_valid) {
-    hl_len++;
-    if (!dupd_memcmp(p->hash, md5out, 16)) {
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void add_hash_list_from_mem(struct hash_list * hl, char * path,
+                            const char * buffer, off_t bufsize)
 
-      if (p->next_index == p->capacity) {
-        // Found correct node but need more space in path list
-        p->capacity = p->capacity * 2;
-        p->pathptrs =
-          (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
+{
+  assert(hl != NULL);                                        // LCOV_EXCL_LINE
+  assert(path != NULL);                                      // LCOV_EXCL_LINE
 
-        hashlist_path_realloc++;
-        if (verbosity >= 5) {
-          printf("Had to increase path capacity to %d\n", p->capacity);
-        }
-      }
-
-      // Add new path to existing node
-      p->pathptrs[p->next_index] = path;
-      if (p->next_index) {
-        hl->has_dups = 1;
-      }
-      p->next_index++;
-      return;
-    }
-    tail = p;
-    p = p->next;
-  }
-
-  // Got here if no hash match found (first time we see this hash).
-
-  // If we don't have a unused node available, need to add a new node to list
-  if (p == NULL) {
-    struct hash_list * new_node = init_hash_list();
-    tail->next = new_node;
-    p = new_node;
-    hash_list_len_inc++;
-    if (verbosity >= 5) {
-      printf("Had to increase hash node list length to %d\n",
-             hl_len + DEFAULT_HASHLIST_ENTRIES);
-    }
-  }
-
-  // Populate new node...
-  memcpy(p->hash, md5out, 16);
-  p->hash_valid = 1;
-  p->pathptrs[p->next_index] = path;
-  p->next_index++;
-
-  // If there are additional hash list entries beyond this one (from a prior
-  // run) mark the next one invalid because it likely contains stale data.
-  p = p->next;
-  if (p != NULL) {
-    reset_hash_list(p);
-  }
-
-  return;
+  char md5out[16];
+  md5_buf(buffer, bufsize, md5out);
+  add_to_hash_list(hl, path, md5out);
 }
 
 
@@ -310,7 +345,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
  *
  */
 void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
-                      struct hash_list * destination, uint64_t skip)
+                      struct hash_list * destination, off_t skip)
 {
   struct hash_list * p = src;
   while (p != NULL && p->hash_valid) {
@@ -393,8 +428,9 @@ void print_hash_list(struct hash_list * src)
   struct hash_list * p = src;
   while (p != NULL && p->hash_valid) {
     if (verbosity >= 9 || (verbosity >= 6 && p->hash_valid)) {
-      printf("hash_valid: %d, has_dups: %d, next_index: %d\n",
+      printf("hash_valid: %d, has_dups: %d, next_index: %d   ",
              p->hash_valid, p->has_dups, p->next_index);
+      memdump("hash", p->hash, 16);
       for (int j=0; j < p->next_index; j++) {
         printf("  [%s]\n", *(p->pathptrs + j));
       }

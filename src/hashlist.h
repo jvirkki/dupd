@@ -103,7 +103,26 @@ struct hash_list * get_hash_list(int kind);
  *
  */
 void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
-                   int bsize, uint64_t skip);
+                   int bsize, off_t skip);
+
+
+/** ***************************************************************************
+ * Adds a new file (path) to a given hash list. The hash of the file
+ * will be computed from the buffer given.
+ * The hash list capacity gets expanded if necessary to hold the new file.
+ *
+ * Parameters:
+ *     hl      - Add file to this hash list.
+ *     path    - Path of the file to add.
+ *     buffer  - Read file data from this buffer.
+ *     bufsize - Size of buffer.
+ *
+ * Return: none.
+ *
+ */
+void add_hash_list_from_mem(struct hash_list * hl, char * path,
+                            const char * buffer, off_t bufsize);
+
 
 /** ***************************************************************************
  * Copy potentially duplicate files from src hash list to destination hash
@@ -124,7 +143,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
  *
  */
 void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
-                      struct hash_list * destination, uint64_t skip);
+                      struct hash_list * destination, off_t skip);
 
 
 /** ***************************************************************************

@@ -252,12 +252,12 @@ void scan()
     }
   }
 
-  if (verbosity >= 1) {
-    printf("Files scanned: %" PRIu32 "\n", stats_files_count);
-  }
-
   if (threaded_sizetree) {
     scan_done();
+  }
+
+  if (verbosity >= 1) {
+    printf("Files scanned: %" PRIu32 "\n", stats_files_count);
   }
 
   if (stats_files_count == 0) {
@@ -296,7 +296,13 @@ void scan()
   // Processing phase - walk through size list whittling down the potentials
 
   t1 = get_current_time_millis();
-  process_size_list(dbh);
+
+  if (threaded_hashcompare) {
+    threaded_process_size_list(dbh);
+  } else {
+    process_size_list(dbh);
+  }
+
   stats_time_process = get_current_time_millis() - t1;
   if (verbosity >= 2) {
     printf("Duplicate processing completed in %ldms\n", stats_time_process);

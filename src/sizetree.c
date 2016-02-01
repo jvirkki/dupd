@@ -180,10 +180,10 @@ static void add_below(struct size_node * node, off_t size, char * path)
  */
 static void check_uniques(sqlite3 * dbh, struct size_node * node)
 {
-  int path_count = (int)*(char *)((node->paths + sizeof(char *)));
+  int path_count = pl_get_path_count(node->paths);
 
   if (path_count == 1) {
-    char * path = node->paths + 3 * sizeof(char *);
+    char * path = pl_entry_get_path(pl_get_first_entry(node->paths));
     unique_to_db(dbh, path, "by-size");
   }
 

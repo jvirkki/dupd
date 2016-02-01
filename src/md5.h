@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -44,6 +44,24 @@
  */
 int md5(const char * path, char * output, uint64_t blocks,
         int bsize, uint64_t skip);
+
+
+/** ***************************************************************************
+ * Compute MD5 hash on data in memory.
+ *
+ * The hash will be stored in the 'output' buffer provided by the
+ * caller. This buffer must be at least 16 bytes long.
+ *
+ * Parameters:
+ *    buffer  - Read data from here.
+ *    bufsize - Size of buffer.
+ *    output  - Buffer where output will be stored.
+ *
+ * Return:
+ *    0 - On success
+ *
+ */
+int md5_buf(const char * buffer, int bufsize, char * output);
 
 
 #endif

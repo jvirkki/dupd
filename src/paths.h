@@ -30,15 +30,15 @@
  *
  * The head of the path list (returned by insert_first_path()) points to:
  *
- *      head
- *       |
- *    +--v-----+--------+--------+-------------------+
- *    |PTR2LAST|ListSize|PTR2NEXT|path string[0] ... |
- *    +--------+--------+----+---+-------------------+
+ *      head              entry
+ *       |                  |
+ *    +--v-----+--------+---v----+--------+-------------------+
+ *    |PTR2LAST|ListSize|PTR2NEXT|PTR2BITS|path string[0] ... |
+ *    +--------+--------+----+---+--------+-------------------+
  *                           |
- *                      +----v---+-------------------+
- *                      |PTR2NEXT|path string[1] ... |
- *                      +--------+-------------------+
+ *                      +----v---+--------+-------------------+
+ *                      |PTR2NEXT|PTR2BITS|path string[1] ... |
+ *                      +--------+--------+-------------------+
  *
  */
 
@@ -214,6 +214,37 @@ static inline void pl_entry_set_next(char * entry, char * next)
 
 
 /** ***************************************************************************
+ * Return pointer to the byte buffer of an entry.
+ *
+ * Parameters:
+ *    entry - The entry
+ *
+ * Return: pointer to byte buffer location
+ *
+ */
+static inline char * pl_entry_get_buffer(char * entry)
+{
+  return *(char **)(entry + sizeof(char *));
+}
+
+
+/** ***************************************************************************
+ * Set the pointer to the byte buffer of an entry.
+ *
+ * Parameters:
+ *    entry  - The entry
+ *    buffer - The buffer location
+ *
+ * Return: none
+ *
+ */
+static inline void pl_entry_set_buffer(char * entry, char * buffer)
+{
+  *(char **)(entry + sizeof(char *)) = buffer;
+}
+
+
+/** ***************************************************************************
  * Return pointer to the path string of an entry.
  *
  * Parameters:
@@ -224,7 +255,7 @@ static inline void pl_entry_set_next(char * entry, char * next)
  */
 static inline char * pl_entry_get_path(char * entry)
 {
-  return entry + sizeof(char *);
+  return entry + 2 * sizeof(char *);
 }
 
 

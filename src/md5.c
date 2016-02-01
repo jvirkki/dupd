@@ -42,7 +42,7 @@ static char buffer[MAX_BLOCK];
 int md5(const char * path, char * output, uint64_t blocks,
         int bsize, uint64_t skip)
 {
-  int counter = blocks;
+  uint64_t counter = blocks;
 
   if (verbosity >= 8) {
     printf("md5: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
@@ -84,5 +84,21 @@ int md5(const char * path, char * output, uint64_t blocks,
   close(file);
   MD5_Final((unsigned char *)output, &md5);
 
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * Public function, see md5.h
+ *
+ */
+int md5_buf(const char * buffer, int bufsize, char * output)
+{
+  MD5_CTX md5;
+
+  MD5_Init(&md5);
+  MD5_Update(&md5, buffer, bufsize);
+  MD5_Final((unsigned char *)output, &md5);
+  stats_total_bytes_hashed += bufsize;
   return(0);
 }
