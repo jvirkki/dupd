@@ -326,6 +326,68 @@ void process_size_list(sqlite3 * dbh)
 
 
 /** ***************************************************************************
+ * Read bytes from disk for the reader thread in states
+ * SLS_NEED_BYTES_ROUND_1 and SLS_NEED_BYTES_ROUND_2.
+ *
+ * Bytes are read to a buffer allocated for each path node. If a prior buffer
+ * is present (in round 2 from round 1), free it first.
+ *
+ * Parameters:
+ *    size_node   - Head of the path list of files to read.
+ *    max_to_read - Read this many bytes from each file in this path list,
+ *                  unless the file is smaller in which case mark it as
+ *                  entirely read.
+ *
+ * Return: none
+ *
+ */
+static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
+{
+  static char * spaces = "                                        [reader] ";
+  char * node;
+  char * path;
+  char * buffer;
+  ssize_t received;
+
+  node = pl_get_first_entry(size_node->path_list);
+
+  if (size_node->size <= max_to_read) {
+    size_node->bytes_read = size_node->size;
+    size_node->fully_read = 1;
+  } else {
+    size_node->bytes_read = max_to_read;
+    size_node->fully_read = 0;
+  }
+
+  do {
+    path = pl_entry_get_path(node);
+
+    // If the buffer of this node is not NULL, it is the buffer
+    // used in a previous round for this path, so free it first
+    buffer = pl_entry_get_buffer(node);
+    if (buffer != NULL) {
+      free(buffer);
+    }
+
+    buffer = (char *)malloc(size_node->bytes_read);
+    received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
+    if (received != size_node->bytes_read) {
+      printf("error: read %zd bytes from [%s] but wanted %ld\n",
+             received, path, size_node->bytes_read);
+      size_node->bytes_read = 0;
+    }
+    if (thread_verbosity >= 2) {
+      printf("%s%ld bytes from %s\n",spaces,size_node->bytes_read,path);
+    }
+    pl_entry_set_buffer(node, buffer);
+
+    node = pl_entry_get_next(node);
+
+  } while (node != NULL);
+}
+
+
+/** ***************************************************************************
  * Reader thread main function.
  *
  * Loops through the size list, looking for size entries which need bytes
@@ -346,10 +408,6 @@ static void * reader_main(void * arg)
   char * spaces = "                                        [reader] ";
   struct size_list * size_node;
   int loops = 0;
-  char * node;
-  char * path;
-  char * buffer;
-  ssize_t received;
   off_t max_to_read;
 
   if (thread_verbosity) {
@@ -374,89 +432,17 @@ static void * reader_main(void * arg)
       switch(size_node->state) {
 
       case SLS_NEED_BYTES_ROUND_1:
-
-        node = pl_get_first_entry(size_node->path_list);
         max_to_read = hash_one_block_size * hash_one_max_blocks;
-
-        if (size_node->size <= max_to_read) {
-          size_node->bytes_read = size_node->size;
-          size_node->fully_read = 1;
-        } else {
-          size_node->bytes_read = max_to_read;
-          size_node->fully_read = 0;
-        }
-
-        do {
-          path = pl_entry_get_path(node);
-
-          // If the buffer of this node is not NULL, it is the buffer used in
-          // a previous round for this path, so free it first.
-          buffer = pl_entry_get_buffer(node);
-          if (buffer != NULL) {
-            free(buffer);
-          }
-
-          buffer = (char *)malloc(size_node->bytes_read);
-          received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
-          if (received != size_node->bytes_read) {
-            printf("error: read %zd bytes from [%s] but wanted %ld\n",
-                   received, path, size_node->bytes_read);
-            size_node->bytes_read = 0;
-          }
-          if (thread_verbosity >= 2) {
-            printf("%s%ld bytes from %s\n",spaces,size_node->bytes_read,path);
-          }
-          pl_entry_set_buffer(node, buffer);
-
-          node = pl_entry_get_next(node);
-
-        } while (node != NULL);
+        reader_read_bytes(size_node, max_to_read);
         size_node->state = SLS_READY_1;
         break;
 
       case SLS_NEED_BYTES_ROUND_2:
-
-        node = pl_get_first_entry(size_node->path_list);
         max_to_read = hash_block_size * intermediate_blocks;
-
-        if (size_node->size <= max_to_read) {
-          size_node->bytes_read = size_node->size;
-          size_node->fully_read = 1;
-        } else {
-          size_node->bytes_read = max_to_read;
-          size_node->fully_read = 0;
-        }
-
-        do {
-          path = pl_entry_get_path(node);
-
-          // if the buffer of this node is not NULL, it is the buffer
-          // used in a previous round for this path, so free it first
-          buffer = pl_entry_get_buffer(node);
-          if (buffer != NULL) {
-            free(buffer);
-          }
-
-          buffer = (char *)malloc(size_node->bytes_read);
-          received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
-          if (received != size_node->bytes_read) {
-            printf("error: read %ld bytes from [%s] but wanted %ld\n",
-                   received, path, size_node->bytes_read);
-            size_node->bytes_read = 0;
-          }
-          if (verbosity >= 3) {
-            printf("reader: reading %ld bytes from %s\n",
-                   size_node->bytes_read, path);
-          }
-          pl_entry_set_buffer(node, buffer);
-
-          node = pl_entry_get_next(node);
-
-        } while (node != NULL);
+        reader_read_bytes(size_node, max_to_read);
         size_node->state = SLS_READY_2;
         break;
-
-      } // switch
+      }
 
       pthread_mutex_unlock(&size_node->lock);
       size_node = size_node->next;
