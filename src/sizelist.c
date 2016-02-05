@@ -460,6 +460,83 @@ static void * reader_main(void * arg)
 
 
 /** ***************************************************************************
+ * Helper function to process files from a size node to a hash list.
+ * Used for rounds 1 and 2 during hash list processing.
+ *
+ * Parameters:
+ *    dbh                          - db handle for saving duplicates/uniques
+ *    size_node                    - Process this size node (and associated
+ *                                   path list.
+ *    hl                           - Save paths to this hash list.
+ *    counter_round_full           - Increased if files read completely.
+ *    counter_round_partial        - Increased if files partially read.
+ *    counter_no_dups_this_round   - Increased if no dups established.
+ *    counter_dupd_done_this_round - Increased if dups found.
+ *
+ * Return: 1 if this path list was completed (either confirmed duplicates
+ *         or ruled out possibility of being duplicates).
+ *
+ */
+static int build_hash_list_round(sqlite3 * dbh,
+                                 struct size_list * size_node,
+                                 struct hash_list * hl,
+                                 int * counter_round_full,
+                                 int * counter_round_partial,
+                                 int * counter_no_dups_this_round,
+                                 int * counter_dupd_done_this_round)
+{
+  char * node;
+  char * path;
+  char * buffer;
+  int completed = 0;
+
+  node = pl_get_first_entry(size_node->path_list);
+
+  // For small files, they may have been fully read already
+  if (size_node->fully_read) { (*counter_round_full)++; }
+  else { (*counter_round_partial)++; }
+
+  // Build hash list for these files
+  do {
+    path = pl_entry_get_path(node);
+    buffer = pl_entry_get_buffer(node);
+    add_hash_list_from_mem(hl, path, buffer, size_node->bytes_read);
+    node = pl_entry_get_next(node);
+  } while (node != NULL);
+
+  if (verbosity >= 4) { printf("Done building first hash list.\n"); }
+  if (verbosity >= 6) {
+    printf("Contents of hash list hl:\n");
+    print_hash_list(hl);
+  }
+
+  if (save_uniques) { record_uniques(dbh, hl); }
+
+  // If no potential dups after this round, we're done!
+  if (HASH_LIST_NO_DUPS(hl)) {
+    if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+    (*counter_no_dups_this_round)++;
+    size_node->state = SLS_DONE;
+    completed = 1;
+    free_path_list_buffers(pl_get_first_entry(size_node->path_list));
+
+  } else {
+    // If by now we already have a full hash, publish and we're done!
+    if (size_node->fully_read) {
+      (*counter_dupd_done_this_round)++;
+      if (verbosity >= 4) { printf("Some dups confirmed, here they are:\n"); }
+      publish_duplicate_hash_list(dbh, hl, size_node->size);
+      size_node->state = SLS_DONE;
+      completed = 1;
+      free_path_list_buffers(pl_get_first_entry(size_node->path_list));
+    }
+  }
+
+  return completed;
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
  *
  */
@@ -467,15 +544,16 @@ void threaded_process_size_list(sqlite3 * dbh)
 {
   static char * spaces = "[main] ";
   struct size_list * size_node;
+  struct hash_list * hl;
   pthread_t reader_thread;
   int work_remains;
   int did_one;
   int loops = 0;
+  int round = 0;
   int count = 0;
   uint32_t path_count = 0;
   char * node;
   char * path;
-  char * buffer;
 
   if (size_list_head == NULL) {
     return;
@@ -522,128 +600,55 @@ void threaded_process_size_list(sqlite3 * dbh)
         break;
 
       case SLS_READY_1:
-        node = pl_get_first_entry(size_node->path_list);
-        path_count = pl_get_path_count(size_node->path_list);
-
-        // For small files, they may have been fully read already
-        if (size_node->fully_read) { stats_full_hash_first++; }
-        else { stats_one_block_hash_first++; }
-
-        // Build hash list for these files
+        hl = get_hash_list(HASH_LIST_ONE);
         stats_set_round_one++;
-        struct hash_list * hl_one = get_hash_list(HASH_LIST_ONE);
-        do {
-          path = pl_entry_get_path(node);
-          buffer = pl_entry_get_buffer(node);
-          add_hash_list_from_mem(hl_one, path, buffer, size_node->bytes_read);
-          node = pl_entry_get_next(node);
-        } while (node != NULL);
 
-        if (verbosity >= 4) { printf("Done building first hash list.\n"); }
-        if (verbosity >= 6) {
-          printf("Contents of hash list hl_one:\n");
-          print_hash_list(hl_one);
-        }
+        did_one = build_hash_list_round(dbh, size_node, hl,
+                                        &stats_full_hash_first,
+                                        &stats_one_block_hash_first,
+                                        &stats_set_no_dups_round_one,
+                                        &stats_set_dups_done_round_one);
+        count += did_one;
+        round = 1;
 
-        if (save_uniques) {
-          record_uniques(dbh, hl_one);
-        }
-
-        // If no potential dups after this round, we're done!
-        if (HASH_LIST_NO_DUPS(hl_one)) {
-          if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
-          stats_set_no_dups_round_one++;
-          size_node->state = SLS_DONE;
-          count++;
-          did_one = 1;
-          free_path_list_buffers(pl_get_first_entry(size_node->path_list));
-          break;
-        }
-
-        // If by now we already have a full hash, publish and we're done!
-        if (size_node->fully_read) {
-          stats_set_dups_done_round_one++;
-          if (verbosity >= 4) {
-            printf("Some dups confirmed, here they are:\n");
+        if (!did_one) {
+          if (intermediate_blocks > 1) {
+            size_node->state = SLS_NEED_BYTES_ROUND_2;
+            work_remains = 1;
+          } else {
+            size_node->state = SLS_NEEDS_ROUND_3;
           }
-          publish_duplicate_hash_list(dbh, hl_one, size_node->size);
-          size_node->state = SLS_DONE;
-          count++;
-          did_one = 1;
-          free_path_list_buffers(pl_get_first_entry(size_node->path_list));
-          break;
         }
-
-        if (intermediate_blocks > 1) {
-          size_node->state = SLS_NEED_BYTES_ROUND_2;
-          work_remains = 1;
-        } else {
-          size_node->state = SLS_NEEDS_ROUND_3;
-        }
-
         break;
 
-
       case SLS_READY_2:
-        node = pl_get_first_entry(size_node->path_list);
-        path_count = pl_get_path_count(size_node->path_list);
-
-        // Build hash list for these files
+        hl = get_hash_list(HASH_LIST_PARTIAL);
         stats_set_round_two++;
-        struct hash_list * hl_intermediate = get_hash_list(HASH_LIST_PARTIAL);
-        do {
-          path = pl_entry_get_path(node);
-          buffer = pl_entry_get_buffer(node);
-          add_hash_list_from_mem(hl_intermediate, path, buffer,
-                                 size_node->bytes_read);
-          node = pl_entry_get_next(node);
-        } while (node != NULL);
 
-        if (verbosity >= 4) {
-          printf("Done building intermediate hash list.\n");
+        did_one = build_hash_list_round(dbh, size_node, hl,
+                                        &stats_full_hash_second,
+                                        &stats_partial_hash_second,
+                                        &stats_set_no_dups_round_two,
+                                        &stats_set_dups_done_round_two);
+        count += did_one;
+        round = 2;
+        if (!did_one) {
+          size_node->state = SLS_NEEDS_ROUND_3;
         }
-        if (verbosity >= 6) {
-          printf("Contents of hash list hl_intermediate:\n");
-          print_hash_list(hl_intermediate);
-        }
-
-        if (save_uniques) {
-          record_uniques(dbh, hl_intermediate);
-        }
-
-        // If no potential dups after this round, we're done!
-        if (HASH_LIST_NO_DUPS(hl_intermediate)) {
-          if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
-          stats_set_no_dups_round_two++;
-          size_node->state = SLS_DONE;
-          count++;
-          did_one = 1;
-          free_path_list_buffers(pl_get_first_entry(size_node->path_list));
-          break;
-        }
-
-        // If by now we already have a full hash, publish and we're done!
-        if (size_node->fully_read) {
-          stats_set_dups_done_round_two++;
-          if (verbosity >= 4) {
-            printf("Some dups confirmed, here they are:\n");
-          }
-          publish_duplicate_hash_list(dbh, hl_intermediate, size_node->size);
-          size_node->state = SLS_DONE;
-          count++;
-          did_one = 1;
-          free_path_list_buffers(pl_get_first_entry(size_node->path_list));
-          break;
-        }
-
-        size_node->state = SLS_NEEDS_ROUND_3;
         break;
       }
 
-      if (verbosity >= 2) {
-        if (did_one) {
-          printf("Processed %d/%d (%d files of size %ld) (loop %d)\n", count,
-                 stats_size_list_count, path_count, size_node->size, loops);
+      if (did_one) {
+        if (verbosity >= 2) {
+          path_count = pl_get_path_count(size_node->path_list);
+          if (verbosity == 2) {
+            printf("Processed %d/%d (%d files of size %ld)\n", count,
+                   stats_size_list_count, path_count, size_node->size);
+          } else {
+            printf("Processed %d/%d (%d files of size %ld) (loop %d) "
+                   "(round %d)\n", count, stats_size_list_count, path_count,
+                   size_node->size, loops, round);
+          }
         }
       }
 
@@ -714,7 +719,6 @@ void threaded_process_size_list(sqlite3 * dbh)
       struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
       do {
         path = pl_entry_get_path(node);
-        buffer = pl_entry_get_buffer(node);
         add_hash_list(hl_full, path, 0, hash_block_size, 0);
         node = pl_entry_get_next(node);
       } while (node != NULL);
@@ -755,10 +759,19 @@ void threaded_process_size_list(sqlite3 * dbh)
       exit(1);
     }
 
-    if (did_one && verbosity >= 2) {
-      count++;
-      printf("Processed %d/%d (%d files of size %ld) (loop %d)\n", count,
-             stats_size_list_count, path_count, size_node->size, loops);
+    if (did_one) {
+      if (verbosity >= 2) {
+        count++;
+        path_count = pl_get_path_count(size_node->path_list);
+        if (verbosity == 2) {
+          printf("Processed %d/%d (%d files of size %ld)\n", count,
+                 stats_size_list_count, path_count, size_node->size);
+        } else {
+          printf("Processed %d/%d (%d files of size %ld) "
+                 "(loop %d) (round 3)\n", count, stats_size_list_count,
+                 path_count, size_node->size, loops);
+        }
+      }
     }
 
     size_node = size_node -> next;

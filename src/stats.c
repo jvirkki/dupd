@@ -40,6 +40,8 @@ int stats_most_dups = 0;
 int stats_duplicate_files = 0;
 int stats_duplicate_sets = 0;
 int stats_full_hash_first = 0;
+int stats_full_hash_second = 0;
+int stats_partial_hash_second = 0;
 int stats_one_block_hash_first = 0;
 int stats_set_dups_done_full_round = 0;
 int stats_set_dups_done_round_one = 0;
@@ -149,6 +151,16 @@ void report_stats()
     }
   }
 
+  // Some sanity checking
+  int totals_from_rounds = stats_set_no_dups_round_one +
+    stats_set_dups_done_round_one + stats_set_no_dups_round_two +
+    stats_set_dups_done_round_two +stats_set_no_dups_full_round +
+    stats_set_dups_done_full_round + stats_two_file_compare +
+    stats_three_file_compare;;
+  if (totals_from_rounds != stats_size_list_count) {
+    printf("\nwarning: total size sets %d != sets confirmed %d\n",
+           stats_size_list_count, totals_from_rounds);
+  }
 }
 
 
@@ -168,6 +180,8 @@ void save_stats()
   fprintf(fp, "stats_duplicate_files %d\n", stats_duplicate_files);
   fprintf(fp, "stats_duplicate_sets %d\n", stats_duplicate_sets);
   fprintf(fp, "stats_full_hash_first %d\n", stats_full_hash_first);
+  fprintf(fp, "stats_full_hash_second %d\n", stats_full_hash_second);
+  fprintf(fp, "stats_partial_hash_second %d\n", stats_partial_hash_second);
   fprintf(fp, "stats_one_block_hash_first %d\n", stats_one_block_hash_first);
   fprintf(fp, "stats_set_dups_done_full_round %d\n",
           stats_set_dups_done_full_round);
