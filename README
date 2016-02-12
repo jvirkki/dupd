@@ -39,4 +39,6 @@ files around as desired and then analyze other subdirectories.  After
 a few rounds of such cleanup, I then re-run a whole scan to refresh
 the database.
 
+Read the EXAMPLE file here for a sample walkthrough of using dupd.
+
 For more information read the USAGE document or run 'dupd help'.
