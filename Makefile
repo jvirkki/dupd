@@ -108,6 +108,13 @@ lcov: gcov
 		--output-directory $(LCOV_OUTPUT_DIR)
 	rm -f lcov.info
 
+# dupd uses optgen to generate its option parsing code based on
+# the config file src/options.conf
+#
+# optgen is a ruby gem, install it as follows:
+#
+# sudo gem install optgen
+#
 # If optgen is not present, skip option handling code generation.
 # This allows compiling dupd without optgen present. The downside is
 # that optgen.c is checked in although it really should not be.
