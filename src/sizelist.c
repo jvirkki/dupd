@@ -230,7 +230,7 @@ void process_size_list(sqlite3 * dbh)
     }
 
     if (save_uniques) {
-      record_uniques(dbh, hl_one);
+      skim_uniques(dbh, hl_one, save_uniques);
     }
 
     // If no potential dups after this round, we're done!
@@ -267,7 +267,7 @@ void process_size_list(sqlite3 * dbh)
       }
 
       if (save_uniques) {
-        record_uniques(dbh, hl_partial);
+        skim_uniques(dbh, hl_partial, save_uniques);
       }
 
       // If no potential dups after this round, we're done!
@@ -302,7 +302,7 @@ void process_size_list(sqlite3 * dbh)
     }
 
     if (save_uniques) {
-      record_uniques(dbh, hl_full);
+      skim_uniques(dbh, hl_full, save_uniques);
     }
 
     // If no potential dups after this round, we're done!
@@ -369,17 +369,24 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
       free(buffer);
     }
 
-    buffer = (char *)malloc(size_node->bytes_read);
-    received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
-    if (received != size_node->bytes_read) {
-      printf("error: read %zd bytes from [%s] but wanted %ld\n",
-             received, path, size_node->bytes_read);
-      size_node->bytes_read = 0;
+    // The path may be null if this particular path within this pathlist
+    // has been discarded as a potential duplicate already. If so, skip.
+    if (path[0] != 0) {
+      buffer = (char *)malloc(size_node->bytes_read);
+      received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
+      if (received != size_node->bytes_read) {
+        printf("error: read %zd bytes from [%s] but wanted %ld\n",
+               received, path, size_node->bytes_read);
+        size_node->bytes_read = 0;
+      }
+      if (thread_verbosity >= 2) {
+        printf("%s%ld bytes from %s\n",spaces,size_node->bytes_read,path);
+      }
+      pl_entry_set_buffer(node, buffer);
+
+    } else {
+      pl_entry_set_buffer(node, NULL);
     }
-    if (thread_verbosity >= 2) {
-      printf("%s%ld bytes from %s\n",spaces,size_node->bytes_read,path);
-    }
-    pl_entry_set_buffer(node, buffer);
 
     node = pl_entry_get_next(node);
 
@@ -499,8 +506,14 @@ static int build_hash_list_round(sqlite3 * dbh,
   // Build hash list for these files
   do {
     path = pl_entry_get_path(node);
-    buffer = pl_entry_get_buffer(node);
-    add_hash_list_from_mem(hl, path, buffer, size_node->bytes_read);
+
+    // The path may be null if this particular path within this pathlist
+    // has been discarded as a potential duplicate already. If so, skip.
+    if (path[0] != 0) {
+      buffer = pl_entry_get_buffer(node);
+      add_hash_list_from_mem(hl, path, buffer, size_node->bytes_read);
+    }
+
     node = pl_entry_get_next(node);
   } while (node != NULL);
 
@@ -510,7 +523,7 @@ static int build_hash_list_round(sqlite3 * dbh,
     print_hash_list(hl);
   }
 
-  if (save_uniques) { record_uniques(dbh, hl); }
+  skim_uniques(dbh, hl, save_uniques);
 
   // If no potential dups after this round, we're done!
   if (HASH_LIST_NO_DUPS(hl)) {
@@ -719,7 +732,12 @@ void threaded_process_size_list(sqlite3 * dbh)
       struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
       do {
         path = pl_entry_get_path(node);
-        add_hash_list(hl_full, path, 0, hash_block_size, 0);
+
+        // The path may be null if this particular path within this pathlist
+        // has been discarded as a potential duplicate already. If so, skip.
+        if (path[0] != 0) {
+          add_hash_list(hl_full, path, 0, hash_block_size, 0);
+        }
         node = pl_entry_get_next(node);
       } while (node != NULL);
 
@@ -729,7 +747,7 @@ void threaded_process_size_list(sqlite3 * dbh)
       }
 
       if (save_uniques) {
-        record_uniques(dbh, hl_full);
+        skim_uniques(dbh, hl_full, save_uniques);
       }
 
       // If no potential dups after this round, we're done!

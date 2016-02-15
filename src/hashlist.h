@@ -180,7 +180,12 @@ void print_hash_list(struct hash_list * src);
 
 
 /** ***************************************************************************
- * Export all unique files from the given hash list to the database.
+ * Look for unique files identified in the given hash list.
+ *
+ * The path of unique entries is nulled out (in its path list, given that the
+ * hash list path is a pointer to the path list).
+ *
+ * If record_in_db is true, these files are also saved in the database.
  *
  * Parameters:
  *     dbh - Database handle.
@@ -189,7 +194,7 @@ void print_hash_list(struct hash_list * src);
  * Return: none.
  *
  */
-void record_uniques(sqlite3 * dbh, struct hash_list * src);
+void skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db);
 
 
 #endif

@@ -102,6 +102,10 @@ static void compare_two_open_files(sqlite3 * dbh,
  */
 void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
 {
+  if (path1[0] == 0 || path2[0] == 0) {
+    return;
+  }
+
   if (verbosity >= 4) {
     printf("compare_two_files: [%s] vs [%s]\n", path1, path2);
   }
@@ -137,6 +141,13 @@ void compare_three_files(sqlite3 * dbh,
   if (verbosity >= 4) {
     printf("compare_three_files: [%s],[%s],[%s]\n", path1, path2, path3);
   }
+
+  // It is possible some of these files have been discarded already by
+  // skim_uniques(), in which case, ignore the first one seen and this
+  // becomes a compare_two.
+  if (path1[0] == 0) { compare_two_files(dbh, path2, path3, size); return; }
+  if (path2[0] == 0) { compare_two_files(dbh, path1, path3, size); return; }
+  if (path3[0] == 0) { compare_two_files(dbh, path1, path2, size); return; }
 
   int bread = 0;
   int file[4];
