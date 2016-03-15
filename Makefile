@@ -70,7 +70,7 @@ endif
 
 
 dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
-	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -o dupd
+	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -lpthread -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
 	mkdir -p $(BUILD)
