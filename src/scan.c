@@ -82,10 +82,8 @@ void free_scanlist()
 void walk_dir(sqlite3 * dbh, const char * path,
               int (*process_file)(sqlite3 *, off_t, char *))
 {
-#ifndef DIRENT_HAS_TYPE
   STRUCT_STAT new_stat_info;
   int rv;
-#endif
 
   struct dirent * entry;
   char newpath[PATH_MAX];
@@ -149,28 +147,29 @@ void walk_dir(sqlite3 * dbh, const char * path,
       // the worker thread do it. That means we won't know the size of the file
       // yet but that's ok. If so, set it to SCAN_SIZE_UNKNOWN to let the
       // worker thread know it'll have to get the size.
+      // This doesn't work on some filesystems such as XFS. In that case, fall
+      // back on calling stat() as usual.
 
+      type = D_OTHER;
 #ifdef DIRENT_HAS_TYPE
       size = SCAN_SIZE_UNKNOWN;
-      type = D_OTHER;
       if (entry->d_type == DT_REG) {
         type = D_FILE;
       } else if (entry->d_type == DT_DIR) {
         type = D_DIR;
       }
-#else
-      rv = get_file_info(newpath, &new_stat_info);
-      size = new_stat_info.st_size;
-      if (rv != 0) {
-        type = D_ERROR;
-      } else if (S_ISDIR(new_stat_info.st_mode)) {
-        type = D_DIR;
-      } else if (S_ISREG(new_stat_info.st_mode)) {
-        type = D_FILE;
-      } else {
-        type = D_OTHER;
-      }
 #endif
+      if (type == D_OTHER) {
+        rv = get_file_info(newpath, &new_stat_info);
+        size = new_stat_info.st_size;
+        if (rv != 0) {
+          type = D_ERROR;
+        } else if (S_ISDIR(new_stat_info.st_mode)) {
+          type = D_DIR;
+        } else if (S_ISREG(new_stat_info.st_mode)) {
+          type = D_FILE;
+        }
+      }
 
       switch(type) {
 
