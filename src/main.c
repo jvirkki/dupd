@@ -42,7 +42,6 @@
 
 static int operation = -1;
 static int start_path_count = 0;
-static int free_start_path = 0;
 static int free_db_path = 0;
 static int free_file_path = 0;
 int verbosity = 1;
@@ -134,12 +133,22 @@ int opt_add_path(char * arg, int command)
 {
   (void)command;
 
-  start_path[start_path_count] = arg;
-
   // Strip any trailing slashes for consistency
-  int x = strlen(start_path[start_path_count]) - 1;
-  while (start_path[start_path_count][x] == '/') {
-    start_path[start_path_count][x--] = 0;
+  int x = strlen(arg) - 1;
+  while (arg[x] == '/') {
+    arg[x--] = 0;
+  }
+
+  // If the path is absolute just copy it as-is, otherwise prefix it with
+  // the current directory.
+  if (arg[0] == '/') {
+    start_path[start_path_count] = (char *)malloc(x + 2);
+    strcpy(start_path[start_path_count], arg);
+  } else {
+    start_path[start_path_count] = (char *)malloc(PATH_MAX);
+    getcwd(start_path[start_path_count], PATH_MAX);
+    strcat(start_path[start_path_count], "/");
+    strcat(start_path[start_path_count], arg);
   }
 
   start_path_count++;
@@ -196,7 +205,6 @@ static void process_args(int argc, char * argv[])
     start_path[0] = (char *)malloc(PATH_MAX);
     getcwd(start_path[0], PATH_MAX);
     start_path_count = 1;
-    free_start_path = 1;
     if (verbosity >= 3) {
       printf("Defaulting --path to [%s]\n", start_path[0]);
     }
@@ -276,6 +284,7 @@ int main(int argc, char * argv[])
 {
   long t1 = get_current_time_millis();
   int rv = 0;
+  int n;
 
   process_args(argc, argv);
 
@@ -301,7 +310,6 @@ int main(int argc, char * argv[])
 
   if (free_file_path) { free(file_path); }
   if (free_db_path) { free(db_path); }
-  if (free_start_path) { free(start_path[0]); }
   if (path_sep_string) { free(path_sep_string); }
   free_size_tree();
   free_size_list();
@@ -309,6 +317,10 @@ int main(int argc, char * argv[])
   free_hash_lists();
   free_filecompare();
   free_scanlist();
+
+  for (n = 0; n < start_path_count; n++) {
+    free(start_path[n]);
+  }
 
   stats_time_total = get_current_time_millis() - t1;
 

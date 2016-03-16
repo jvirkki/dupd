@@ -7,7 +7,7 @@ $DUPD_CMD scan --path /nosuchdirectory -v > nreport
 checkrv $?
 
 OUT=`wc -l nreport | sed 's/^ *//g'`
-if [ "$OUT" != "2 nreport" ]; then
+if [ "$OUT" != "3 nreport" ]; then
     echo "FAIL ${DESC}"
     exit 1
 else

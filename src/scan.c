@@ -227,6 +227,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
 void scan()
 {
   sqlite3 * dbh = NULL;
+  STRUCT_STAT stat_info;
 
   init_size_list();
   init_path_block();
@@ -244,10 +245,15 @@ void scan()
 
   long t1 = get_current_time_millis();
   for (int i=0; start_path[i] != NULL; i++) {
-    if (threaded_sizetree) {
-      walk_dir(dbh, start_path[i], add_queue);
+    int rv = get_file_info(start_path[i], &stat_info);
+    if (rv != 0) {
+      printf("error: skipping requested path [%s]\n", start_path[i]);
     } else {
-      walk_dir(dbh, start_path[i], add_file);
+      if (threaded_sizetree) {
+        walk_dir(dbh, start_path[i], add_queue);
+      } else {
+        walk_dir(dbh, start_path[i], add_file);
+      }
     }
   }
 
