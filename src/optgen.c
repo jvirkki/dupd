@@ -54,6 +54,7 @@ int option_firstblocks[] = { 1 };
 int option_firstblocksize[] = { 1 };
 int option_intblocks[] = { 1 };
 int option_blocksize[] = { 1 };
+int option_fileblocksize[] = { 1 };
 int option_skip_two[] = { 1 };
 int option_skip_three[] = { 1 };
 int option_file_count[] = { 1 };
@@ -176,11 +177,6 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --path\n");
         exit(1);
       }
-      // ABSPATH: Must start with /
-      if (argv[pos+1][0] != '/') {
-        printf("error: --path must be an absolute path\n");
-        exit(1);
-      }
       options[1] = argv[pos+1];
       pos += 2;
       // strict_options: is path allowed?
@@ -288,11 +284,32 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
+    if ((l == 15 && !strncmp("--fileblocksize", argv[pos], 15))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --fileblocksize\n");
+        exit(1);
+      }
+      options[6] = argv[pos+1];
+      pos += 2;
+      // strict_options: is fileblocksize allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_fileblocksize) / sizeof(option_fileblocksize)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_fileblocksize[cc] == *command) { ok = 1; }
+        if (option_fileblocksize[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'fileblocksize' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
     if ((l == 10 && !strncmp("--skip-two", argv[pos], 10))) {
-      if (options[6] == NULL) {
-        options[6] = numstring[0];
+      if (options[7] == NULL) {
+        options[7] = numstring[0];
       } else {
-        options[6] = numstring[atoi(options[6])];
+        options[7] = numstring[atoi(options[7])];
       }
       pos++;
       // strict_options: is skip_two allowed?
@@ -310,10 +327,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 12 && !strncmp("--skip-three", argv[pos], 12))) {
-      if (options[7] == NULL) {
-        options[7] = numstring[0];
+      if (options[8] == NULL) {
+        options[8] = numstring[0];
       } else {
-        options[7] = numstring[atoi(options[7])];
+        options[8] = numstring[atoi(options[8])];
       }
       pos++;
       // strict_options: is skip_three allowed?
@@ -331,10 +348,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 12 && !strncmp("--file-count", argv[pos], 12))) {
-      if (options[8] == NULL) {
-        options[8] = numstring[0];
+      if (options[9] == NULL) {
+        options[9] = numstring[0];
       } else {
-        options[8] = numstring[atoi(options[8])];
+        options[9] = numstring[atoi(options[9])];
       }
       pos++;
       // strict_options: is file_count allowed?
@@ -352,10 +369,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 10 && !strncmp("--avg-size", argv[pos], 10))) {
-      if (options[9] == NULL) {
-        options[9] = numstring[0];
+      if (options[10] == NULL) {
+        options[10] = numstring[0];
       } else {
-        options[9] = numstring[atoi(options[9])];
+        options[10] = numstring[atoi(options[10])];
       }
       pos++;
       // strict_options: is avg_size allowed?
@@ -373,10 +390,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 9 && !strncmp("--uniques", argv[pos], 9))) {
-      if (options[10] == NULL) {
-        options[10] = numstring[0];
+      if (options[11] == NULL) {
+        options[11] = numstring[0];
       } else {
-        options[10] = numstring[atoi(options[10])];
+        options[11] = numstring[atoi(options[11])];
       }
       pos++;
       // strict_options: is uniques allowed?
@@ -398,7 +415,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --stats-file\n");
         exit(1);
       }
-      options[11] = argv[pos+1];
+      options[12] = argv[pos+1];
       pos += 2;
       // strict_options: is stats_file allowed?
       int ok = 0;
@@ -420,7 +437,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --minsize\n");
         exit(1);
       }
-      options[12] = argv[pos+1];
+      options[13] = argv[pos+1];
       pos += 2;
       // strict_options: is minsize allowed?
       int ok = 0;
@@ -446,7 +463,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: --pathsep must be a single character\n");
         exit(1);
       }
-      options[13] = argv[pos+1];
+      options[14] = argv[pos+1];
       pos += 2;
       // strict_options: is pathsep allowed?
       int ok = 0;
@@ -463,10 +480,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 8 && !strncmp("--hidden", argv[pos], 8))) {
-      if (options[14] == NULL) {
-        options[14] = numstring[0];
+      if (options[15] == NULL) {
+        options[15] = numstring[0];
       } else {
-        options[14] = numstring[atoi(options[14])];
+        options[15] = numstring[atoi(options[15])];
       }
       pos++;
       // strict_options: is hidden allowed?
@@ -484,10 +501,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 16 && !strncmp("--no-thread-scan", argv[pos], 16))) {
-      if (options[15] == NULL) {
-        options[15] = numstring[0];
+      if (options[16] == NULL) {
+        options[16] = numstring[0];
       } else {
-        options[15] = numstring[atoi(options[15])];
+        options[16] = numstring[atoi(options[16])];
       }
       pos++;
       // strict_options: is no_thread_scan allowed?
@@ -505,10 +522,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 16 && !strncmp("--no-thread-hash", argv[pos], 16))) {
-      if (options[16] == NULL) {
-        options[16] = numstring[0];
+      if (options[17] == NULL) {
+        options[17] = numstring[0];
       } else {
-        options[16] = numstring[atoi(options[16])];
+        options[17] = numstring[atoi(options[17])];
       }
       pos++;
       // strict_options: is no_thread_hash allowed?
@@ -531,7 +548,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --cut\n");
         exit(1);
       }
-      options[17] = argv[pos+1];
+      options[18] = argv[pos+1];
       pos += 2;
       // strict_options: is cut allowed?
       int ok = 0;
@@ -553,7 +570,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --file\n");
         exit(1);
       }
-      options[18] = argv[pos+1];
+      options[19] = argv[pos+1];
       pos += 2;
       // strict_options: is file allowed?
       int ok = 0;
@@ -575,7 +592,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --exclude-path\n");
         exit(1);
       }
-      options[19] = argv[pos+1];
+      options[20] = argv[pos+1];
       pos += 2;
       // strict_options: is exclude_path allowed?
       int ok = 0;
@@ -593,10 +610,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--link", argv[pos], 6))||
         (l == 2 && !strncmp("-L", argv[pos], 2))) {
-      if (options[20] == NULL) {
-        options[20] = numstring[0];
+      if (options[21] == NULL) {
+        options[21] = numstring[0];
       } else {
-        options[20] = numstring[atoi(options[20])];
+        options[21] = numstring[atoi(options[21])];
       }
       pos++;
       // strict_options: is link allowed?
@@ -615,10 +632,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 10 && !strncmp("--hardlink", argv[pos], 10))||
         (l == 2 && !strncmp("-H", argv[pos], 2))) {
-      if (options[21] == NULL) {
-        options[21] = numstring[0];
+      if (options[22] == NULL) {
+        options[22] = numstring[0];
       } else {
-        options[21] = numstring[atoi(options[21])];
+        options[22] = numstring[atoi(options[22])];
       }
       pos++;
       // strict_options: is hardlink allowed?
@@ -637,10 +654,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 9 && !strncmp("--verbose", argv[pos], 9))||
         (l == 2 && !strncmp("-v", argv[pos], 2))) {
-      if (options[22] == NULL) {
-        options[22] = numstring[0];
+      if (options[23] == NULL) {
+        options[23] = numstring[0];
       } else {
-        options[22] = numstring[atoi(options[22])];
+        options[23] = numstring[atoi(options[23])];
       }
       pos++;
       // strict_options: is verbose allowed?
@@ -659,10 +676,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 17 && !strncmp("--verbose-threads", argv[pos], 17))||
         (l == 2 && !strncmp("-V", argv[pos], 2))) {
-      if (options[23] == NULL) {
-        options[23] = numstring[0];
+      if (options[24] == NULL) {
+        options[24] = numstring[0];
       } else {
-        options[23] = numstring[atoi(options[23])];
+        options[24] = numstring[atoi(options[24])];
       }
       pos++;
       // strict_options: is verbose_threads allowed?
@@ -681,10 +698,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 7 && !strncmp("--quiet", argv[pos], 7))||
         (l == 2 && !strncmp("-q", argv[pos], 2))) {
-      if (options[24] == NULL) {
-        options[24] = numstring[0];
+      if (options[25] == NULL) {
+        options[25] = numstring[0];
       } else {
-        options[24] = numstring[atoi(options[24])];
+        options[25] = numstring[atoi(options[25])];
       }
       pos++;
       // strict_options: is quiet allowed?
@@ -707,7 +724,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --db\n");
         exit(1);
       }
-      options[25] = argv[pos+1];
+      options[26] = argv[pos+1];
       pos += 2;
       // strict_options: is db allowed?
       int ok = 0;
@@ -724,10 +741,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 11 && !strncmp("--no-unique", argv[pos], 11))) {
-      if (options[26] == NULL) {
-        options[26] = numstring[0];
+      if (options[27] == NULL) {
+        options[27] = numstring[0];
       } else {
-        options[26] = numstring[atoi(options[26])];
+        options[27] = numstring[atoi(options[27])];
       }
       pos++;
       // strict_options: is no_unique allowed?
@@ -746,10 +763,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--help", argv[pos], 6))||
         (l == 2 && !strncmp("-h", argv[pos], 2))) {
-      if (options[27] == NULL) {
-        options[27] = numstring[0];
+      if (options[28] == NULL) {
+        options[28] = numstring[0];
       } else {
-        options[27] = numstring[atoi(options[27])];
+        options[28] = numstring[atoi(options[28])];
       }
       pos++;
       // strict_options: is help allowed?
@@ -767,10 +784,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 17 && !strncmp("--x-small-buffers", argv[pos], 17))) {
-      if (options[28] == NULL) {
-        options[28] = numstring[0];
+      if (options[29] == NULL) {
+        options[29] = numstring[0];
       } else {
-        options[28] = numstring[atoi(options[28])];
+        options[29] = numstring[atoi(options[29])];
       }
       pos++;
       // strict_options: is x_small_buffers allowed?
@@ -788,10 +805,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 9 && !strncmp("--testing", argv[pos], 9))) {
-      if (options[29] == NULL) {
-        options[29] = numstring[0];
+      if (options[30] == NULL) {
+        options[30] = numstring[0];
       } else {
-        options[29] = numstring[atoi(options[29])];
+        options[30] = numstring[atoi(options[30])];
       }
       pos++;
       // strict_options: is testing allowed?
@@ -847,11 +864,12 @@ void opt_show_help()
 {
   printf("scan     scan starting from the given path\n");
   printf("     --nodb              do not generate database file\n");
-  printf("  -p --path ABSPATH      absolute path where scanning will start\n");
+  printf("  -p --path PATH         path where scanning will start\n");
   printf("     --firstblocks N     max blocks to read in first hash pass\n");
   printf("     --firstblocksize N  size of firstblocks to read\n");
   printf("     --intblocks N       blocks to read in intermediate hash\n");
   printf("     --blocksize N       size of regular blocks to read\n");
+  printf("     --fileblocksize N   size of blocks to read in file compare\n");
   printf("     --skip-two          do not compare two files directly\n");
   printf("     --skip-three        do not compare three files directly\n");
   printf("     --file-count        max estimated number of files to scan\n");
@@ -874,17 +892,17 @@ void opt_show_help()
   printf("  -x --exclude-path PATH     ignore duplicates under this path\n");
   printf("\n");
   printf("uniques  based on report, look for unique files\n");
-  printf("  -p --path ABSPATH          absolute path where scanning will start\n");
+  printf("  -p --path PATH             path where scanning will start\n");
   printf("  -c --cut PATHSEG           remove 'PATHSEG' from report paths\n");
   printf("  -x --exclude-path PATH     ignore duplicates under this path\n");
   printf("\n");
   printf("dups     based on report, look for duplicate files\n");
-  printf("  -p --path ABSPATH          absolute path where scanning will start\n");
+  printf("  -p --path PATH             path where scanning will start\n");
   printf("  -c --cut PATHSEG           remove 'PATHSEG' from report paths\n");
   printf("  -x --exclude-path PATH     ignore duplicates under this path\n");
   printf("\n");
   printf("ls       based on report, list info about every file seen\n");
-  printf("  -p --path ABSPATH          absolute path where scanning will start\n");
+  printf("  -p --path PATH             path where scanning will start\n");
   printf("  -c --cut PATHSEG           remove 'PATHSEG' from report paths\n");
   printf("  -x --exclude-path PATH     ignore duplicates under this path\n");
   printf("\n");

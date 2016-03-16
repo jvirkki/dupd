@@ -39,12 +39,12 @@
 
 #include <stdlib.h>
 
-#define COUNT_OPTIONS 30
+#define COUNT_OPTIONS 31
 
 // nodb (--nodb) : do not generate database file
 #define OPT_nodb 0
 
-// path (-p,--path) ABSPATH : absolute path where scanning will start
+// path (-p,--path) PATH : path where scanning will start
 #define OPT_path 1
 
 // firstblocks (--firstblocks) N : max blocks to read in first hash pass
@@ -59,77 +59,80 @@
 // blocksize (--blocksize) N : size of regular blocks to read
 #define OPT_blocksize 5
 
+// fileblocksize (--fileblocksize) N : size of blocks to read in file compare
+#define OPT_fileblocksize 6
+
 // skip_two (--skip-two) : do not compare two files directly
-#define OPT_skip_two 6
+#define OPT_skip_two 7
 
 // skip_three (--skip-three) : do not compare three files directly
-#define OPT_skip_three 7
+#define OPT_skip_three 8
 
 // file_count (--file-count) : max estimated number of files to scan
-#define OPT_file_count 8
+#define OPT_file_count 9
 
 // avg_size (--avg-size) : estimated average file path length
-#define OPT_avg_size 9
+#define OPT_avg_size 10
 
 // uniques (--uniques) : save info about unique files
-#define OPT_uniques 10
+#define OPT_uniques 11
 
 // stats_file (--stats-file) FILE : save stats to this file
-#define OPT_stats_file 11
+#define OPT_stats_file 12
 
 // minsize (-m,--minsize) SIZE : min size of files to scan
-#define OPT_minsize 12
+#define OPT_minsize 13
 
 // pathsep (--pathsep) CHAR : change internal path separator to CHAR
-#define OPT_pathsep 13
+#define OPT_pathsep 14
 
 // hidden (--hidden) : include hidden files and dirs in scan
-#define OPT_hidden 14
+#define OPT_hidden 15
 
 // no_thread_scan (--no-thread-scan) : do scan phase in a single thread
-#define OPT_no_thread_scan 15
+#define OPT_no_thread_scan 16
 
 // no_thread_hash (--no-thread-hash) : do hash/compare phase in a single thread
-#define OPT_no_thread_hash 16
+#define OPT_no_thread_hash 17
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 17
+#define OPT_cut 18
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 18
+#define OPT_file 19
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 19
+#define OPT_exclude_path 20
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 20
+#define OPT_link 21
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 21
+#define OPT_hardlink 22
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 22
+#define OPT_verbose 23
 
 // verbose_threads (-V,--verbose-threads) : increase thread verbosity (may be repeated for more)
-#define OPT_verbose_threads 23
+#define OPT_verbose_threads 24
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 24
+#define OPT_quiet 25
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 25
+#define OPT_db 26
 
 // no_unique (--no-unique) : ignore unique table even if present
-#define OPT_no_unique 26
+#define OPT_no_unique 27
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 27
+#define OPT_help 28
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 28
+#define OPT_x_small_buffers 29
 
 // testing (--testing) : for testing only, not useful otherwise
-#define OPT_testing 29
+#define OPT_testing 30
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
