@@ -58,6 +58,7 @@ int hash_one_max_blocks = 4;
 int intermediate_blocks = 0;
 int hash_one_block_size = 2048;
 int hash_block_size = 8192;
+int filecmp_block_size = 8192;
 int opt_compare_two = 1;
 int opt_compare_three = 1;
 long file_count = 1000000L;
@@ -246,6 +247,8 @@ static void process_args(int argc, char * argv[])
     opt_int(options[OPT_firstblocksize], hash_one_block_size);
 
   hash_block_size = opt_int(options[OPT_blocksize], hash_block_size);
+
+  filecmp_block_size = opt_int(options[OPT_fileblocksize], filecmp_block_size);
 
   hash_one_max_blocks = opt_int(options[OPT_firstblocks], hash_one_max_blocks);
 

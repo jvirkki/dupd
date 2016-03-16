@@ -147,6 +147,13 @@ extern int hash_block_size;
 
 
 /** ***************************************************************************
+ * Size of blocks to read from disk during direct file comparisons.
+ *
+ */
+extern int filecmp_block_size;
+
+
+/** ***************************************************************************
  * The path buffer is allocated a given size so it needs to be large enough.
  * It will be sized to hold file_count files with an average path length
  * of avg_path_len.

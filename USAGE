@@ -93,6 +93,11 @@ the same reasons.
 
 --skip-three        This option disables the three file comparison.
 
+When doing these direct file comparisons, the default block size
+can be adjusted.
+
+--fileblocksize N   Size of blocks to read in file compare.
+
 For size groups of four or more files, dupd will first read and hash a
 small amount of data from each. This is effective at quickly
 discarding different files from the list of potential duplicates.
