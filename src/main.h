@@ -247,6 +247,13 @@ extern int threaded_hashcompare;
 
 
 /** ***************************************************************************
+ * If database is older than this, show a warning.
+ *
+ */
+extern long db_warn_age_seconds;
+
+
+/** ***************************************************************************
  * If true, generate links in rmsh operation.
  *
  */

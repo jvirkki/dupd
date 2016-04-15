@@ -85,7 +85,8 @@ static void initialize_database(sqlite3 * dbh)
                         "each_size INTEGER, paths TEXT)");
 
   single_statement(dbh, "CREATE TABLE meta "
-                        "(separator TEXT, hidden INTEGER, version TEXT)");
+                        "(separator TEXT, hidden INTEGER, version TEXT, "
+                        "dbtime INTEGER)");
 
   if (save_uniques) {
     single_statement(dbh, "CREATE TABLE files (path TEXT)");
@@ -94,8 +95,8 @@ static void initialize_database(sqlite3 * dbh)
   // Save settings to meta table for future reference
 
   static sqlite3_stmt * stmt;
-  const char * sql = "INSERT INTO meta (separator, hidden, version) "
-                     "VALUES (?, ?, ?)";
+  const char * sql = "INSERT INTO meta (separator, hidden, version, dbtime) "
+                     "VALUES (?, ?, ?, ?)";
 
   int rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -108,6 +109,10 @@ static void initialize_database(sqlite3 * dbh)
 
   rv = sqlite3_bind_text(stmt, 3, DUPD_VERSION, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind version: %s\n", dbh);
+
+  long now = get_current_time_millis();
+  rv = sqlite3_bind_int64(stmt, 4, now);
+  rvchk(rv, SQLITE_OK, "Can't bind current dbtime: %s\n", dbh);
 
   rv = sqlite3_step(stmt);
   rvchk(rv, SQLITE_DONE, "tried to set meta data: %s\n", dbh);
@@ -186,7 +191,7 @@ sqlite3 * open_database(char * path, int newdb)
   // Load meta info from database
 
   sqlite3_stmt * statement = NULL;
-  char * sql = "SELECT separator, hidden, version FROM meta";
+  char * sql = "SELECT separator, hidden, version, dbtime FROM meta";
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -227,6 +232,18 @@ sqlite3 * open_database(char * path, int newdb)
     printf("*** Recommendation is to re-run dupd scan first.\n");
     printf("\n\n");
   }                                                          // LCOV_EXCL_STOP
+
+  long db_create_time = sqlite3_column_int64(statement, 3);
+  if (verbosity >= 4) {
+    printf("database create time %ld\n", db_create_time);
+  }
+
+  long expiration = db_create_time + 1000L * db_warn_age_seconds;
+  long now = get_current_time_millis();
+  if (now > expiration) {
+    long age =(now - db_create_time) / 1000 / 60 / 60;
+    printf("WARNING: database is %ld hours old, data may be stale!\n", age);
+  }
 
   sqlite3_finalize(statement);
 

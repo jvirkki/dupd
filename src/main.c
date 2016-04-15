@@ -75,6 +75,7 @@ int x_small_buffers = 0;
 int only_testing = 0;
 int threaded_sizetree = 1;
 int threaded_hashcompare = 1;
+long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 
 
 /** ***************************************************************************
