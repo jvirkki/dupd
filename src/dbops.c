@@ -35,6 +35,7 @@ static int known_dup_path_list_size = 512;
 static int known_dup_path_list_first = 1;
 static sqlite3_stmt * stmt_is_known_unique = NULL;
 static sqlite3_stmt * stmt_duplicate_to_db = NULL;
+static sqlite3_stmt * stmt_delete_duplicate = NULL;
 static sqlite3_stmt * stmt_unique_to_db = NULL;
 static sqlite3_stmt * stmt_get_known_duplicates = NULL;
 
@@ -274,6 +275,10 @@ void close_database(sqlite3 * dbh)
     sqlite3_finalize(stmt_unique_to_db);
   }
 
+  if (stmt_delete_duplicate != NULL) {
+    sqlite3_finalize(stmt_delete_duplicate);
+  }
+
   if (stmt_get_known_duplicates != NULL) {
     sqlite3_finalize(stmt_get_known_duplicates);
   }
@@ -357,6 +362,30 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
   if (count > stats_most_dups) {
     stats_most_dups = count;
   }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void delete_duplicate_entry(sqlite3 * dbh, int id)
+{
+  const char * sql = "DELETE FROM duplicates WHERE id=?";
+  int rv;
+
+  if (stmt_delete_duplicate == NULL) {
+    rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_delete_duplicate, NULL);
+    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+  }
+
+  rv = sqlite3_bind_int(stmt_delete_duplicate, 1, id);
+  rvchk(rv, SQLITE_OK, "Can't bind id: %s\n", dbh);
+
+  rv = sqlite3_step(stmt_delete_duplicate);
+  rvchk(rv, SQLITE_DONE, "tried to delete from duplicates table: %s\n", dbh);
+
+  sqlite3_reset(stmt_delete_duplicate);
 }
 
 

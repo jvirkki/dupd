@@ -18,9 +18,21 @@ checkrv $?
 
 check_nreport output.40
 
+#----------------------------------
+# refresh shouldn't change anything
 
-#-----------------------------
-# This time with threaded scan
+DESC="nothing changed, try refresh"
+$DUPD_CMD refresh
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.40
+
+#-------------------------------
+# This time with unthreaded scan
 
 DESC="scan(files3): 20K files no-thread-scan"
 

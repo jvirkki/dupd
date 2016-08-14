@@ -31,6 +31,7 @@
 #include "main_opt.h"
 #include "optgen.h"
 #include "paths.h"
+#include "refresh.h"
 #include "report.h"
 #include "scan.h"
 #include "sizelist.h"
@@ -295,6 +296,7 @@ int main(int argc, char * argv[])
   switch (operation) {
 
     case COMMAND_scan:      scan();                      break;
+    case COMMAND_refresh:   operation_refresh();         break;
     case COMMAND_report:    operation_report();          break;
     case COMMAND_uniques:   operation_uniques();         break;
     case COMMAND_license:   show_license();              break;

@@ -212,6 +212,27 @@ Options include:
 --exclude PATH     Ignore any duplicates under PATH when reporting duplicates.
 
 
+Refreshing the database
+-----------------------
+As you remove duplicate files, the list of duplicates in the database grows
+increasingly stale. Whenever possible you should re-run a scan operation
+to refresh the database content after having done some cleanup.
+
+Unfortunately this might not be very convenient when working with a
+large file set where the scan operation takes a long time.
+
+The refresh command offers an alternative, with caveats. It checks all
+the duplicate files listed in the database and removes those which are
+no longer present in the filesystem.
+
+Be sure to consider the limitations of this approach. The refresh command
+DOES NOT re-verify whether all files listed as duplicates are still
+duplicates.  It also, of course, does not detect any new duplicates which
+may have appeared since the last scan.
+
+% dupd refresh
+
+
 Remove duplicate files
 ----------------------
 As a policy dupd never modifies the filesystem.

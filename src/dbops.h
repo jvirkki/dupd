@@ -108,6 +108,19 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths);
 
 
 /** ***************************************************************************
+ * Remove a duplicate entry from the database.
+ *
+ * Parameters:
+ *    dbh - Database handle.
+ *    id  - id of entry to delete
+ *
+ * Return: none.
+ *
+ */
+void delete_duplicate_entry(sqlite3 * dbh, int id);
+
+
+/** ***************************************************************************
  * Write unique file info to database.
  *
  * Parameters:

@@ -1,0 +1,70 @@
+#!/bin/bash
+
+source common
+
+cd files6
+cat files.tar.gz | gunzip | tar xf -
+cd ..
+
+#-----
+# First just extract files and check baseline
+
+DESC="scan(files6): prepare to test refresh"
+$DUPD_CMD scan --path `pwd`/files6 > /dev/null
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.58a
+
+#-----
+# Run refresh, shouldn't change anything yet
+
+DESC="scan(files6): refresh (nothing changed yet)"
+$DUPD_CMD refresh -v > /dev/null
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.58a
+
+#-----
+# Remove one dup, run refresh, check output
+
+rm files6/1
+
+DESC="scan(files6): refresh (removed 1)"
+$DUPD_CMD refresh -v -v -v > /dev/null
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.58b
+
+#-----
+# Remove remaining dup, run refresh, check output
+
+rm files6/2
+
+DESC="scan(files6): refresh (removed 2)"
+$DUPD_CMD refresh > /dev/null
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.58c
+
+
+cd files6
+rm -f 1 2 3 4 5
+cd ..
+
+tdone

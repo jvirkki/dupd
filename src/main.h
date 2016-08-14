@@ -20,6 +20,8 @@
 #ifndef _DUPD_MAIN_H
 #define _DUPD_MAIN_H
 
+#include <sys/types.h>
+
 
 /** ***************************************************************************
  * Verbosity is 1 by default, increased by one for every -v command

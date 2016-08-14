@@ -49,7 +49,7 @@ char * numstring[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
 
 // For each option, list the commands which accept it
 int option_nodb[] = { 1 };
-int option_path[] = { 1, 4, 5, 6 };
+int option_path[] = { 1, 5, 6, 7 };
 int option_firstblocks[] = { 1 };
 int option_firstblocksize[] = { 1 };
 int option_intblocks[] = { 1 };
@@ -61,24 +61,24 @@ int option_file_count[] = { 1 };
 int option_avg_size[] = { 1 };
 int option_uniques[] = { 1 };
 int option_stats_file[] = { 1 };
-int option_minsize[] = { 1, 2 };
+int option_minsize[] = { 1, 3 };
 int option_pathsep[] = { 1 };
 int option_hidden[] = { 1 };
 int option_no_thread_scan[] = { 1 };
 int option_no_thread_hash[] = { 1 };
-int option_cut[] = { 2, 3, 4, 5, 6 };
-int option_file[] = { 3 };
-int option_exclude_path[] = { 3, 4, 5, 6 };
-int option_link[] = { 7 };
-int option_hardlink[] = { 7 };
-int option_verbose[] = { 12 };
-int option_verbose_threads[] = { 12 };
-int option_quiet[] = { 12 };
-int option_db[] = { 12 };
-int option_no_unique[] = { 12 };
-int option_help[] = { 12 };
-int option_x_small_buffers[] = { 12 };
-int option_testing[] = { 12 };
+int option_cut[] = { 3, 4, 5, 6, 7 };
+int option_file[] = { 4 };
+int option_exclude_path[] = { 4, 5, 6, 7 };
+int option_link[] = { 8 };
+int option_hardlink[] = { 8 };
+int option_verbose[] = { 13 };
+int option_verbose_threads[] = { 13 };
+int option_quiet[] = { 13 };
+int option_db[] = { 13 };
+int option_no_unique[] = { 13 };
+int option_help[] = { 13 };
+int option_x_small_buffers[] = { 13 };
+int option_testing[] = { 13 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -102,44 +102,48 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     *command = 1;
     goto OPTS;
   }
-  if (l == 6 && !strncmp("report", argv[1], 6)) {
+  if (l == 7 && !strncmp("refresh", argv[1], 7)) {
     *command = 2;
     goto OPTS;
   }
-  if (l == 4 && !strncmp("file", argv[1], 4)) {
+  if (l == 6 && !strncmp("report", argv[1], 6)) {
     *command = 3;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("uniques", argv[1], 7)) {
+  if (l == 4 && !strncmp("file", argv[1], 4)) {
     *command = 4;
     goto OPTS;
   }
-  if (l == 4 && !strncmp("dups", argv[1], 4)) {
+  if (l == 7 && !strncmp("uniques", argv[1], 7)) {
     *command = 5;
     goto OPTS;
   }
-  if (l == 2 && !strncmp("ls", argv[1], 2)) {
+  if (l == 4 && !strncmp("dups", argv[1], 4)) {
     *command = 6;
     goto OPTS;
   }
-  if (l == 4 && !strncmp("rmsh", argv[1], 4)) {
+  if (l == 2 && !strncmp("ls", argv[1], 2)) {
     *command = 7;
     goto OPTS;
   }
-  if (l == 4 && !strncmp("help", argv[1], 4)) {
+  if (l == 4 && !strncmp("rmsh", argv[1], 4)) {
     *command = 8;
     goto OPTS;
   }
-  if (l == 5 && !strncmp("usage", argv[1], 5)) {
+  if (l == 4 && !strncmp("help", argv[1], 4)) {
     *command = 9;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("license", argv[1], 7)) {
+  if (l == 5 && !strncmp("usage", argv[1], 5)) {
     *command = 10;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("version", argv[1], 7)) {
+  if (l == 7 && !strncmp("license", argv[1], 7)) {
     *command = 11;
+    goto OPTS;
+  }
+  if (l == 7 && !strncmp("version", argv[1], 7)) {
+    *command = 12;
     goto OPTS;
   }
 
@@ -881,6 +885,8 @@ void opt_show_help()
   printf("     --hidden            include hidden files and dirs in scan\n");
   printf("     --no-thread-scan    do scan phase in a single thread\n");
   printf("     --no-thread-hash    do hash/compare phase in a single thread\n");
+  printf("\n");
+  printf("refresh  remove deleted files from the database\n");
   printf("\n");
   printf("report   show duplicate report from last scan\n");
   printf("  -c --cut PATHSEG      remove 'PATHSEG' from report paths\n");

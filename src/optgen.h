@@ -137,38 +137,41 @@
 // scan: scan starting from the given path
 #define COMMAND_scan 1
 
+// refresh: remove deleted files from the database
+#define COMMAND_refresh 2
+
 // report: show duplicate report from last scan
-#define COMMAND_report 2
+#define COMMAND_report 3
 
 // file: based on report, check for duplicates of one file
-#define COMMAND_file 3
+#define COMMAND_file 4
 
 // uniques: based on report, look for unique files
-#define COMMAND_uniques 4
+#define COMMAND_uniques 5
 
 // dups: based on report, look for duplicate files
-#define COMMAND_dups 5
+#define COMMAND_dups 6
 
 // ls: based on report, list info about every file seen
-#define COMMAND_ls 6
+#define COMMAND_ls 7
 
 // rmsh: create shell script to delete all duplicates
-#define COMMAND_rmsh 7
+#define COMMAND_rmsh 8
 
 // help: show brief usage info
-#define COMMAND_help 8
+#define COMMAND_help 9
 
 // usage: show more extensive documentation
-#define COMMAND_usage 9
+#define COMMAND_usage 10
 
 // license: show license info
-#define COMMAND_license 10
+#define COMMAND_license 11
 
 // version: show version and exit
-#define COMMAND_version 11
+#define COMMAND_version 12
 
 // GLOBAL: 
-#define COMMAND_GLOBAL 12
+#define COMMAND_GLOBAL 13
 
 /**
  * Function to parse the arguments.
