@@ -62,10 +62,10 @@ int option_avg_size[] = { 1 };
 int option_uniques[] = { 1 };
 int option_stats_file[] = { 1 };
 int option_minsize[] = { 1, 3 };
-int option_pathsep[] = { 1 };
 int option_hidden[] = { 1 };
 int option_no_thread_scan[] = { 1 };
 int option_no_thread_hash[] = { 1 };
+int option_pathsep[] = { 1 };
 int option_cut[] = { 3, 4, 5, 6, 7 };
 int option_file[] = { 4 };
 int option_exclude_path[] = { 4, 5, 6, 7 };
@@ -78,7 +78,7 @@ int option_db[] = { 13 };
 int option_no_unique[] = { 13 };
 int option_help[] = { 13 };
 int option_x_small_buffers[] = { 13 };
-int option_testing[] = { 13 };
+int option_x_testing[] = { 13 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -457,37 +457,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 9 && !strncmp("--pathsep", argv[pos], 9))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --pathsep\n");
-        exit(1);
-      }
-      // CHAR: Must be a single character
-      if (strlen(argv[pos+1]) != 1) {
-        printf("error: --pathsep must be a single character\n");
-        exit(1);
-      }
-      options[14] = argv[pos+1];
-      pos += 2;
-      // strict_options: is pathsep allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_pathsep) / sizeof(option_pathsep)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_pathsep[cc] == *command) { ok = 1; }
-        if (option_pathsep[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'pathsep' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
     if ((l == 8 && !strncmp("--hidden", argv[pos], 8))) {
-      if (options[15] == NULL) {
-        options[15] = numstring[0];
+      if (options[14] == NULL) {
+        options[14] = numstring[0];
       } else {
-        options[15] = numstring[atoi(options[15])];
+        options[14] = numstring[atoi(options[14])];
       }
       pos++;
       // strict_options: is hidden allowed?
@@ -505,10 +479,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 16 && !strncmp("--no-thread-scan", argv[pos], 16))) {
-      if (options[16] == NULL) {
-        options[16] = numstring[0];
+      if (options[15] == NULL) {
+        options[15] = numstring[0];
       } else {
-        options[16] = numstring[atoi(options[16])];
+        options[15] = numstring[atoi(options[15])];
       }
       pos++;
       // strict_options: is no_thread_scan allowed?
@@ -526,10 +500,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 16 && !strncmp("--no-thread-hash", argv[pos], 16))) {
-      if (options[17] == NULL) {
-        options[17] = numstring[0];
+      if (options[16] == NULL) {
+        options[16] = numstring[0];
       } else {
-        options[17] = numstring[atoi(options[17])];
+        options[16] = numstring[atoi(options[16])];
       }
       pos++;
       // strict_options: is no_thread_hash allowed?
@@ -542,6 +516,32 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'no_thread_hash' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 9 && !strncmp("--pathsep", argv[pos], 9))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --pathsep\n");
+        exit(1);
+      }
+      // CHAR: Must be a single character
+      if (strlen(argv[pos+1]) != 1) {
+        printf("error: --pathsep must be a single character\n");
+        exit(1);
+      }
+      options[17] = argv[pos+1];
+      pos += 2;
+      // strict_options: is pathsep allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_pathsep) / sizeof(option_pathsep)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_pathsep[cc] == *command) { ok = 1; }
+        if (option_pathsep[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'pathsep' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -808,23 +808,23 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 9 && !strncmp("--testing", argv[pos], 9))) {
+    if ((l == 11 && !strncmp("--x-testing", argv[pos], 11))) {
       if (options[30] == NULL) {
         options[30] = numstring[0];
       } else {
         options[30] = numstring[atoi(options[30])];
       }
       pos++;
-      // strict_options: is testing allowed?
+      // strict_options: is x_testing allowed?
       int ok = 0;
       unsigned int cc;
-      unsigned int len = sizeof(option_testing) / sizeof(option_testing)[0];
+      unsigned int len = sizeof(option_x_testing) / sizeof(option_x_testing)[0];
       for (cc = 0; cc < len; cc++) {
-        if (option_testing[cc] == *command) { ok = 1; }
-        if (option_testing[cc] == COMMAND_GLOBAL) { ok = 1; }
+        if (option_x_testing[cc] == *command) { ok = 1; }
+        if (option_x_testing[cc] == COMMAND_GLOBAL) { ok = 1; }
       }
       if (!ok) {
-        printf("error: option 'testing' not compatible with given command\n");
+        printf("error: option 'x_testing' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -881,7 +881,6 @@ void opt_show_help()
   printf("     --uniques           save info about unique files\n");
   printf("     --stats-file FILE   save stats to this file\n");
   printf("  -m --minsize SIZE      min size of files to scan\n");
-  printf("     --pathsep CHAR      change internal path separator to CHAR\n");
   printf("     --hidden            include hidden files and dirs in scan\n");
   printf("     --no-thread-scan    do scan phase in a single thread\n");
   printf("     --no-thread-hash    do hash/compare phase in a single thread\n");

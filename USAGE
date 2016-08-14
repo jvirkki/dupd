@@ -48,18 +48,6 @@ Additional options are available:
 
 --minsize SIZE     Ignore files smaller than this size when scanning.
 
---pathsep CHAR     Change the internal path separator character to CHAR.
-                   When a list of paths is saved to the database, they are
-                   separated by this character. The result is that any files
-                   which contains this character in the name will be ignored
-                   during scan because the name conflicts with this separator.
-
-                   This is a bug, really, but unless you have oddly named
-                   files should not be much of an issue. If you do have files
-                   names containing the default separator (`), this option
-                   allows changing it to something else that might work better
-                   for your file set.
-
 --no-thread-scan   Do filesystem scan phase in a single thread. The default
                    is to have two threads, one which traverses the directory
                    tree and the other one which builds the internal data

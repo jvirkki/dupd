@@ -83,17 +83,17 @@
 // minsize (-m,--minsize) SIZE : min size of files to scan
 #define OPT_minsize 13
 
-// pathsep (--pathsep) CHAR : change internal path separator to CHAR
-#define OPT_pathsep 14
-
 // hidden (--hidden) : include hidden files and dirs in scan
-#define OPT_hidden 15
+#define OPT_hidden 14
 
 // no_thread_scan (--no-thread-scan) : do scan phase in a single thread
-#define OPT_no_thread_scan 16
+#define OPT_no_thread_scan 15
 
 // no_thread_hash (--no-thread-hash) : do hash/compare phase in a single thread
-#define OPT_no_thread_hash 17
+#define OPT_no_thread_hash 16
+
+// pathsep (--pathsep) CHAR : change internal path separator to CHAR
+#define OPT_pathsep 17
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
 #define OPT_cut 18
@@ -131,8 +131,8 @@
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
 #define OPT_x_small_buffers 29
 
-// testing (--testing) : for testing only, not useful otherwise
-#define OPT_testing 30
+// x_testing (--x-testing) : for testing only, not useful otherwise
+#define OPT_x_testing 30
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
