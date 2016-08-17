@@ -1,5 +1,5 @@
 #
-#  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -47,6 +47,13 @@ USAGE_ARCH=-O elf64-x86-64 -B i386
 else
 USAGE_ARCH=-O elf32-i386 -B i386
 endif
+endif
+
+ifeq ($(BUILD_OS),OpenBSD)
+OBJCP=objcopy
+CFLAGS=-m64
+USAGE=$(BUILD)/usage.o
+USAGE_ARCH=-O elf64-x86-64 -B i386
 endif
 
 ifeq ($(BUILD_OS),SunOS)
