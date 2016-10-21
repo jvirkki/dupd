@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan(files7) with hard links"
+
+(cd ./files7 && ./create_files)
+
+$DUPD_CMD scan --path `pwd`/files7 -q
+checkrv $?
+
+DESC="ls with hard links"
+$DUPD_CMD ls -v --path `pwd`/files7/ --cut `pwd`/files7/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+check_nreport output.59a
+
+DESC="ls with hard links --hardlink-is-unique"
+$DUPD_CMD ls -v --hardlink-is-unique --path `pwd`/files7/ --cut `pwd`/files7/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+check_nreport output.59b
+
+rm -f files7/?
+
+tdone

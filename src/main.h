@@ -265,6 +265,13 @@ extern int rmsh_link;
 
 
 /** ***************************************************************************
+ * If true, hard links are considered unique files.
+ *
+ */
+extern int hardlink_is_unique;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

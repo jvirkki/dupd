@@ -175,6 +175,9 @@ Options include:
                    under PATH, to make sure you don't delete all copies
                    of the file.
 
+--hardlink-is-unique  Ignore the existence of hard links to the file for
+                   the purpose of considering whether the file is unique.
+
 
 List matching files
 -------------------
@@ -198,6 +201,9 @@ Options include:
 --cut PATHSEG      Remove prefix $PATHSEG from the file paths in the report
 
 --exclude PATH     Ignore any duplicates under PATH when reporting duplicates.
+
+--hardlink-is-unique  Ignore the existence of hard links to the file for
+                   the purpose of considering whether the file is unique.
 
 
 Refreshing the database

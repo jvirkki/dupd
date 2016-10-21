@@ -34,6 +34,7 @@
 #define STATUS_NOTDUP 0
 #define STATUS_DUPLICATE 1
 #define STATUS_EXCLUDE 2
+#define STATUS_HARDLINK 3
 
 static int print_uniques = 0;
 static int print_duplicates = 0;
@@ -125,6 +126,7 @@ static int is_duplicate(char * path, char * self, char * hash)
  *    STATUS_NOTDUP    - It is not a duplicate of 'path'
  *    STATUS_DUPLICATE - It is a duplicate of 'path'
  *    STATUS_EXCLUDE   - Ignored due to exclude_path
+ *    STATUS_HARDLINK  - File is a hard link of path
  *
  * Parameters:
  *    path         - Primary file to be tested against all 'duplicates'
@@ -137,12 +139,15 @@ static int is_duplicate(char * path, char * self, char * hash)
  *    The number of duplicates of 'path' found in 'duplicates', zero or more.
  *    Note that if 'shortcircuit' is true this can be 1 even if there were
  *    more duplicates present.
+ *    If hardlink_is_unique flag is set, hard links do not count towards the
+ *    total of duplicates.
  *
  */
 static int reverify_duplicates(char * path, int dups, char * * duplicates,
                                int * status, int shortcircuit)
 {
   char hash[16];
+  STRUCT_STAT info;
 
   if (verbosity >= 5) {
     printf("reverify_duplicates(path=%s, dups=%d)\n", path, dups);
@@ -158,6 +163,13 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
+  if (get_file_info(path, &info)) {
+    printf("error: unable to stat %s\n", path);
+    exit(1);
+  }
+
+  ino_t path_inode = info.st_ino;
+
   for (int i = 0; i < dups; i++) { status[i] = STATUS_UNKNOWN; }
 
   int current_dups = 0;
@@ -166,6 +178,18 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     if (exclude_path != NULL &&
         !strncmp(exclude_path, duplicates[i], exclude_path_len)) {
       status[i] = STATUS_EXCLUDE;
+      continue;
+    }
+
+    if (get_file_info(duplicates[i], &info)) {
+      printf("error: unable to stat %s\n", duplicates[i]);
+      status[i] = STATUS_NOTDUP;
+      continue;
+    }
+
+    if (info.st_ino == path_inode) {
+      status[i] = STATUS_HARDLINK;
+      if (!hardlink_is_unique) { current_dups++; }
       continue;
     }
 
@@ -324,6 +348,9 @@ static int file_callback(sqlite3 * dbh, off_t size, char * path)
       switch(status[i]) {
       case STATUS_DUPLICATE:
         print_path("             DUP: ", dup_paths[i]);
+        break;
+      case STATUS_HARDLINK:
+        print_path("             HL : ", dup_paths[i]);
         break;
       case STATUS_EXCLUDE:
         print_path("             xxx: ", dup_paths[i]);
