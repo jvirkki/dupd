@@ -27,14 +27,15 @@
  * Add the given path to the size tree. Also adds the path to the path list.
  *
  * Parameters:
- *    dbh  - sqlite3 database handle (not used, set to NULL)..
- *    size - Size of this file.
- *    path - Path of this file.
+ *    dbh   - sqlite3 database handle (not used, set to NULL)..
+ *    size  - Size of this file (or SCAN_SIZE_UNKNOWN).
+ *    inode - The inode of this file (or SCAN_INODE_UNKNOWN).
+ *    path  - Path of this file.
  *
  * Return: none (int to comply with callback prototype)
  *
  */
-int add_file(sqlite3 * dbh, off_t size, char * path);
+int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path);
 
 
 /** ***************************************************************************
@@ -44,14 +45,15 @@ int add_file(sqlite3 * dbh, off_t size, char * path);
  * This is equivalent to add_file(), used when running in threaded scan mode.
  *
  * Parameters:
- *    dbh  - sqlite3 database handle (not used, set to NULL).
- *    size - Size of this file.
- *    path - Path of this file.
+ *    dbh   - sqlite3 database handle (not used, set to NULL).
+ *    size  - Size of this file (or SCAN_SIZE_UNKNOWN).
+ *    inode - The inode of this file (or SCAN_INODE_UNKNOWN).
+ *    path  - Path of this file.
  *
  * Return: none (int to comply with callback prototype)
  *
  */
-int add_queue(sqlite3 * dbh, off_t size, char * path);
+int add_queue(sqlite3 * dbh, off_t size, ino_t inode, char * path);
 
 
 /** ***************************************************************************

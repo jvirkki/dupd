@@ -57,6 +57,18 @@ Additional options are available:
                    default is to have two threads, one which reads data from
                    disk and the other one which hashes and compares.
 
+--hardlink-is-unique Skip processing hard links to a given file after the
+                   first one. If the file set has many hard links to a
+                   file this causes only one of them (the first one seen)
+                   to be tracked for further (non-hard-link) duplicates.
+                   Not recommended if the file set has a mixture of hard
+                   links and true duplicates to content, as the report may
+                   be confusing. This is useful if you are concerned
+                   primarily about disk space and thus prefer to ignore any
+                   duplicates which are only hard links to the same file.
+                   Note that if this option is given during scan, it cannot
+                   be given during interactive operations.
+
 The remaining scan options can be used to experiment with alternate
 scanning thresholds. In most cases these will not provide significant
 performance difference.

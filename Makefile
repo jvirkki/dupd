@@ -26,10 +26,18 @@ ifeq ($(LCOV_OUTPUT_DIR),)
 LCOV_OUTPUT_DIR=./lcov.out
 endif
 
+ifeq ($(LIBBLOOM_INC),)
+LIBBLOOM_INC=$(TOP)/../libbloom
+endif
+
+ifeq ($(LIBBLOOM_LIB),)
+LIBBLOOM_LIB=$(TOP)/../libbloom/build
+endif
+
 BUILD=$(TOP)/build
-INC=
+INC=-I${LIBBLOOM_INC}
 LIB=
-CCC=gcc -Wall -Wextra -std=gnu99 $(OPT) $(INC) $(LIB)
+CCC=$(CC) -Wall -Wextra -std=gnu99 $(OPT) $(LIB)
 CFLAGS=
 
 SRCS:=$(wildcard src/*.c)
@@ -57,6 +65,7 @@ USAGE_ARCH=-O elf64-x86-64 -B i386
 endif
 
 ifeq ($(BUILD_OS),SunOS)
+CC=gcc
 CFLAGS=-m64
 OBJCP=gobjcopy
 USAGE=$(BUILD)/usage.o
@@ -77,7 +86,9 @@ endif
 
 
 dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
-	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) -lsqlite3 -lcrypto -lpthread -o dupd
+	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) \
+	    $(LIBBLOOM_LIB)/libbloom.a \
+	    -lsqlite3 -lcrypto -lpthread -lm -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
 	mkdir -p $(BUILD)

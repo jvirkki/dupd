@@ -80,7 +80,7 @@ void free_scanlist()
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path,
-              int (*process_file)(sqlite3 *, off_t, char *))
+              int (*process_file)(sqlite3 *, off_t, ino_t, char *))
 {
   STRUCT_STAT new_stat_info;
   int rv;
@@ -90,6 +90,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
   char current[PATH_MAX];
 
   off_t size;
+  ino_t inode;
   long type;
 
   if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
@@ -130,7 +131,6 @@ void walk_dir(sqlite3 * dbh, const char * path,
 
       // Skip files with 'path_separator' in them because dupd uses this
       // character as a separator in the sqlite duplicates table.
-      // It shouldn't, but for now just skip these files to avoid confusion.
 
       if (strchr(entry->d_name, path_separator)) {
         if (verbosity >= 1) {
@@ -151,8 +151,10 @@ void walk_dir(sqlite3 * dbh, const char * path,
       // back on calling stat() as usual.
 
       type = D_OTHER;
+
 #ifdef DIRENT_HAS_TYPE
       size = SCAN_SIZE_UNKNOWN;
+      inode = SCAN_INODE_UNKNOWN;
       if (entry->d_type == DT_REG) {
         type = D_FILE;
       } else if (entry->d_type == DT_DIR) {
@@ -162,6 +164,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
       if (type == D_OTHER) {
         rv = get_file_info(newpath, &new_stat_info);
         size = new_stat_info.st_size;
+        inode = new_stat_info.st_ino;
         if (rv != 0) {
           type = D_ERROR;
         } else if (S_ISDIR(new_stat_info.st_mode)) {
@@ -197,7 +200,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
 
       case D_FILE:
         // If it is a file, just process it now
-        (*process_file)(dbh, size, newpath);
+        (*process_file)(dbh, size, inode, newpath);
         break;
 
       case D_OTHER:

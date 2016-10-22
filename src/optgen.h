@@ -100,17 +100,17 @@
 // pathsep (--pathsep) CHAR : change internal path separator to CHAR
 #define OPT_pathsep 17
 
+// hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
+#define OPT_hardlink_is_unique 18
+
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 18
+#define OPT_cut 19
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 19
+#define OPT_file 20
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 20
-
-// hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
-#define OPT_hardlink_is_unique 21
+#define OPT_exclude_path 21
 
 // link (-L,--link) : create symlinks for deleted files
 #define OPT_link 22

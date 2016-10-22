@@ -21,6 +21,7 @@
 #define _DUPD_SCAN_H
 
 #define SCAN_SIZE_UNKNOWN -42
+#define SCAN_INODE_UNKNOWN 0
 
 
 /** ***************************************************************************
@@ -56,7 +57,7 @@ void free_scanlist();
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path,
-              int (*process_file)(sqlite3 *, off_t, char *));
+              int (*process_file)(sqlite3 *, off_t, ino_t, char *));
 
 
 /** ***************************************************************************

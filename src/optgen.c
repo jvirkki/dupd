@@ -66,10 +66,10 @@ int option_hidden[] = { 1 };
 int option_no_thread_scan[] = { 1 };
 int option_no_thread_hash[] = { 1 };
 int option_pathsep[] = { 1 };
+int option_hardlink_is_unique[] = { 1, 4, 5, 6, 7 };
 int option_cut[] = { 3, 4, 5, 6, 7 };
 int option_file[] = { 4 };
 int option_exclude_path[] = { 4, 5, 6, 7 };
-int option_hardlink_is_unique[] = { 4, 5, 6, 7 };
 int option_link[] = { 8 };
 int option_hardlink[] = { 8 };
 int option_verbose[] = { 13 };
@@ -547,13 +547,35 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
+    if ((l == 20 && !strncmp("--hardlink-is-unique", argv[pos], 20))||
+        (l == 2 && !strncmp("-I", argv[pos], 2))) {
+      if (options[18] == NULL) {
+        options[18] = numstring[0];
+      } else {
+        options[18] = numstring[atoi(options[18])];
+      }
+      pos++;
+      // strict_options: is hardlink_is_unique allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_hardlink_is_unique) / sizeof(option_hardlink_is_unique)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_hardlink_is_unique[cc] == *command) { ok = 1; }
+        if (option_hardlink_is_unique[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'hardlink_is_unique' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
     if ((l == 5 && !strncmp("--cut", argv[pos], 5))||
         (l == 2 && !strncmp("-c", argv[pos], 2))) {
       if (argv[pos+1] == NULL) {
         printf("error: no value for arg --cut\n");
         exit(1);
       }
-      options[18] = argv[pos+1];
+      options[19] = argv[pos+1];
       pos += 2;
       // strict_options: is cut allowed?
       int ok = 0;
@@ -575,7 +597,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --file\n");
         exit(1);
       }
-      options[19] = argv[pos+1];
+      options[20] = argv[pos+1];
       pos += 2;
       // strict_options: is file allowed?
       int ok = 0;
@@ -597,7 +619,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --exclude-path\n");
         exit(1);
       }
-      options[20] = argv[pos+1];
+      options[21] = argv[pos+1];
       pos += 2;
       // strict_options: is exclude_path allowed?
       int ok = 0;
@@ -609,28 +631,6 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'exclude_path' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 20 && !strncmp("--hardlink-is-unique", argv[pos], 20))||
-        (l == 2 && !strncmp("-I", argv[pos], 2))) {
-      if (options[21] == NULL) {
-        options[21] = numstring[0];
-      } else {
-        options[21] = numstring[atoi(options[21])];
-      }
-      pos++;
-      // strict_options: is hardlink_is_unique allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_hardlink_is_unique) / sizeof(option_hardlink_is_unique)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_hardlink_is_unique[cc] == *command) { ok = 1; }
-        if (option_hardlink_is_unique[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'hardlink_is_unique' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -890,23 +890,24 @@ char opt_char(char * str, char def)
 void opt_show_help()
 {
   printf("scan     scan starting from the given path\n");
-  printf("     --nodb              do not generate database file\n");
-  printf("  -p --path PATH         path where scanning will start\n");
-  printf("     --firstblocks N     max blocks to read in first hash pass\n");
-  printf("     --firstblocksize N  size of firstblocks to read\n");
-  printf("     --intblocks N       blocks to read in intermediate hash\n");
-  printf("     --blocksize N       size of regular blocks to read\n");
-  printf("     --fileblocksize N   size of blocks to read in file compare\n");
-  printf("     --skip-two          do not compare two files directly\n");
-  printf("     --skip-three        do not compare three files directly\n");
-  printf("     --file-count        max estimated number of files to scan\n");
-  printf("     --avg-size          estimated average file path length\n");
-  printf("     --uniques           save info about unique files\n");
-  printf("     --stats-file FILE   save stats to this file\n");
-  printf("  -m --minsize SIZE      min size of files to scan\n");
-  printf("     --hidden            include hidden files and dirs in scan\n");
-  printf("     --no-thread-scan    do scan phase in a single thread\n");
-  printf("     --no-thread-hash    do hash/compare phase in a single thread\n");
+  printf("     --nodb                   do not generate database file\n");
+  printf("  -p --path PATH              path where scanning will start\n");
+  printf("     --firstblocks N          max blocks to read in first hash pass\n");
+  printf("     --firstblocksize N       size of firstblocks to read\n");
+  printf("     --intblocks N            blocks to read in intermediate hash\n");
+  printf("     --blocksize N            size of regular blocks to read\n");
+  printf("     --fileblocksize N        size of blocks to read in file compare\n");
+  printf("     --skip-two               do not compare two files directly\n");
+  printf("     --skip-three             do not compare three files directly\n");
+  printf("     --file-count             max estimated number of files to scan\n");
+  printf("     --avg-size               estimated average file path length\n");
+  printf("     --uniques                save info about unique files\n");
+  printf("     --stats-file FILE        save stats to this file\n");
+  printf("  -m --minsize SIZE           min size of files to scan\n");
+  printf("     --hidden                 include hidden files and dirs in scan\n");
+  printf("     --no-thread-scan         do scan phase in a single thread\n");
+  printf("     --no-thread-hash         do hash/compare phase in a single thread\n");
+  printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
   printf("refresh  remove deleted files from the database\n");
   printf("\n");

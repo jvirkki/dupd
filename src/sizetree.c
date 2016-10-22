@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <bloom.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,10 +40,12 @@ struct size_node {
 };
 
 static struct size_node * tip = NULL;
+static struct bloom inode_filter;
 
 struct stat_queue {
   int end;
   off_t size;
+  ino_t inode;
   char path[PATH_MAX];
   struct stat_queue * next;
 };
@@ -267,7 +270,8 @@ static void * worker_main(void * arg)
         done = 1;
 
       } else {
-        add_file(NULL, worker_next->size, worker_next->path);
+        add_file(NULL, worker_next->size,
+                 worker_next->inode, worker_next->path);
         queue_removed[current_worker_queue]++;
         worker_next = worker_next->next;
       }
@@ -328,7 +332,7 @@ static void free_node(struct size_node * node)
  * Public function, see header file.
  *
  */
-int add_file(sqlite3 * dbh, off_t size, char * path)
+int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path)
 {
   (void)dbh;                    /* not used */
   static STRUCT_STAT new_stat_info;
@@ -352,9 +356,15 @@ int add_file(sqlite3 * dbh, off_t size, char * path)
     }                                                       // LCOV_EXCL_STOP
 
     size = new_stat_info.st_size;
+    inode = new_stat_info.st_ino;
   }
 
   stats_files_count++;
+
+  if (inode < 1) {
+    printf("Bad inode! %d\n", (int)inode);
+    exit(1);
+  }
 
   if (size >= minimum_file_size) {
     stats_total_bytes += size;
@@ -377,6 +387,15 @@ int add_file(sqlite3 * dbh, off_t size, char * path)
     return(-2);
   }
 
+  if (hardlink_is_unique) {
+    if (bloom_add(&inode_filter, &inode, sizeof(ino_t))) {
+      if (verbosity >= 4) {
+        printf("SKIP (inode seen before: %d): [%s]\n", (int)inode, path);
+      }
+      return(-2);
+    }
+  }
+
   if (tip == NULL) {
     tip = new_node(size, path);
     return(-2);
@@ -392,7 +411,7 @@ int add_file(sqlite3 * dbh, off_t size, char * path)
  * Public function, see header file.
  *
  */
-int add_queue(sqlite3 * dbh, off_t size, char * path)
+int add_queue(sqlite3 * dbh, off_t size, ino_t inode, char * path)
 {
   (void)dbh;                    /* not used */
   static char * spaces = "[scan] ";
@@ -403,6 +422,7 @@ int add_queue(sqlite3 * dbh, off_t size, char * path)
 
   // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;
+  producer_next->inode = inode;
   strcpy(producer_next->path, path);
   producer_next = producer_next->next;
   queue_added[current_producer_queue]++;
@@ -535,6 +555,13 @@ void init_sizetree()
   int n;
   struct stat_queue * p;
 
+  if (hardlink_is_unique) {
+    bloom_init(&inode_filter, file_count, 0.000001);
+    if (verbosity >= 5) {
+      bloom_print(&inode_filter);
+    }
+  }
+
   if (threaded_sizetree) {
     for (i = 0; i < QUEUE_COUNT; i++) {
       queue_removed[i] = 0;
@@ -575,6 +602,10 @@ void free_size_tree()
   struct stat_queue * p;
   struct stat_queue * t;
   int i;
+
+  if (hardlink_is_unique) {
+    bloom_free(&inode_filter);
+  }
 
   if (tip != NULL) {
     free_node(tip);

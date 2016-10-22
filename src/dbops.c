@@ -87,7 +87,7 @@ static void initialize_database(sqlite3 * dbh)
 
   single_statement(dbh, "CREATE TABLE meta "
                         "(separator TEXT, hidden INTEGER, version TEXT, "
-                        "dbtime INTEGER)");
+                        "dbtime INTEGER, hardlinks TEXT)");
 
   if (save_uniques) {
     single_statement(dbh, "CREATE TABLE files (path TEXT)");
@@ -96,8 +96,9 @@ static void initialize_database(sqlite3 * dbh)
   // Save settings to meta table for future reference
 
   static sqlite3_stmt * stmt;
-  const char * sql = "INSERT INTO meta (separator, hidden, version, dbtime) "
-                     "VALUES (?, ?, ?, ?)";
+  const char * sql = "INSERT INTO meta (separator, hidden, version, "
+                     "dbtime, hardlinks) "
+                     "VALUES (?, ?, ?, ?, ?)";
 
   int rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -114,6 +115,13 @@ static void initialize_database(sqlite3 * dbh)
   long now = get_current_time_millis();
   rv = sqlite3_bind_int64(stmt, 4, now);
   rvchk(rv, SQLITE_OK, "Can't bind current dbtime: %s\n", dbh);
+
+  if (hardlink_is_unique) {
+    rv = sqlite3_bind_text(stmt, 5, "ignore", -1, SQLITE_STATIC);
+  } else {
+    rv = sqlite3_bind_text(stmt, 5, "normal", -1, SQLITE_STATIC);
+  }
+  rvchk(rv, SQLITE_OK, "Can't bind hardlinks: %s\n", dbh);
 
   rv = sqlite3_step(stmt);
   rvchk(rv, SQLITE_DONE, "tried to set meta data: %s\n", dbh);
@@ -192,7 +200,8 @@ sqlite3 * open_database(char * path, int newdb)
   // Load meta info from database
 
   sqlite3_stmt * statement = NULL;
-  char * sql = "SELECT separator, hidden, version, dbtime FROM meta";
+  char * sql = "SELECT separator, hidden, version, dbtime, hardlinks "
+               "FROM meta";
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -244,6 +253,18 @@ sqlite3 * open_database(char * path, int newdb)
   if (now > expiration) {
     long age =(now - db_create_time) / 1000 / 60 / 60;
     printf("WARNING: database is %ld hours old, data may be stale!\n", age);
+  }
+
+  // If opening an existing db which was created with hardlinks=ignore,
+  // make sure we're not now running with the same option set (that would
+  // cause confusing output for the file operations (file|ls|dups|uniques).
+
+  if (!newdb && hardlink_is_unique) {
+    char * hardlinks = (char *)sqlite3_column_text(statement, 4);
+    if (!strcmp(hardlinks, "ignore")) {
+      printf("error: scan was already performed with --hardlink-is-unique\n");
+      exit(1);
+    }
   }
 
   sqlite3_finalize(statement);

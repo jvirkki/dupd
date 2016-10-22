@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <bloom.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -90,6 +91,7 @@ static void show_banner()
   printf("This program comes with ABSOLUTELY NO WARRANTY.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
   printf("under certain conditions. Run 'dupd license' for details.\n");
+  printf("dupd " DUPD_VERSION " incorporates libbloom-%s.\n", bloom_version());
   printf("\n");
 }
 
