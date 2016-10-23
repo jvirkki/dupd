@@ -33,7 +33,6 @@
 #include "filecompare.h"
 #include "hashlist.h"
 #include "main.h"
-#include "md5.h"
 #include "paths.h"
 #include "sizelist.h"
 #include "stats.h"
