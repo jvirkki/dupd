@@ -1,0 +1,31 @@
+
+Dependencies
+------------
+dupd depends on libbloom (https://github.com/jvirkki/libbloom).
+
+By default the build expects to find libbloom as a peer directory to dupd.
+If dupd is in $HOME/src/dupd/ then clone libbloom into $HOME/src/libbloom/
+
+You can override this location assumption by setting LIBBLOOM_INC and
+LIBBLOOM_LIB, see Makefile. Build libbloom before building dupd.
+
+Aside from that, dupd requires SQLite (-lsqlite3) and OpenSSL (-lcrypto).
+
+
+Building
+--------
+The Makefile specifically supports Linux, SunOS, Darwin and OpenBSD.
+If you build on other platforms, let me know.
+
+The Makefile assumes GNU make. To build just run make (or gmake).
+
+If you'd like to test your built binary run "make test".
+
+There are other targets in the Makefile which you won't need unless
+you want to hack on the code. See Makefile in that case.
+
+
+Installing
+----------
+There is no install target as the dupd binary is fully self-contained.
+Just copy it wherever you like (e.g. $HOME/bin or /usr/local/bin).
