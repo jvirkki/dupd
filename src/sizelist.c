@@ -522,6 +522,7 @@ static int build_hash_list_round(sqlite3 * dbh,
     print_hash_list(hl);
   }
 
+  // Remove the uniques seen (also save in db if save_uniques)
   skim_uniques(dbh, hl, save_uniques);
 
   // If no potential dups after this round, we're done!
@@ -751,7 +752,21 @@ void threaded_process_size_list(sqlite3 * dbh)
 
       // If no potential dups after this round, we're done!
       if (HASH_LIST_NO_DUPS(hl_full)) {
-        if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+
+        if (verbosity >= 4) {
+          printf("No potential dups left, done!\n");
+          printf("Discarded in round 3 the potentials: ");
+          node = pl_get_first_entry(size_node->path_list);
+          do {
+            path = pl_entry_get_path(node);
+            if (path[0] != 0) {
+              printf("%s ", path);
+            }
+            node = pl_entry_get_next(node);
+          } while (node != NULL);
+          printf("\n");
+        }
+
         stats_set_no_dups_full_round++;
         size_node->state = SLS_DONE;
         did_one = 1;
