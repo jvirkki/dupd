@@ -18,16 +18,6 @@ Additional options are available:
 --hidden           Include hidden files and directories in the scan.
                    By default these are not included.
 
---uniques          Save in a separate table the paths of all files found to
-                   be unique while searching for duplicates. This will
-                   increase the size of the database (possibly by a lot)
-                   and slow down the scan. It can be useful if after the
-                   scan you intend to take advantage of a list of unique
-                   files in addition to the sets of duplicates.
-
---no-unique        Ignore the unique info in the database (if any).
-                   Useful only for debugging.
-
 --db PATH          Override the default database file location.
                    If you override the path during scan, remember to
                    provide this argument and the path for subsequent
@@ -48,15 +38,6 @@ Additional options are available:
 
 --minsize SIZE     Ignore files smaller than this size when scanning.
 
---no-thread-scan   Do filesystem scan phase in a single thread. The default
-                   is to have two threads, one which traverses the directory
-                   tree and the other one which builds the internal data
-                   structures. The default is generally always faster.
-
---no-thread-hash   Do the hash and compare phase in a single thread. The
-                   default is to have two threads, one which reads data from
-                   disk and the other one which hashes and compares.
-
 --hardlink-is-unique Skip processing hard links to a given file after the
                    first one. If the file set has many hard links to a
                    file this causes only one of them (the first one seen)
@@ -68,63 +49,6 @@ Additional options are available:
                    duplicates which are only hard links to the same file.
                    Note that if this option is given during scan, it cannot
                    be given during interactive operations.
-
-The remaining scan options can be used to experiment with alternate
-scanning thresholds. In most cases these will not provide significant
-performance difference.
-
-dupd first scans all the files and groups them by size.  Files with a
-unique size cannot have duplicates so these are discarded. After this
-initial scan dupd has size groups containing two or more files.
-
-By default, if there are only two files of a given size dupd will
-compare them directly instead of computing their hashes because if the
-files are different it will save having to completely read them.
-
---skip-two          This option disables the two file comparison. In general
-                    there should be no reason to do so. The only exception is
-                    if there are a large number of pairs of files which
-                    are large and duplicates. In that case all of them will
-                    need to be read completely so it can be more efficient
-                    to read and hash one at a time.
-
-By default dupd also compares three files of the same size directly, for
-the same reasons.
-
---skip-three        This option disables the three file comparison.
-
-When doing these direct file comparisons, the default block size
-can be adjusted.
-
---fileblocksize N   Size of blocks to read in file compare.
-
-For size groups of four or more files, dupd will first read and hash a
-small amount of data from each. This is effective at quickly
-discarding different files from the list of potential duplicates.
-
-By default, dupd will first read a --firstblocksize byte block, or up
-to --firstblocks blocks if the file is smaller than that. The defaults
-can vary based on other options. Override defaults with:
-
---firstblocksize N  Number of bytes in the initial block read.
---firstblocks N     Maximum number of blocks to read in the first pass.
-
-Next, dupd can do an intermediate pass where it computes the hash on a
-larger number of blocks than the first round but not on the entire
-file.  Experimentation has shown that this is often not worth doing so
-this intermediate pass is disabled by default. The case where this can
-be benefitial is when the files being scanned are large with few
-duplicates but they tend to be identical in the first bytes of
-content. In such a scenario the intermediate scan may help.
-
---intblocks N      Blocks to read during the intermediate scan. Must be
-                   larger than one to enable the intermediate scan.
---blocksize N      Block size in bytes. Default 8192.
-
-Finally, for any files which are still undecided after all the above
-steps, dupd will read and hash the entire file to compare against the
-others in the size group. The same blocksize as above is used.
-
 
 The two remaining options adjust the path block size which needs
 enough capacity to hold all the full pathnames of all the files which
@@ -262,4 +186,89 @@ exclusive (if both given, --hardlink takes precedence).
 --hardlink       create hard links for deleted files
 
 % dupd rmsh > delete_my_files.sh
+
+
+
+Esoteric Options
+================
+This section documents options which are generally not useful but
+might (usually not) be interesting for experimenting. Some or all of
+these might go away in a future major release of dupd. If you do
+experiment with any of these options and find some to be measurably
+useful, let me know.
+
+Scanning
+--------
+
+--uniques          Save in a separate table the paths of all files found to
+                   be unique while searching for duplicates. This will
+                   increase the size of the database (possibly by a lot)
+                   and slow down the scan. It can be useful if after the
+                   scan you intend to take advantage of a list of unique
+                   files in addition to the sets of duplicates.
+
+--no-thread-scan   Do filesystem scan phase in a single thread. The default
+                   is to have two threads, one which traverses the directory
+                   tree and the other one which builds the internal data
+                   structures. The default is generally always faster.
+
+--no-thread-hash   Do the hash and compare phase in a single thread. The
+                   default is to have two threads, one which reads data from
+                   disk and the other one which hashes and compares.
+
+The remaining scan options can be used to experiment with alternate
+scanning thresholds. In most cases these will not provide significant
+performance difference.
+
+dupd first scans all the files and groups them by size.  Files with a
+unique size cannot have duplicates so these are discarded. After this
+initial scan dupd has size groups containing two or more files.
+
+By default, if there are only two files of a given size dupd will
+compare them directly instead of computing their hashes because if the
+files are different it will save having to completely read them.
+
+--skip-two          This option disables the two file comparison. In general
+                    there should be no reason to do so. The only exception is
+                    if there are a large number of pairs of files which
+                    are large and duplicates. In that case all of them will
+                    need to be read completely so it can be more efficient
+                    to read and hash one at a time.
+
+By default dupd also compares three files of the same size directly, for
+the same reasons.
+
+--skip-three        This option disables the three file comparison.
+
+When doing these direct file comparisons, the default block size
+can be adjusted.
+
+--fileblocksize N   Size of blocks to read in file compare.
+
+For size groups of four or more files, dupd will first read and hash a
+small amount of data from each. This is effective at quickly
+discarding different files from the list of potential duplicates.
+
+By default, dupd will first read a --firstblocksize byte block, or up
+to --firstblocks blocks if the file is smaller than that. The defaults
+can vary based on other options. Override defaults with:
+
+--firstblocksize N  Number of bytes in the initial block read.
+--firstblocks N     Maximum number of blocks to read in the first pass.
+
+Next, dupd can do an intermediate pass where it computes the hash on a
+larger number of blocks than the first round but not on the entire
+file.  Experimentation has shown that this is often not worth doing so
+this intermediate pass is disabled by default. The case where this can
+be benefitial is when the files being scanned are large with few
+duplicates but they tend to be identical in the first bytes of
+content. In such a scenario the intermediate scan may help.
+
+--intblocks N      Blocks to read during the intermediate scan. Must be
+                   larger than one to enable the intermediate scan.
+--blocksize N      Block size in bytes. Default 8192.
+
+Finally, for any files which are still undecided after all the above
+steps, dupd will read and hash the entire file to compare against the
+others in the size group. The same blocksize as above is used.
 

@@ -46,62 +46,62 @@
 
 #define COUNT_OPTIONS 32
 
-// nodb (--nodb) : do not generate database file
-#define OPT_nodb 0
-
 // path (-p,--path) PATH : path where scanning will start
-#define OPT_path 1
+#define OPT_path 0
 
-// firstblocks (--firstblocks) N : max blocks to read in first hash pass
-#define OPT_firstblocks 2
-
-// firstblocksize (--firstblocksize) N : size of firstblocks to read
-#define OPT_firstblocksize 3
-
-// intblocks (--intblocks) N : blocks to read in intermediate hash
-#define OPT_intblocks 4
-
-// blocksize (--blocksize) N : size of regular blocks to read
-#define OPT_blocksize 5
-
-// fileblocksize (--fileblocksize) N : size of blocks to read in file compare
-#define OPT_fileblocksize 6
-
-// skip_two (--skip-two) : do not compare two files directly
-#define OPT_skip_two 7
-
-// skip_three (--skip-three) : do not compare three files directly
-#define OPT_skip_three 8
+// nodb (--nodb) : do not generate database file
+#define OPT_nodb 1
 
 // file_count (--file-count) : max estimated number of files to scan
-#define OPT_file_count 9
+#define OPT_file_count 2
 
 // avg_size (--avg-size) : estimated average file path length
-#define OPT_avg_size 10
-
-// uniques (--uniques) : save info about unique files
-#define OPT_uniques 11
+#define OPT_avg_size 3
 
 // stats_file (--stats-file) FILE : save stats to this file
-#define OPT_stats_file 12
+#define OPT_stats_file 4
 
 // minsize (-m,--minsize) SIZE : min size of files to scan
-#define OPT_minsize 13
+#define OPT_minsize 5
 
 // hidden (--hidden) : include hidden files and dirs in scan
-#define OPT_hidden 14
-
-// no_thread_scan (--no-thread-scan) : do scan phase in a single thread
-#define OPT_no_thread_scan 15
-
-// no_thread_hash (--no-thread-hash) : do hash/compare phase in a single thread
-#define OPT_no_thread_hash 16
-
-// pathsep (--pathsep) CHAR : change internal path separator to CHAR
-#define OPT_pathsep 17
+#define OPT_hidden 6
 
 // hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
-#define OPT_hardlink_is_unique 18
+#define OPT_hardlink_is_unique 7
+
+// no_thread_scan (--no-thread-scan) : do scan phase in a single thread
+#define OPT_no_thread_scan 8
+
+// no_thread_hash (--no-thread-hash) : do hash/compare phase in a single thread
+#define OPT_no_thread_hash 9
+
+// pathsep (--pathsep) CHAR : change internal path separator to CHAR
+#define OPT_pathsep 10
+
+// firstblocks (--firstblocks) N : max blocks to read in first hash pass
+#define OPT_firstblocks 11
+
+// firstblocksize (--firstblocksize) N : size of firstblocks to read
+#define OPT_firstblocksize 12
+
+// intblocks (--intblocks) N : blocks to read in intermediate hash
+#define OPT_intblocks 13
+
+// blocksize (--blocksize) N : size of regular blocks to read
+#define OPT_blocksize 14
+
+// fileblocksize (--fileblocksize) N : size of blocks to read in file compare
+#define OPT_fileblocksize 15
+
+// skip_two (--skip-two) : do not compare two files directly
+#define OPT_skip_two 16
+
+// skip_three (--skip-three) : do not compare three files directly
+#define OPT_skip_three 17
+
+// uniques (--uniques) : save info about unique files
+#define OPT_uniques 18
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
 #define OPT_cut 19
@@ -130,11 +130,11 @@
 // db (-d,--db) PATH : path to dupd database file
 #define OPT_db 27
 
-// no_unique (--no-unique) : ignore unique table even if present
-#define OPT_no_unique 28
-
 // help (-h,--help) : show brief usage info
-#define OPT_help 29
+#define OPT_help 28
+
+// no_unique (--no-unique) : ignore unique table even if present, for testing
+#define OPT_no_unique 29
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
 #define OPT_x_small_buffers 30

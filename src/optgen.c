@@ -48,8 +48,17 @@
 char * numstring[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
 
 // For each option, list the commands which accept it
-int option_nodb[] = { 1 };
 int option_path[] = { 1, 5, 6, 7 };
+int option_nodb[] = { 1 };
+int option_file_count[] = { 1 };
+int option_avg_size[] = { 1 };
+int option_stats_file[] = { 1 };
+int option_minsize[] = { 1, 3 };
+int option_hidden[] = { 1 };
+int option_hardlink_is_unique[] = { 1, 4, 5, 6, 7 };
+int option_no_thread_scan[] = { 1 };
+int option_no_thread_hash[] = { 1 };
+int option_pathsep[] = { 1 };
 int option_firstblocks[] = { 1 };
 int option_firstblocksize[] = { 1 };
 int option_intblocks[] = { 1 };
@@ -57,16 +66,7 @@ int option_blocksize[] = { 1 };
 int option_fileblocksize[] = { 1 };
 int option_skip_two[] = { 1 };
 int option_skip_three[] = { 1 };
-int option_file_count[] = { 1 };
-int option_avg_size[] = { 1 };
 int option_uniques[] = { 1 };
-int option_stats_file[] = { 1 };
-int option_minsize[] = { 1, 3 };
-int option_hidden[] = { 1 };
-int option_no_thread_scan[] = { 1 };
-int option_no_thread_hash[] = { 1 };
-int option_pathsep[] = { 1 };
-int option_hardlink_is_unique[] = { 1, 4, 5, 6, 7 };
 int option_cut[] = { 3, 4, 5, 6, 7 };
 int option_file[] = { 4 };
 int option_exclude_path[] = { 4, 5, 6, 7 };
@@ -76,8 +76,8 @@ int option_verbose[] = { 13 };
 int option_verbose_threads[] = { 13 };
 int option_quiet[] = { 13 };
 int option_db[] = { 13 };
-int option_no_unique[] = { 13 };
 int option_help[] = { 13 };
+int option_no_unique[] = { 13 };
 int option_x_small_buffers[] = { 13 };
 int option_x_testing[] = { 13 };
 
@@ -155,11 +155,40 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
   while (pos < argc) {
     l = strlen(argv[pos]);
 
+    if ((l == 6 && !strncmp("--path", argv[pos], 6))||
+        (l == 2 && !strncmp("-p", argv[pos], 2))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --path\n");
+        exit(1);
+      }
+      options[0] = argv[pos+1];
+      pos += 2;
+      // strict_options: is path allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_path) / sizeof(option_path)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_path[cc] == *command) { ok = 1; }
+        if (option_path[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'path' not compatible with given command\n");
+        exit(1);
+      }
+      // callback configured for this option
+      int rv = opt_add_path(options[0], *command);
+      if (rv != OPTGEN_CALLBACK_OK) {
+        printf("error: problem handling option 'path'\n");
+        exit(1);
+      }
+
+      continue;
+    }
     if ((l == 6 && !strncmp("--nodb", argv[pos], 6))) {
-      if (options[0] == NULL) {
-        options[0] = numstring[0];
+      if (options[1] == NULL) {
+        options[1] = numstring[0];
       } else {
-        options[0] = numstring[atoi(options[0])];
+        options[1] = numstring[atoi(options[1])];
       }
       pos++;
       // strict_options: is nodb allowed?
@@ -176,187 +205,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 6 && !strncmp("--path", argv[pos], 6))||
-        (l == 2 && !strncmp("-p", argv[pos], 2))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --path\n");
-        exit(1);
-      }
-      options[1] = argv[pos+1];
-      pos += 2;
-      // strict_options: is path allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_path) / sizeof(option_path)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_path[cc] == *command) { ok = 1; }
-        if (option_path[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'path' not compatible with given command\n");
-        exit(1);
-      }
-      // callback configured for this option
-      int rv = opt_add_path(options[1], *command);
-      if (rv != OPTGEN_CALLBACK_OK) {
-        printf("error: problem handling option 'path'\n");
-        exit(1);
-      }
-
-      continue;
-    }
-    if ((l == 13 && !strncmp("--firstblocks", argv[pos], 13))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --firstblocks\n");
-        exit(1);
-      }
-      options[2] = argv[pos+1];
-      pos += 2;
-      // strict_options: is firstblocks allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_firstblocks) / sizeof(option_firstblocks)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_firstblocks[cc] == *command) { ok = 1; }
-        if (option_firstblocks[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'firstblocks' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 16 && !strncmp("--firstblocksize", argv[pos], 16))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --firstblocksize\n");
-        exit(1);
-      }
-      options[3] = argv[pos+1];
-      pos += 2;
-      // strict_options: is firstblocksize allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_firstblocksize) / sizeof(option_firstblocksize)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_firstblocksize[cc] == *command) { ok = 1; }
-        if (option_firstblocksize[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'firstblocksize' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 11 && !strncmp("--intblocks", argv[pos], 11))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --intblocks\n");
-        exit(1);
-      }
-      options[4] = argv[pos+1];
-      pos += 2;
-      // strict_options: is intblocks allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_intblocks) / sizeof(option_intblocks)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_intblocks[cc] == *command) { ok = 1; }
-        if (option_intblocks[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'intblocks' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 11 && !strncmp("--blocksize", argv[pos], 11))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --blocksize\n");
-        exit(1);
-      }
-      options[5] = argv[pos+1];
-      pos += 2;
-      // strict_options: is blocksize allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_blocksize) / sizeof(option_blocksize)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_blocksize[cc] == *command) { ok = 1; }
-        if (option_blocksize[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'blocksize' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 15 && !strncmp("--fileblocksize", argv[pos], 15))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --fileblocksize\n");
-        exit(1);
-      }
-      options[6] = argv[pos+1];
-      pos += 2;
-      // strict_options: is fileblocksize allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_fileblocksize) / sizeof(option_fileblocksize)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_fileblocksize[cc] == *command) { ok = 1; }
-        if (option_fileblocksize[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'fileblocksize' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 10 && !strncmp("--skip-two", argv[pos], 10))) {
-      if (options[7] == NULL) {
-        options[7] = numstring[0];
-      } else {
-        options[7] = numstring[atoi(options[7])];
-      }
-      pos++;
-      // strict_options: is skip_two allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_skip_two) / sizeof(option_skip_two)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_skip_two[cc] == *command) { ok = 1; }
-        if (option_skip_two[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'skip_two' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 12 && !strncmp("--skip-three", argv[pos], 12))) {
-      if (options[8] == NULL) {
-        options[8] = numstring[0];
-      } else {
-        options[8] = numstring[atoi(options[8])];
-      }
-      pos++;
-      // strict_options: is skip_three allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_skip_three) / sizeof(option_skip_three)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_skip_three[cc] == *command) { ok = 1; }
-        if (option_skip_three[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'skip_three' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
     if ((l == 12 && !strncmp("--file-count", argv[pos], 12))) {
-      if (options[9] == NULL) {
-        options[9] = numstring[0];
+      if (options[2] == NULL) {
+        options[2] = numstring[0];
       } else {
-        options[9] = numstring[atoi(options[9])];
+        options[2] = numstring[atoi(options[2])];
       }
       pos++;
       // strict_options: is file_count allowed?
@@ -374,10 +227,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 10 && !strncmp("--avg-size", argv[pos], 10))) {
-      if (options[10] == NULL) {
-        options[10] = numstring[0];
+      if (options[3] == NULL) {
+        options[3] = numstring[0];
       } else {
-        options[10] = numstring[atoi(options[10])];
+        options[3] = numstring[atoi(options[3])];
       }
       pos++;
       // strict_options: is avg_size allowed?
@@ -394,33 +247,12 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 9 && !strncmp("--uniques", argv[pos], 9))) {
-      if (options[11] == NULL) {
-        options[11] = numstring[0];
-      } else {
-        options[11] = numstring[atoi(options[11])];
-      }
-      pos++;
-      // strict_options: is uniques allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_uniques) / sizeof(option_uniques)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_uniques[cc] == *command) { ok = 1; }
-        if (option_uniques[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'uniques' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
     if ((l == 12 && !strncmp("--stats-file", argv[pos], 12))) {
       if (argv[pos+1] == NULL) {
         printf("error: no value for arg --stats-file\n");
         exit(1);
       }
-      options[12] = argv[pos+1];
+      options[4] = argv[pos+1];
       pos += 2;
       // strict_options: is stats_file allowed?
       int ok = 0;
@@ -442,7 +274,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --minsize\n");
         exit(1);
       }
-      options[13] = argv[pos+1];
+      options[5] = argv[pos+1];
       pos += 2;
       // strict_options: is minsize allowed?
       int ok = 0;
@@ -459,10 +291,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 8 && !strncmp("--hidden", argv[pos], 8))) {
-      if (options[14] == NULL) {
-        options[14] = numstring[0];
+      if (options[6] == NULL) {
+        options[6] = numstring[0];
       } else {
-        options[14] = numstring[atoi(options[14])];
+        options[6] = numstring[atoi(options[6])];
       }
       pos++;
       // strict_options: is hidden allowed?
@@ -479,11 +311,33 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 16 && !strncmp("--no-thread-scan", argv[pos], 16))) {
-      if (options[15] == NULL) {
-        options[15] = numstring[0];
+    if ((l == 20 && !strncmp("--hardlink-is-unique", argv[pos], 20))||
+        (l == 2 && !strncmp("-I", argv[pos], 2))) {
+      if (options[7] == NULL) {
+        options[7] = numstring[0];
       } else {
-        options[15] = numstring[atoi(options[15])];
+        options[7] = numstring[atoi(options[7])];
+      }
+      pos++;
+      // strict_options: is hardlink_is_unique allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_hardlink_is_unique) / sizeof(option_hardlink_is_unique)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_hardlink_is_unique[cc] == *command) { ok = 1; }
+        if (option_hardlink_is_unique[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'hardlink_is_unique' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 16 && !strncmp("--no-thread-scan", argv[pos], 16))) {
+      if (options[8] == NULL) {
+        options[8] = numstring[0];
+      } else {
+        options[8] = numstring[atoi(options[8])];
       }
       pos++;
       // strict_options: is no_thread_scan allowed?
@@ -501,10 +355,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 16 && !strncmp("--no-thread-hash", argv[pos], 16))) {
-      if (options[16] == NULL) {
-        options[16] = numstring[0];
+      if (options[9] == NULL) {
+        options[9] = numstring[0];
       } else {
-        options[16] = numstring[atoi(options[16])];
+        options[9] = numstring[atoi(options[9])];
       }
       pos++;
       // strict_options: is no_thread_hash allowed?
@@ -531,7 +385,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: --pathsep must be a single character\n");
         exit(1);
       }
-      options[17] = argv[pos+1];
+      options[10] = argv[pos+1];
       pos += 2;
       // strict_options: is pathsep allowed?
       int ok = 0;
@@ -547,24 +401,170 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 20 && !strncmp("--hardlink-is-unique", argv[pos], 20))||
-        (l == 2 && !strncmp("-I", argv[pos], 2))) {
+    if ((l == 13 && !strncmp("--firstblocks", argv[pos], 13))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --firstblocks\n");
+        exit(1);
+      }
+      options[11] = argv[pos+1];
+      pos += 2;
+      // strict_options: is firstblocks allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_firstblocks) / sizeof(option_firstblocks)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_firstblocks[cc] == *command) { ok = 1; }
+        if (option_firstblocks[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'firstblocks' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 16 && !strncmp("--firstblocksize", argv[pos], 16))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --firstblocksize\n");
+        exit(1);
+      }
+      options[12] = argv[pos+1];
+      pos += 2;
+      // strict_options: is firstblocksize allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_firstblocksize) / sizeof(option_firstblocksize)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_firstblocksize[cc] == *command) { ok = 1; }
+        if (option_firstblocksize[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'firstblocksize' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 11 && !strncmp("--intblocks", argv[pos], 11))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --intblocks\n");
+        exit(1);
+      }
+      options[13] = argv[pos+1];
+      pos += 2;
+      // strict_options: is intblocks allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_intblocks) / sizeof(option_intblocks)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_intblocks[cc] == *command) { ok = 1; }
+        if (option_intblocks[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'intblocks' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 11 && !strncmp("--blocksize", argv[pos], 11))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --blocksize\n");
+        exit(1);
+      }
+      options[14] = argv[pos+1];
+      pos += 2;
+      // strict_options: is blocksize allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_blocksize) / sizeof(option_blocksize)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_blocksize[cc] == *command) { ok = 1; }
+        if (option_blocksize[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'blocksize' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 15 && !strncmp("--fileblocksize", argv[pos], 15))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --fileblocksize\n");
+        exit(1);
+      }
+      options[15] = argv[pos+1];
+      pos += 2;
+      // strict_options: is fileblocksize allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_fileblocksize) / sizeof(option_fileblocksize)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_fileblocksize[cc] == *command) { ok = 1; }
+        if (option_fileblocksize[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'fileblocksize' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 10 && !strncmp("--skip-two", argv[pos], 10))) {
+      if (options[16] == NULL) {
+        options[16] = numstring[0];
+      } else {
+        options[16] = numstring[atoi(options[16])];
+      }
+      pos++;
+      // strict_options: is skip_two allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_skip_two) / sizeof(option_skip_two)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_skip_two[cc] == *command) { ok = 1; }
+        if (option_skip_two[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'skip_two' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 12 && !strncmp("--skip-three", argv[pos], 12))) {
+      if (options[17] == NULL) {
+        options[17] = numstring[0];
+      } else {
+        options[17] = numstring[atoi(options[17])];
+      }
+      pos++;
+      // strict_options: is skip_three allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_skip_three) / sizeof(option_skip_three)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_skip_three[cc] == *command) { ok = 1; }
+        if (option_skip_three[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'skip_three' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 9 && !strncmp("--uniques", argv[pos], 9))) {
       if (options[18] == NULL) {
         options[18] = numstring[0];
       } else {
         options[18] = numstring[atoi(options[18])];
       }
       pos++;
-      // strict_options: is hardlink_is_unique allowed?
+      // strict_options: is uniques allowed?
       int ok = 0;
       unsigned int cc;
-      unsigned int len = sizeof(option_hardlink_is_unique) / sizeof(option_hardlink_is_unique)[0];
+      unsigned int len = sizeof(option_uniques) / sizeof(option_uniques)[0];
       for (cc = 0; cc < len; cc++) {
-        if (option_hardlink_is_unique[cc] == *command) { ok = 1; }
-        if (option_hardlink_is_unique[cc] == COMMAND_GLOBAL) { ok = 1; }
+        if (option_uniques[cc] == *command) { ok = 1; }
+        if (option_uniques[cc] == COMMAND_GLOBAL) { ok = 1; }
       }
       if (!ok) {
-        printf("error: option 'hardlink_is_unique' not compatible with given command\n");
+        printf("error: option 'uniques' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -767,33 +767,12 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 11 && !strncmp("--no-unique", argv[pos], 11))) {
+    if ((l == 6 && !strncmp("--help", argv[pos], 6))||
+        (l == 2 && !strncmp("-h", argv[pos], 2))) {
       if (options[28] == NULL) {
         options[28] = numstring[0];
       } else {
         options[28] = numstring[atoi(options[28])];
-      }
-      pos++;
-      // strict_options: is no_unique allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_no_unique) / sizeof(option_no_unique)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_no_unique[cc] == *command) { ok = 1; }
-        if (option_no_unique[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'no_unique' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 6 && !strncmp("--help", argv[pos], 6))||
-        (l == 2 && !strncmp("-h", argv[pos], 2))) {
-      if (options[29] == NULL) {
-        options[29] = numstring[0];
-      } else {
-        options[29] = numstring[atoi(options[29])];
       }
       pos++;
       // strict_options: is help allowed?
@@ -806,6 +785,27 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'help' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 11 && !strncmp("--no-unique", argv[pos], 11))) {
+      if (options[29] == NULL) {
+        options[29] = numstring[0];
+      } else {
+        options[29] = numstring[atoi(options[29])];
+      }
+      pos++;
+      // strict_options: is no_unique allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_no_unique) / sizeof(option_no_unique)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_no_unique[cc] == *command) { ok = 1; }
+        if (option_no_unique[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'no_unique' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -890,23 +890,13 @@ char opt_char(char * str, char def)
 void opt_show_help()
 {
   printf("scan     scan starting from the given path\n");
-  printf("     --nodb                   do not generate database file\n");
   printf("  -p --path PATH              path where scanning will start\n");
-  printf("     --firstblocks N          max blocks to read in first hash pass\n");
-  printf("     --firstblocksize N       size of firstblocks to read\n");
-  printf("     --intblocks N            blocks to read in intermediate hash\n");
-  printf("     --blocksize N            size of regular blocks to read\n");
-  printf("     --fileblocksize N        size of blocks to read in file compare\n");
-  printf("     --skip-two               do not compare two files directly\n");
-  printf("     --skip-three             do not compare three files directly\n");
+  printf("     --nodb                   do not generate database file\n");
   printf("     --file-count             max estimated number of files to scan\n");
   printf("     --avg-size               estimated average file path length\n");
-  printf("     --uniques                save info about unique files\n");
   printf("     --stats-file FILE        save stats to this file\n");
   printf("  -m --minsize SIZE           min size of files to scan\n");
   printf("     --hidden                 include hidden files and dirs in scan\n");
-  printf("     --no-thread-scan         do scan phase in a single thread\n");
-  printf("     --no-thread-hash         do hash/compare phase in a single thread\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
   printf("refresh  remove deleted files from the database\n");
@@ -956,7 +946,6 @@ void opt_show_help()
   printf("  -V --verbose-threads     increase thread verbosity (may be repeated for more)\n");
   printf("  -q --quiet               quiet, supress all output except fatal errors\n");
   printf("  -d --db PATH             path to dupd database file\n");
-  printf("     --no-unique           ignore unique table even if present\n");
   printf("  -h --help                show brief usage info\n");
   printf("\n");
 }
