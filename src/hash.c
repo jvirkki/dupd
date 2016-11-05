@@ -62,6 +62,11 @@ static int md5(const char * path, char * output, uint64_t blocks,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
+  // When reading the entire file, use max block size to reduce read calls
+  if (blocks == 0) {
+    bsize = MAX_BLOCK;
+  }
+
   int file = open(path, O_RDONLY);
   if (file < 0) {                                            // LCOV_EXCL_START
     if (verbosity >= 1) {
