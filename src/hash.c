@@ -19,28 +19,35 @@
 
 #include <fcntl.h>
 #include <inttypes.h>
-#include <openssl/md5.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifndef __APPLE__
+#include <openssl/md5.h>
+#endif
+
+#ifdef __APPLE__
+#include <CommonCrypto/CommonDigest.h>
+#define MD5_CTX CC_MD5_CTX
+#define MD5_Init CC_MD5_Init
+#define MD5_Update CC_MD5_Update
+#define MD5_Final CC_MD5_Final
+#endif
+
 #include "main.h"
-#include "md5.h"
+#include "hash.h"
 #include "stats.h"
 
-#define MAX_BLOCK (1024 * 64)
+#define MAX_BLOCK (1024 * 256)
 
 static char buffer[MAX_BLOCK];
 
 
-/** ***************************************************************************
- * Public function, see md5.h
- *
- */
-int md5(const char * path, char * output, uint64_t blocks,
-        int bsize, uint64_t skip)
+static int md5(const char * path, char * output, uint64_t blocks,
+               int bsize, uint64_t skip)
 {
   uint64_t counter = blocks;
 
@@ -55,10 +62,15 @@ int md5(const char * path, char * output, uint64_t blocks,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
+  // When reading the entire file, use max block size to reduce read calls
+  if (blocks == 0) {
+    bsize = MAX_BLOCK;
+  }
+
   int file = open(path, O_RDONLY);
   if (file < 0) {                                            // LCOV_EXCL_START
     if (verbosity >= 1) {
-      printf("MD5: Error opening [%s]\n", path);
+      printf("HASH: Error opening [%s]\n", path);
     }
     return(-1);
   }                                                          // LCOV_EXCL_STOP
@@ -88,11 +100,7 @@ int md5(const char * path, char * output, uint64_t blocks,
 }
 
 
-/** ***************************************************************************
- * Public function, see md5.h
- *
- */
-int md5_buf(const char * buffer, int bufsize, char * output)
+static int md5_buf(const char * buffer, int bufsize, char * output)
 {
   MD5_CTX md5;
 
@@ -102,3 +110,18 @@ int md5_buf(const char * buffer, int bufsize, char * output)
   stats_total_bytes_hashed += bufsize;
   return(0);
 }
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+int (*hashfn)(const char * path, char * output, uint64_t blocks,
+              int bsize, uint64_t skip) = &md5;
+
+
+/** ***************************************************************************
+ * Public function, see md5.h
+ *
+ */
+int (*hashfn_buf)(const char * buffer, int bufsize, char * output) = &md5_buf;

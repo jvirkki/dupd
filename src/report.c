@@ -25,7 +25,7 @@
 
 #include "dbops.h"
 #include "main.h"
-#include "md5.h"
+#include "hash.h"
 #include "report.h"
 #include "scan.h"
 #include "utils.h"
@@ -98,7 +98,7 @@ static int is_duplicate(char * path, char * self, char * hash)
     return(0);
   }
 
-  if (md5(path, hash2, 0, hash_block_size, 0)) {
+  if ((*hashfn)(path, hash2, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);              // LCOV_EXCL_START
     return(0);
   }                                                          // LCOV_EXCL_STOP
@@ -158,7 +158,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  if (md5(path, hash, 0, hash_block_size, 0)) {
+  if ((*hashfn)(path, hash, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);              // LCOV_EXCL_START
     exit(1);
   }                                                          // LCOV_EXCL_STOP

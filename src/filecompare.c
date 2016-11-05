@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -30,7 +30,6 @@
 #include "dbops.h"
 #include "filecompare.h"
 #include "main.h"
-#include "md5.h"
 #include "stats.h"
 
 static char * buffers[4];

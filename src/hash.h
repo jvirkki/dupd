@@ -17,17 +17,17 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DUPD_MD5_H
-#define _DUPD_MD5_H
+#ifndef _DUPD_HASH_H
+#define _DUPD_HASH_H
 
 #include <stdint.h>
 
 
 /** ***************************************************************************
- * Compute MD5 hash on one file.
+ * Compute hash on one file from disk.
  *
  * The hash will be stored in the 'output' buffer provided by the
- * caller. This buffer must be at least 16 bytes long.
+ * caller.
  *
  * Parameters:
  *    path    - The path to process. Must not be null or empty.
@@ -35,6 +35,7 @@
  *    blocks  - Number of blocks to read from file.
  *              Or set to 0 to read entire file.
  *    bsize   - Size of blocks to read from disk.
+ *              Ignored if blocks == 0 (when reading entire file).
  *    skip    - Skip this many blocks when hashing from the file.
  *
  * Return:
@@ -42,15 +43,15 @@
  *   -1 - If unable to compute hash (e.g. unable to open file)
  *
  */
-int md5(const char * path, char * output, uint64_t blocks,
-        int bsize, uint64_t skip);
+int (*hashfn)(const char * path, char * output, uint64_t blocks,
+              int bsize, uint64_t skip);
 
 
 /** ***************************************************************************
- * Compute MD5 hash on data in memory.
+ * Compute hash on data in memory.
  *
  * The hash will be stored in the 'output' buffer provided by the
- * caller. This buffer must be at least 16 bytes long.
+ * caller.
  *
  * Parameters:
  *    buffer  - Read data from here.
@@ -61,7 +62,7 @@ int md5(const char * path, char * output, uint64_t blocks,
  *    0 - On success
  *
  */
-int md5_buf(const char * buffer, int bufsize, char * output);
+int (*hashfn_buf)(const char * buffer, int bufsize, char * output);
 
 
 #endif
