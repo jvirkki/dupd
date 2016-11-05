@@ -30,7 +30,7 @@
 #include "dbops.h"
 #include "hashlist.h"
 #include "main.h"
-#include "md5.h"
+#include "hash.h"
 #include "stats.h"
 #include "utils.h"
 
@@ -311,7 +311,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
   assert(path != NULL);                                      // LCOV_EXCL_LINE
 
   char md5out[16];
-  int rv = md5(path, md5out, blocks, bsize, skip);
+  int rv = (*hashfn)(path, md5out, blocks, bsize, skip);
   if (rv != 0) {                                             // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("SKIP [%s]: Unable to compute hash\n", path);
@@ -335,7 +335,7 @@ void add_hash_list_from_mem(struct hash_list * hl, char * path,
   assert(path != NULL);                                      // LCOV_EXCL_LINE
 
   char md5out[16];
-  md5_buf(buffer, bufsize, md5out);
+  (*hashfn_buf)(buffer, bufsize, md5out);
   add_to_hash_list(hl, path, md5out);
 }
 
