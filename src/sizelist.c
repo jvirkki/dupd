@@ -38,6 +38,7 @@
 #include "stats.h"
 #include "utils.h"
 
+static int round1_max_bytes;
 static struct size_list * size_list_head;
 static struct size_list * size_list_tail;
 static int reader_continue = 1;
@@ -568,7 +569,11 @@ static void * reader_main(void * arg)
       switch(size_node->state) {
 
       case SLS_NEED_BYTES_ROUND_1:
-        max_to_read = hash_one_block_size * hash_one_max_blocks;
+        if (size_node->size <= round1_max_bytes) {
+          max_to_read = round1_max_bytes;
+        } else {
+          max_to_read = hash_one_block_size;
+        }
         reader_read_bytes(size_node, max_to_read);
         size_node->state = SLS_READY_1;
         break;
@@ -956,6 +961,7 @@ void init_size_list()
   size_list_tail = NULL;
   stats_size_list_count = 0;
   stats_size_list_avg = 0;
+  round1_max_bytes = hash_one_block_size * hash_one_max_blocks;
 }
 
 
