@@ -304,10 +304,14 @@ void scan()
 
   t1 = get_current_time_millis();
 
-  if (threaded_hashcompare) {
-    threaded_process_size_list(dbh);
+  if (x_analyze) {
+    analyze_process_size_list(dbh);
   } else {
-    process_size_list(dbh);
+    if (threaded_hashcompare) {
+      threaded_process_size_list(dbh);
+    } else {
+      process_size_list(dbh);
+    }
   }
 
   stats_time_process = get_current_time_millis() - t1;

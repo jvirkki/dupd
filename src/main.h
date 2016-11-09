@@ -228,6 +228,14 @@ extern int x_small_buffers;
 
 
 /** ***************************************************************************
+ * If true, run the analyze_process_size_list() after scan. This is for
+ * testing only and disables other functionality (such as threading).
+ *
+ */
+extern int x_analyze;
+
+
+/** ***************************************************************************
  * If true, enable behavior(s) that only make sense while testing.
  *
  */

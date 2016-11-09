@@ -76,6 +76,20 @@ void process_size_list(sqlite3 * dbh);
 
 
 /** ***************************************************************************
+ * An internal testing version of process_size_list. Produces output
+ * showing how many blocks needed to discard potential duplicates.
+ * Not intended for normal usage.
+ *
+ * Parameters:
+ *    dbh - Database pointer.
+ *
+ * Return: none
+ *
+ */
+void analyze_process_size_list(sqlite3 * dbh);
+
+
+/** ***************************************************************************
  * Process the size list in two threads.
  *
  * Otherwise same as process_size_list() above.

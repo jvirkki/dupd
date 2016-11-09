@@ -44,7 +44,7 @@
 // ab..e.g.ijkl.no..rstu.w.yzABCDEFG..JK.MNOPQRSTU.WXYZ0123456789
 //
 
-#define COUNT_OPTIONS 32
+#define COUNT_OPTIONS 33
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -103,44 +103,47 @@
 // uniques (--uniques) : save info about unique files
 #define OPT_uniques 18
 
+// x_analyze (--x-analyze) : for testing only
+#define OPT_x_analyze 19
+
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 19
+#define OPT_cut 20
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 20
+#define OPT_file 21
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 21
+#define OPT_exclude_path 22
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 22
+#define OPT_link 23
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 23
+#define OPT_hardlink 24
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 24
+#define OPT_verbose 25
 
 // verbose_threads (-V,--verbose-threads) : increase thread verbosity (may be repeated for more)
-#define OPT_verbose_threads 25
+#define OPT_verbose_threads 26
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 26
+#define OPT_quiet 27
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 27
+#define OPT_db 28
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 28
+#define OPT_help 29
 
 // no_unique (--no-unique) : ignore unique table even if present, for testing
-#define OPT_no_unique 29
+#define OPT_no_unique 30
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 30
+#define OPT_x_small_buffers 31
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 31
+#define OPT_x_testing 32
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

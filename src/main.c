@@ -74,6 +74,7 @@ int scan_hidden = 0;
 int path_separator = '\x1C';
 char * path_sep_string = NULL;
 int x_small_buffers = 0;
+int x_analyze = 0;
 int only_testing = 0;
 int threaded_sizetree = 1;
 int threaded_hashcompare = 1;
@@ -282,6 +283,14 @@ static void process_args(int argc, char * argv[])
   path_sep_string = (char *)malloc(2);
   path_sep_string[0] = (char)path_separator;
   path_sep_string[1] = 0;
+
+  if (options[OPT_x_analyze]) {
+    opt_compare_two = 0;
+    opt_compare_three = 0;
+    threaded_sizetree = 0;
+    threaded_hashcompare = 0;
+    x_analyze = 1;
+  }
 }
 
 

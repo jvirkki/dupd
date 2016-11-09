@@ -146,6 +146,136 @@ void add_to_size_list(off_t size, char * path_list)
  * Public function, see header file.
  *
  */
+void analyze_process_size_list(sqlite3 * dbh)
+{
+  if (size_list_head == NULL) {
+    return;
+  }
+
+  char * line;
+  char * node;
+  char * path_list_head;
+  int count = 0;
+  long total_blocks;
+  long total_blocks_initial;
+  int analyze_block_size = hash_one_block_size;
+  off_t skip = 0;
+
+  struct size_list * size_node = size_list_head;
+
+  while (size_node != NULL) {
+
+    if (size_node->size < 0) {
+      printf("size makes no sense!\n");                     // LCOV_EXCL_LINE
+      exit(1);                                              // LCOV_EXCL_LINE
+    }
+
+    total_blocks = 1 + (size_node->size / analyze_block_size);
+    total_blocks_initial = total_blocks;
+    skip = 0;
+    count++;
+    path_list_head = size_node->path_list;
+    node = pl_get_first_entry(path_list_head);
+
+    if (verbosity >= 2) {
+      uint32_t path_count = pl_get_path_count(path_list_head);
+      printf("Processing %d/%d "
+             "(%d files of size %ld) (%ld blocks of size %d)\n",
+             count, stats_size_list_count,
+             path_count, size_node->size, total_blocks, analyze_block_size);
+    }
+
+    // Build initial hash list for these files
+
+    int hl_current = 1;
+    struct hash_list * hl_one = get_hash_list(hl_current);
+    do {
+      line = pl_entry_get_path(node);
+      add_hash_list(hl_one, line, 1, analyze_block_size, skip);
+      node = pl_entry_get_next(node);
+    } while (node != NULL);
+
+    if (verbosity >= 4) { printf("Done building first hash list.\n"); }
+    if (verbosity >= 6) {
+      printf("Contents of hash list hl_one:\n");
+      print_hash_list(hl_one);
+    }
+
+    if (save_uniques) {
+      skim_uniques(dbh, hl_one, save_uniques);
+    }
+
+    struct hash_list * hl_previous = NULL;
+
+    total_blocks--;
+
+    while(1) {
+
+      // If no potential dups after this round, we're done!
+      if (HASH_LIST_NO_DUPS(hl_one)) {
+        if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+        stats_set_no_dups_round_one++;
+        goto ANALYZER_CONTINUE;
+      }
+
+      // If we've processed all blocks already, we're done!
+      if (total_blocks == 0) {
+        if (verbosity >= 4) { printf("Some dups confirmed, here they are:\n");}
+        publish_duplicate_hash_list(dbh, hl_one, size_node->size);
+        stats_set_dups_done_round_one++;
+        goto ANALYZER_CONTINUE;
+      }
+
+      hl_previous = hl_one;
+      hl_current = hl_current == 1 ? 3 : 1;
+      hl_one = get_hash_list(hl_current);
+      skip++;
+      total_blocks--;
+
+      if (verbosity >= 4) {
+        printf("Next round of filtering: skip = %zu\n", skip);
+      }
+      filter_hash_list(hl_previous, 1, analyze_block_size, hl_one, skip);
+
+      if (verbosity >= 6) {
+        printf("Contents of hash list hl_one:\n");
+        print_hash_list(hl_one);
+      }
+
+      if (save_uniques) {
+        skim_uniques(dbh, hl_one, save_uniques);
+      }
+    }
+
+  ANALYZER_CONTINUE:
+
+    skip++;
+    if (skip == 1) {
+      stats_analyzer_one_block++;
+    } else if (total_blocks == 0) {
+      stats_analyzer_all_blocks++;
+    }
+
+    if (skip > 1 && total_blocks > 0) {
+      int pct = (int)(100 * skip) / total_blocks_initial;
+      int bucket = (pct / 5) - 1;
+      stats_analyzer_buckets[bucket]++;
+    }
+
+    if (verbosity >=3) {
+      printf(" Completed after %zu blocks read (%ld remaining)\n",
+             skip, total_blocks);
+    }
+
+    size_node = size_node->next;
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void process_size_list(sqlite3 * dbh)
 {
   if (size_list_head == NULL) {
