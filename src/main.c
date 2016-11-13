@@ -375,6 +375,7 @@ int main(int argc, char * argv[])
     case COMMAND_file:      operation_file();            break;
     case COMMAND_ls:        operation_ls();              break;
     case COMMAND_rmsh:      operation_shell_script();    break;
+    case COMMAND_validate:  rv = operation_validate();   break;
     case COMMAND_usage:     show_usage();                break;
     case COMMAND_help:      show_help();                 break;
     case OPTGEN_NO_COMMAND: show_help();                 rv = 1; break;

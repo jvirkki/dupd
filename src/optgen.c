@@ -73,14 +73,14 @@ int option_file[] = { 4 };
 int option_exclude_path[] = { 4, 5, 6, 7 };
 int option_link[] = { 8 };
 int option_hardlink[] = { 8 };
-int option_verbose[] = { 13 };
-int option_verbose_threads[] = { 13 };
-int option_quiet[] = { 13 };
-int option_db[] = { 13 };
-int option_help[] = { 13 };
-int option_no_unique[] = { 13 };
-int option_x_small_buffers[] = { 13 };
-int option_x_testing[] = { 13 };
+int option_verbose[] = { 14 };
+int option_verbose_threads[] = { 14 };
+int option_quiet[] = { 14 };
+int option_db[] = { 14 };
+int option_help[] = { 14 };
+int option_no_unique[] = { 14 };
+int option_x_small_buffers[] = { 14 };
+int option_x_testing[] = { 14 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -132,20 +132,24 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     *command = 8;
     goto OPTS;
   }
-  if (l == 4 && !strncmp("help", argv[1], 4)) {
+  if (l == 8 && !strncmp("validate", argv[1], 8)) {
     *command = 9;
     goto OPTS;
   }
-  if (l == 5 && !strncmp("usage", argv[1], 5)) {
+  if (l == 4 && !strncmp("help", argv[1], 4)) {
     *command = 10;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("license", argv[1], 7)) {
+  if (l == 5 && !strncmp("usage", argv[1], 5)) {
     *command = 11;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("version", argv[1], 7)) {
+  if (l == 7 && !strncmp("license", argv[1], 7)) {
     *command = 12;
+    goto OPTS;
+  }
+  if (l == 7 && !strncmp("version", argv[1], 7)) {
+    *command = 13;
     goto OPTS;
   }
 
@@ -911,7 +915,7 @@ char opt_char(char * str, char def)
 
 void opt_show_help()
 {
-  printf("scan     scan starting from the given path\n");
+  printf("scan      scan starting from the given path\n");
   printf("  -p --path PATH              path where scanning will start\n");
   printf("     --nodb                   do not generate database file\n");
   printf("     --file-count             max estimated number of files to scan\n");
@@ -921,47 +925,49 @@ void opt_show_help()
   printf("     --hidden                 include hidden files and dirs in scan\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
-  printf("refresh  remove deleted files from the database\n");
+  printf("refresh   remove deleted files from the database\n");
   printf("\n");
-  printf("report   show duplicate report from last scan\n");
+  printf("report    show duplicate report from last scan\n");
   printf("  -c --cut PATHSEG      remove 'PATHSEG' from report paths\n");
   printf("  -m --minsize SIZE     min size of total duplicated space to report\n");
   printf("\n");
-  printf("file     based on report, check for duplicates of one file\n");
+  printf("file      based on report, check for duplicates of one file\n");
   printf("  -f --file PATH              check this file\n");
   printf("  -c --cut PATHSEG            remove 'PATHSEG' from report paths\n");
   printf("  -x --exclude-path PATH      ignore duplicates under this path\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
-  printf("uniques  based on report, look for unique files\n");
+  printf("uniques   based on report, look for unique files\n");
   printf("  -p --path PATH              path where scanning will start\n");
   printf("  -c --cut PATHSEG            remove 'PATHSEG' from report paths\n");
   printf("  -x --exclude-path PATH      ignore duplicates under this path\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
-  printf("dups     based on report, look for duplicate files\n");
+  printf("dups      based on report, look for duplicate files\n");
   printf("  -p --path PATH              path where scanning will start\n");
   printf("  -c --cut PATHSEG            remove 'PATHSEG' from report paths\n");
   printf("  -x --exclude-path PATH      ignore duplicates under this path\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
-  printf("ls       based on report, list info about every file seen\n");
+  printf("ls        based on report, list info about every file seen\n");
   printf("  -p --path PATH              path where scanning will start\n");
   printf("  -c --cut PATHSEG            remove 'PATHSEG' from report paths\n");
   printf("  -x --exclude-path PATH      ignore duplicates under this path\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
-  printf("rmsh     create shell script to delete all duplicates\n");
+  printf("rmsh      create shell script to delete all duplicates\n");
   printf("  -L --link         create symlinks for deleted files\n");
   printf("  -H --hardlink     create hard links for deleted files\n");
   printf("\n");
-  printf("help     show brief usage info\n");
+  printf("validate  revalidate all duplicates in db\n");
   printf("\n");
-  printf("usage    show more extensive documentation\n");
+  printf("help      show brief usage info\n");
   printf("\n");
-  printf("license  show license info\n");
+  printf("usage     show more extensive documentation\n");
   printf("\n");
-  printf("version  show version and exit\n");
+  printf("license   show license info\n");
+  printf("\n");
+  printf("version   show version and exit\n");
   printf("\n");
   printf("General options:\n");
   printf("  -v --verbose             increase verbosity (may be repeated for more)\n");

@@ -169,20 +169,23 @@
 // rmsh: create shell script to delete all duplicates
 #define COMMAND_rmsh 8
 
+// validate: revalidate all duplicates in db
+#define COMMAND_validate 9
+
 // help: show brief usage info
-#define COMMAND_help 9
+#define COMMAND_help 10
 
 // usage: show more extensive documentation
-#define COMMAND_usage 10
+#define COMMAND_usage 11
 
 // license: show license info
-#define COMMAND_license 11
+#define COMMAND_license 12
 
 // version: show version and exit
-#define COMMAND_version 12
+#define COMMAND_version 13
 
 // GLOBAL: 
-#define COMMAND_GLOBAL 13
+#define COMMAND_GLOBAL 14
 
 /**
  * Function to parse the arguments.

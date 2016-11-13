@@ -163,6 +163,20 @@ may have appeared since the last scan.
 % dupd refresh
 
 
+Validating the database
+-----------------------
+The validate operation is primarily for testing but may be useful if
+you want to reconfirm that all duplicates in the database are still
+truly duplicates.
+
+Generally you will be better off re-running the scan operation
+instead of using validate.
+
+This is fairly slow as it will fully hash every file in the database.
+
+% dupd validate
+
+
 Remove duplicate files
 ----------------------
 As a policy dupd never modifies the filesystem.

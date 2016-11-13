@@ -69,6 +69,45 @@ static void print_path(char * prefix, char * path)
 
 
 /** ***************************************************************************
+ * Prints out each duplicate and its status from respective arrays.
+ *
+ * The duplicates and status arrays are same as what was passed to
+ * reverify_duplicates(), which must have been called prior to calling this
+ * function (as reverify_duplicates() is what fills the content into status).
+ *
+ * Parameters:
+ *    count      - Number of entries in duplicates and status arrays.
+ *    duplicates - Array of duplicate paths.
+ *    status     - Array of status codes.
+ *
+ * Return: none
+ *
+ */
+void print_status_array(int count, char * * duplicates, int * status)
+{
+  for (int i = 0; i < count; i++) {
+    switch(status[i]) {
+    case STATUS_DUPLICATE:
+      print_path("             DUP: ", duplicates[i]);
+      break;
+    case STATUS_HARDLINK:
+      print_path("             HL : ", duplicates[i]);
+      break;
+    case STATUS_EXCLUDE:
+      print_path("             xxx: ", duplicates[i]);
+      break;
+    case STATUS_NOTDUP:
+      print_path("             ---: ", duplicates[i]);
+      break;
+    default:
+      printf("error: file_callback: unknown status\n");    // LCOV_EXCL_START
+      exit(1);
+    }                                                      // LCOV_EXCL_STOP
+  }
+}
+
+
+/** ***************************************************************************
  * For the given 'path', check if that file is the same as the file in
  * 'self' which has the given 'hash'.
  *
@@ -345,25 +384,7 @@ static int file_callback(sqlite3 * dbh, off_t size, ino_t inode, char * path)
   // Print info about each individual duplicate candidate if applicable
 
   if (have_info && list_all_duplicates) {
-    for (int i = 0; i < dups; i++) {
-      switch(status[i]) {
-      case STATUS_DUPLICATE:
-        print_path("             DUP: ", dup_paths[i]);
-        break;
-      case STATUS_HARDLINK:
-        print_path("             HL : ", dup_paths[i]);
-        break;
-      case STATUS_EXCLUDE:
-        print_path("             xxx: ", dup_paths[i]);
-        break;
-      case STATUS_NOTDUP:
-        print_path("             ---: ", dup_paths[i]);
-        break;
-      default:
-        printf("error: file_callback: unknown status\n");    // LCOV_EXCL_START
-        exit(1);
-      }                                                      // LCOV_EXCL_STOP
-    }
+    print_status_array(dups, dup_paths, status);
   }
 
   return(verified_dups);
@@ -498,4 +519,76 @@ void operation_shell_script()
   }
   sqlite3_finalize(statement);
   close_database(dbh);
+}
+
+
+/** ***************************************************************************
+ * Public function, see report.h
+ *
+ */
+int operation_validate()
+{
+  sqlite3_stmt * statement = NULL;
+  const char * sql = "SELECT count,paths FROM duplicates";
+  char path[PATH_MAX];
+  int rv;
+  char * path_list;
+  char * pos = NULL;
+  char * token;
+  char * * duplicates;
+  int * status;
+  int count;
+  int i;
+  int errors = 0;
+
+  sqlite3 * dbh = open_database(db_path, 0);
+  rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  while (rv != SQLITE_DONE) {
+    rv = sqlite3_step(statement);
+    if (rv == SQLITE_DONE) { continue; }
+    if (rv != SQLITE_ROW) {                                  // LCOV_EXCL_START
+      printf("Error reading duplicates table!\n");
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
+
+    count = sqlite3_column_int(statement, 0);
+    duplicates = (char * *)calloc(count - 1, sizeof(char *));
+    status = (int *)calloc(count - 1, sizeof(int));
+    path_list = (char *)sqlite3_column_text(statement, 1);
+
+    if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
+      strcpy(path, token);
+      i = 0;
+
+      while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
+        duplicates[i] = (char *)malloc(strlen(token) + 1);
+        strcpy(duplicates[i], token);
+        i++;
+      }
+    }
+
+    rv = reverify_duplicates(path, count - 1, duplicates, status, 0);
+    if (rv != count-1 || verbosity >= 2) {
+      printf("%s\n", path);
+      print_status_array(count - 1, duplicates, status);
+    }
+    if (rv != count-1) {
+      printf("error: not dups (anymore)!\n");
+      errors++;
+    }
+
+    for (i = 0; i < count-1; i++) {
+      free(duplicates[i]);
+    }
+    free(duplicates);
+    duplicates = NULL;
+    free(status);
+    status = NULL;
+  }
+
+  sqlite3_finalize(statement);
+  close_database(dbh);
+  return(errors != 0);
 }

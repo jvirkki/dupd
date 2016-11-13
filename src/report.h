@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -88,6 +88,18 @@ void operation_dups();
  *
  */
 void operation_ls();
+
+
+/** ***************************************************************************
+ * Validate that all duplicate sets in the database are still duplicates
+ * by hashing each file (potentially slow, for many duplicates).
+ *
+ * Parameters: none
+ *
+ * Return: 1 if non-duplicates were found.
+ *
+ */
+int operation_validate();
 
 
 #endif
