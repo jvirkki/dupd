@@ -338,6 +338,7 @@ static void process_args(int argc, char * argv[])
     opt_compare_three = 0;
     threaded_sizetree = 0;
     threaded_hashcompare = 0;
+    save_uniques = 0;
     x_analyze = 1;
   }
 }

@@ -202,10 +202,6 @@ void analyze_process_size_list(sqlite3 * dbh)
       print_hash_list(hl_one);
     }
 
-    if (save_uniques) {
-      skim_uniques(dbh, hl_one, save_uniques);
-    }
-
     struct hash_list * hl_previous = NULL;
 
     total_blocks--;
@@ -242,10 +238,6 @@ void analyze_process_size_list(sqlite3 * dbh)
         printf("Contents of hash list hl_one:\n");
         print_hash_list(hl_one);
       }
-
-      if (save_uniques) {
-        skim_uniques(dbh, hl_one, save_uniques);
-      }
     }
 
   ANALYZER_CONTINUE:
@@ -256,12 +248,12 @@ void analyze_process_size_list(sqlite3 * dbh)
     } else if (total_blocks == 0) {
       stats_analyzer_all_blocks++;
     }
-
+                                                             // LCOV_EXCL_START
     if (skip > 1 && total_blocks > 0) {
       int pct = (int)(100 * skip) / total_blocks_initial;
       int bucket = (pct / 5) - 1;
       stats_analyzer_buckets[bucket]++;
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     if (verbosity >=3) {
       printf(" Completed after %zu blocks read (%ld remaining)\n",
@@ -504,11 +496,11 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
     if (path[0] != 0) {
       buffer = (char *)malloc(size_node->bytes_read);
       received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
-      if (received != size_node->bytes_read) {
+      if (received != size_node->bytes_read) {               // LCOV_EXCL_START
         printf("error: read %zd bytes from [%s] but wanted %ld\n",
                received, path, size_node->bytes_read);
         size_node->bytes_read = 0;
-      }
+      }                                                      // LCOV_EXCL_STOP
       if (thread_verbosity >= 2) {
         printf("%s%ld bytes from %s\n",spaces,size_node->bytes_read,path);
       }
@@ -921,10 +913,10 @@ void threaded_process_size_list(sqlite3 * dbh)
     case SLS_DONE:
       break;
 
-    default:
+    default:                                                 // LCOV_EXCL_START
       printf("In final pass, bad sizelist state %d\n", size_node->state);
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     if (did_one) {
       if (verbosity >= 2) {

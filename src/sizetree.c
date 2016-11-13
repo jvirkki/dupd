@@ -237,11 +237,11 @@ static void * worker_main(void * arg)
 
     current_worker_queue = want_queue;
 
-    if (last_owner[current_worker_queue] != PRODUCER) {
+    if (last_owner[current_worker_queue] != PRODUCER) {      // LCOV_EXCL_START
       printf("worker got Q%d but last_owner=%d\n",
              current_worker_queue, last_owner[current_worker_queue]);
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     last_owner[current_worker_queue] = WORKER;
 
@@ -293,14 +293,14 @@ static void * worker_main(void * arg)
 
       pthread_mutex_lock(&queue_lock);
 
-      if (queue_added[current_worker_queue] !=
+      if (queue_added[current_worker_queue] !=               // LCOV_EXCL_START
           queue_removed[current_worker_queue]) {
         printf("Q%d: added (%ld) != removed (%ld)\n",
                current_worker_queue,
                queue_added[current_worker_queue],
                queue_removed[current_worker_queue]);
         exit(1);
-      }
+      }                                                      // LCOV_EXCL_STOP
 
       current_worker_queue = WANT_QUEUE;
       pthread_cond_signal(&queue_producer_cond);
@@ -361,10 +361,10 @@ int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path)
 
   stats_files_count++;
 
-  if (inode < 1) {
+  if (inode < 1) {                                           // LCOV_EXCL_START
     printf("Bad inode! %d\n", (int)inode);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   if (size >= minimum_file_size) {
     stats_total_bytes += size;
@@ -380,10 +380,10 @@ int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path)
     if (verbosity >= 4) {
       printf("SKIP (too small: %lld): [%s]\n", (long long)size, path);
     }
-    if (size < 0) {
+    if (size < 0) {                                          // LCOV_EXCL_START
       printf("Bad size! %lld: [%s]\n", (long long)size, path);
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
     return(-2);
   }
 
@@ -518,16 +518,17 @@ void scan_done()
     printf("Total added %" PRIu32 ", removed %" PRIu32 "\n", added, removed);
   }
 
+                                                             // LCOV_EXCL_START
   if (added != removed) {
     printf("added (%" PRIu32 ") != removed (%" PRIu32 ")\n", added, removed);
     exit(1);
   }
-
   if (removed != stats_files_count) {
     printf("files processed (%" PRIu32 ") != files scanned (%"PRIu32") !!!\n",
            removed, stats_files_count);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
+
 }
 
 
