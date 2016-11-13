@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan one good, one nonexistent path"
+$DUPD_CMD scan -p / --path /nosuchdirectory -v > nreport
+checkerr $?
+
+tdone

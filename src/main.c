@@ -41,9 +41,13 @@
 #include "utils.h"
 
 #define MAX_START_PATH 10
+#define START_PATH_NULL 0
+#define START_PATH_GIVEN 1
+#define START_PATH_ERROR 2
 
 static int operation = -1;
 static int start_path_count = 0;
+static int start_path_state = 0;
 static int free_db_path = 0;
 static int free_file_path = 0;
 int verbosity = 1;
@@ -140,10 +144,17 @@ int opt_add_path(char * arg, int command)
 {
   (void)command;
 
+  // Mark that path option was given at least once
+  if (start_path_state == START_PATH_NULL) {
+    start_path_state = START_PATH_GIVEN;
+  }
+
   // Strip any trailing slashes for consistency
   int x = strlen(arg) - 1;
-  while (arg[x] == '/') {
-    arg[x--] = 0;
+  if (x > 0) {
+    while (arg[x] == '/') {
+      arg[x--] = 0;
+    }
   }
 
   // If the path is absolute just copy it as-is, otherwise prefix it with
@@ -158,6 +169,28 @@ int opt_add_path(char * arg, int command)
     strcat(start_path[start_path_count], arg);
   }
 
+  STRUCT_STAT info;
+  if (get_file_info(start_path[start_path_count], &info) ||
+      !S_ISDIR(info.st_mode)) {
+    printf("error: not a directory: %s\n", start_path[start_path_count]);
+    free(start_path[start_path_count]);
+    start_path[start_path_count] = NULL;
+    start_path_state = START_PATH_ERROR;
+    return OPTGEN_CALLBACK_OK;
+  }
+
+  for (int n = 0; n < start_path_count; n++) {
+    if (strstr(start_path[n], start_path[start_path_count]) ||
+        strstr(start_path[start_path_count], start_path[n])) {
+      printf("error: overlap between %s and %s\n",
+             start_path[n], start_path[start_path_count]);
+      free(start_path[start_path_count]);
+      start_path[start_path_count] = NULL;
+      start_path_state = START_PATH_ERROR;
+      return OPTGEN_CALLBACK_OK;
+    }
+  }
+
   start_path_count++;
   if (start_path_count == MAX_START_PATH) {                  // LCOV_EXCL_START
     printf("error: exceeded max number of --path elements\n");
@@ -167,6 +200,22 @@ int opt_add_path(char * arg, int command)
   start_path[start_path_count] = NULL;
 
   return OPTGEN_CALLBACK_OK;
+}
+
+
+/** ***************************************************************************
+ * Free any allocated start_path entries.
+ *
+ */
+static void free_start_paths()
+{
+  start_path_count = 0;
+  for (int n = 0; n < MAX_START_PATH; n++) {
+    if (start_path[n]) {
+      free(start_path[n]);
+      start_path[n] = NULL;
+    }
+  }
 }
 
 
@@ -208,7 +257,7 @@ static void process_args(int argc, char * argv[])
 
   path_separator = opt_char(options[OPT_pathsep], path_separator);
 
-  if (start_path[0] == NULL) {
+  if (start_path_state == START_PATH_NULL) {
     start_path[0] = (char *)malloc(PATH_MAX);
     getcwd(start_path[0], PATH_MAX);
     start_path_count = 1;
@@ -302,9 +351,16 @@ int main(int argc, char * argv[])
 {
   long t1 = get_current_time_millis();
   int rv = 0;
-  int n;
 
   process_args(argc, argv);
+
+  // If bad --path values given, don't try to process them. Arguably one
+  // could process the good ones (if any) but better to flag the path
+  // error up front instead of spending time doing a partial scan.
+  if (start_path_state == START_PATH_ERROR) {
+    rv = 1;
+    goto DONE;
+  }
 
   switch (operation) {
 
@@ -327,6 +383,7 @@ int main(int argc, char * argv[])
       rv = 1;
   }                                                          // LCOV_EXCL_STOP
 
+ DONE:
   if (free_file_path) { free(file_path); }
   if (free_db_path) { free(db_path); }
   if (path_sep_string) { free(path_sep_string); }
@@ -336,10 +393,7 @@ int main(int argc, char * argv[])
   free_hash_lists();
   free_filecompare();
   free_scanlist();
-
-  for (n = 0; n < start_path_count; n++) {
-    free(start_path[n]);
-  }
+  free_start_paths();
 
   stats_time_total = get_current_time_millis() - t1;
 

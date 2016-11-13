@@ -4,14 +4,6 @@ source common
 
 DESC="scan nonexistent path"
 $DUPD_CMD scan --path /nosuchdirectory -v > nreport
-checkrv $?
-
-OUT=`wc -l nreport | sed 's/^ *//g'`
-if [ "$OUT" != "3 nreport" ]; then
-    echo "FAIL ${DESC}"
-    exit 1
-else
-    echo "OK ${DESC}"
-fi
+checkerr $?
 
 tdone
