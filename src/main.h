@@ -280,6 +280,20 @@ extern int hardlink_is_unique;
 
 
 /** ***************************************************************************
+ * Hash function to use.
+ *
+ */
+extern int hash_function;
+
+
+/** ***************************************************************************
+ * Output size of hash_function.
+ *
+ */
+extern int hash_bufsize;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

@@ -153,12 +153,12 @@ static void reset_hash_list(struct hash_list * hl)
  * Parameters:
  *     hl   - Add file to this hash list.
  *     path - Path of the file to add.
- *     md5  - The hash of this file (full or partial depending on round).
+ *     hash - The hash of this file (full or partial depending on round).
  *
  * Return: none.
  *
  */
-static void add_to_hash_list(struct hash_list * hl, char * path, char md5[16])
+static void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
 {
   struct hash_list * p = hl;
   struct hash_list * tail = hl;
@@ -168,7 +168,7 @@ static void add_to_hash_list(struct hash_list * hl, char * path, char md5[16])
 
   while (p != NULL && p->hash_valid) {
     hl_len++;
-    if (!dupd_memcmp(p->hash, md5, 16)) {
+    if (!dupd_memcmp(p->hash, hash, hash_bufsize)) {
 
       if (p->next_index == p->capacity) {
         // Found correct node but need more space in path list
@@ -209,7 +209,7 @@ static void add_to_hash_list(struct hash_list * hl, char * path, char md5[16])
   }
 
   // Populate new node...
-  memcpy(p->hash, md5, 16);
+  memcpy(p->hash, hash, hash_bufsize);
   p->hash_valid = 1;
   p->pathptrs[p->next_index] = path;
   p->next_index++;
@@ -310,8 +310,8 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
   assert(hl != NULL);                                        // LCOV_EXCL_LINE
   assert(path != NULL);                                      // LCOV_EXCL_LINE
 
-  char md5out[16];
-  int rv = (*hashfn)(path, md5out, blocks, bsize, skip);
+  char hash_out[HASH_MAX_BUFSIZE];
+  int rv = hash_fn(path, hash_out, blocks, bsize, skip);
   if (rv != 0) {                                             // LCOV_EXCL_START
     if (verbosity >= 1) {
       printf("SKIP [%s]: Unable to compute hash\n", path);
@@ -319,7 +319,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
     }
   }                                                          // LCOV_EXCL_STOP
 
-  add_to_hash_list(hl, path, md5out);
+  add_to_hash_list(hl, path, hash_out);
 }
 
 
@@ -334,9 +334,9 @@ void add_hash_list_from_mem(struct hash_list * hl, char * path,
   assert(hl != NULL);                                        // LCOV_EXCL_LINE
   assert(path != NULL);                                      // LCOV_EXCL_LINE
 
-  char md5out[16];
-  (*hashfn_buf)(buffer, bufsize, md5out);
-  add_to_hash_list(hl, path, md5out);
+  char hash_out[HASH_MAX_BUFSIZE];
+  hash_fn_buf(buffer, bufsize, hash_out);
+  add_to_hash_list(hl, path, hash_out);
 }
 
 
@@ -430,7 +430,7 @@ void print_hash_list(struct hash_list * src)
     if (verbosity >= 9 || (verbosity >= 6 && p->hash_valid)) {
       printf("hash_valid: %d, has_dups: %d, next_index: %d   ",
              p->hash_valid, p->has_dups, p->next_index);
-      memdump("hash", p->hash, 16);
+      memdump("hash", p->hash, hash_bufsize);
       for (int j=0; j < p->next_index; j++) {
         printf("  [%s]\n", *(p->pathptrs + j));
       }

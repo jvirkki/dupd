@@ -27,6 +27,7 @@
 
 #ifndef __APPLE__
 #include <openssl/md5.h>
+#include <openssl/sha.h>
 #endif
 
 #ifdef __APPLE__
@@ -46,19 +47,176 @@
 static char buffer[MAX_BLOCK];
 
 
-static int md5(const char * path, char * output, uint64_t blocks,
-               int bsize, uint64_t skip)
+/** ***************************************************************************
+ * MD5 implementation for hash_fn().
+ *
+ */
+static int md5(char * output, uint64_t blocks, int bsize, int file)
 {
   uint64_t counter = blocks;
+  ssize_t bytes;
+  MD5_CTX ctx;
 
+  MD5_Init(&ctx);
+  while ((bytes = read(file, buffer, bsize)) > 0) {
+    stats_total_bytes_hashed += bytes;
+    stats_total_bytes_read += bytes;
+    MD5_Update(&ctx, buffer, bytes);
+    if (blocks) {
+      counter--;
+      if (counter == 0) { break; }
+    }
+  }
+
+  close(file);
+  MD5_Final((unsigned char *)output, &ctx);
+
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * MD5 implementation for hash_fn_buf().
+ *
+ */
+static int md5_buf(const char * buffer, int bufsize, char * output)
+{
+  MD5_CTX ctx;
+
+  MD5_Init(&ctx);
+  MD5_Update(&ctx, buffer, bufsize);
+  MD5_Final((unsigned char *)output, &ctx);
+  stats_total_bytes_hashed += bufsize;
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * SHA1 implementation for hash_fn().
+ *
+ */
+static int sha1(char * output, uint64_t blocks, int bsize, int file)
+{
+  uint64_t counter = blocks;
+  ssize_t bytes;
+  SHA_CTX ctx;
+
+  SHA1_Init(&ctx);
+  while ((bytes = read(file, buffer, bsize)) > 0) {
+    stats_total_bytes_hashed += bytes;
+    stats_total_bytes_read += bytes;
+    SHA1_Update(&ctx, buffer, bytes);
+    if (blocks) {
+      counter--;
+      if (counter == 0) { break; }
+    }
+  }
+
+  close(file);
+  SHA1_Final((unsigned char *)output, &ctx);
+
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * SHA1 implementation for hash_fn_buf().
+ *
+ */
+static int sha1_buf(const char * buffer, int bufsize, char * output)
+{
+  SHA_CTX ctx;
+
+  SHA1_Init(&ctx);
+  SHA1_Update(&ctx, buffer, bufsize);
+  SHA1_Final((unsigned char *)output, &ctx);
+  stats_total_bytes_hashed += bufsize;
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * SHA512 implementation for hash_fn().
+ *
+ */
+static int sha512(char * output, uint64_t blocks, int bsize, int file)
+{
+  uint64_t counter = blocks;
+  ssize_t bytes;
+  SHA512_CTX ctx;
+
+  SHA512_Init(&ctx);
+  while ((bytes = read(file, buffer, bsize)) > 0) {
+    stats_total_bytes_hashed += bytes;
+    stats_total_bytes_read += bytes;
+    SHA512_Update(&ctx, buffer, bytes);
+    if (blocks) {
+      counter--;
+      if (counter == 0) { break; }
+    }
+  }
+
+  close(file);
+  SHA512_Final((unsigned char *)output, &ctx);
+
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * SHA512 implementation for hash_fn_buf().
+ *
+ */
+static int sha512_buf(const char * buffer, int bufsize, char * output)
+{
+  SHA512_CTX ctx;
+
+  SHA512_Init(&ctx);
+  SHA512_Update(&ctx, buffer, bufsize);
+  SHA512_Final((unsigned char *)output, &ctx);
+  stats_total_bytes_hashed += bufsize;
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+int hash_get_bufsize(int hash_function)
+{
+  switch(hash_function) {
+
+  case HASH_FN_MD5:
+    return 16;
+
+  case HASH_FN_SHA1:
+    return 20;
+
+  case HASH_FN_SHA512:
+    return 64;
+
+  default:                                                   // LCOV_EXCL_START
+    printf("error: invalid hash_function value %d\n", hash_function);
+    exit(1);                                                 // LCOV_EXCL_STOP
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+int hash_fn(const char * path, char * output, uint64_t blocks,
+            int bsize, uint64_t skip)
+{
   if (verbosity >= 8) {
-    printf("md5: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
+    printf("hash_fn: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
            bsize, blocks, skip, path);
   }
 
-
   if (bsize > MAX_BLOCK) {                                   // LCOV_EXCL_START
-    printf("error: md5 requested block size too big. max is %d\n", MAX_BLOCK);
+    printf("error: hash requested block size too big. max is %d\n", MAX_BLOCK);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
@@ -79,36 +237,21 @@ static int md5(const char * path, char * output, uint64_t blocks,
     lseek(file, skip * bsize, SEEK_SET);
   }
 
-  ssize_t bytes;
-  MD5_CTX md5;
+  switch(hash_function) {
 
-  MD5_Init(&md5);
-  while ((bytes = read(file, buffer, bsize)) > 0) {
-    stats_total_bytes_hashed += bytes;
-    stats_total_bytes_read += bytes;
-    MD5_Update(&md5, buffer, bytes);
-    if (blocks) {
-      counter--;
-      if (counter == 0) { break; }
-    }
+  case HASH_FN_MD5:
+    return md5(output, blocks, bsize, file);
+
+  case HASH_FN_SHA1:
+    return sha1(output, blocks, bsize, file);
+
+  case HASH_FN_SHA512:
+    return sha512(output, blocks, bsize, file);
+
+  default:                                                   // LCOV_EXCL_START
+    printf("error: invalid hash_function value %d\n", hash_function);
+    exit(1);                                                 // LCOV_EXCL_STOP
   }
-
-  close(file);
-  MD5_Final((unsigned char *)output, &md5);
-
-  return(0);
-}
-
-
-static int md5_buf(const char * buffer, int bufsize, char * output)
-{
-  MD5_CTX md5;
-
-  MD5_Init(&md5);
-  MD5_Update(&md5, buffer, bufsize);
-  MD5_Final((unsigned char *)output, &md5);
-  stats_total_bytes_hashed += bufsize;
-  return(0);
 }
 
 
@@ -116,12 +259,21 @@ static int md5_buf(const char * buffer, int bufsize, char * output)
  * Public function, see hash.h
  *
  */
-int (*hashfn)(const char * path, char * output, uint64_t blocks,
-              int bsize, uint64_t skip) = &md5;
+int hash_fn_buf(const char * buffer, int bufsize, char * output)
+{
+  switch(hash_function) {
 
+  case HASH_FN_MD5:
+    return md5_buf(buffer, bufsize, output);
 
-/** ***************************************************************************
- * Public function, see md5.h
- *
- */
-int (*hashfn_buf)(const char * buffer, int bufsize, char * output) = &md5_buf;
+  case HASH_FN_SHA1:
+    return sha1_buf(buffer, bufsize, output);
+
+  case HASH_FN_SHA512:
+    return sha512_buf(buffer, bufsize, output);
+
+  default:                                                   // LCOV_EXCL_START
+    printf("error: invalid hash_function value %d\n", hash_function);
+    exit(1);                                                 // LCOV_EXCL_STOP
+  }
+}

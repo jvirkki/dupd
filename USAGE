@@ -211,6 +211,17 @@ these might go away in a future major release of dupd. If you do
 experiment with any of these options and find some to be measurably
 useful, let me know.
 
+
+Hash function
+-------------
+The default hash used is MD5. A few other alternatives are available
+and can be specified with this option:
+
+  -F --hash NAME           specify alternate hash function
+
+NAME is one of: md5 sha1 sha512
+
+
 Scanning
 --------
 

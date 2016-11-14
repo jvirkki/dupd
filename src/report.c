@@ -123,7 +123,7 @@ void print_status_array(int count, char * * duplicates, int * status)
  */
 static int is_duplicate(char * path, char * self, char * hash)
 {
-  char hash2[16];
+  char hash2[HASH_MAX_BUFSIZE];
 
   if (!strcmp(path, self)) {                                 // LCOV_EXCL_START
     printf("is_duplicate: path [%s] == self [%s]\n", path, self);
@@ -137,12 +137,12 @@ static int is_duplicate(char * path, char * self, char * hash)
     return(0);
   }
 
-  if ((*hashfn)(path, hash2, 0, hash_block_size, 0)) {
+  if (hash_fn(path, hash2, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);              // LCOV_EXCL_START
     return(0);
   }                                                          // LCOV_EXCL_STOP
 
-  if (memcmp(hash, hash2, 16)) {
+  if (dupd_memcmp(hash, hash2, hash_bufsize)) {
     if (verbosity >= 4) { printf("file no longer a duplicate: %s\n", path); }
     return(0);
   } else {
@@ -185,7 +185,7 @@ static int is_duplicate(char * path, char * self, char * hash)
 static int reverify_duplicates(char * path, int dups, char * * duplicates,
                                int * status, int shortcircuit)
 {
-  char hash[16];
+  char hash[HASH_MAX_BUFSIZE];
   STRUCT_STAT info;
 
   if (verbosity >= 5) {
@@ -197,7 +197,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  if ((*hashfn)(path, hash, 0, hash_block_size, 0)) {
+  if (hash_fn(path, hash, 0, hash_block_size, 0)) {
     printf("error: unable to hash %s\n", path);              // LCOV_EXCL_START
     exit(1);
   }                                                          // LCOV_EXCL_STOP

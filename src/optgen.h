@@ -41,10 +41,10 @@
 
 //
 // The following short options are NOT yet taken:
-// ab..e.g.ijkl.no..rstu.w.yzABCDEFG..JK.MNOPQRSTU.WXYZ0123456789
+// ab..e.g.ijkl.no..rstu.w.yzABCDE.G..JK.MNOPQRSTU.WXYZ0123456789
 //
 
-#define COUNT_OPTIONS 33
+#define COUNT_OPTIONS 34
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -121,29 +121,32 @@
 // hardlink (-H,--hardlink) : create hard links for deleted files
 #define OPT_hardlink 24
 
+// hash (-F,--hash) NAME : specify alternate hash function
+#define OPT_hash 25
+
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 25
+#define OPT_verbose 26
 
 // verbose_threads (-V,--verbose-threads) : increase thread verbosity (may be repeated for more)
-#define OPT_verbose_threads 26
+#define OPT_verbose_threads 27
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 27
+#define OPT_quiet 28
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 28
+#define OPT_db 29
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 29
+#define OPT_help 30
 
 // no_unique (--no-unique) : ignore unique table even if present, for testing
-#define OPT_no_unique 30
+#define OPT_no_unique 31
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 31
+#define OPT_x_small_buffers 32
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 32
+#define OPT_x_testing 33
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
@@ -262,6 +265,20 @@ int opt_int(char * str, int def);
  *
  */
 char opt_char(char * str, char def);
+
+/**
+ * Convenience function to string value of an option
+ *
+ * Parameters:
+ *   str - A value from options array
+ *   def - Default value if none given
+ *
+ * Return:
+ *
+ *   Value of option as char *. If NULL, returns default def.
+ *
+ */
+char * opt_string(char * str, char * def);
 
 /**
  * Show help based on command and option descriptions.

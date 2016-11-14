@@ -73,6 +73,7 @@ int option_file[] = { 4 };
 int option_exclude_path[] = { 4, 5, 6, 7 };
 int option_link[] = { 8 };
 int option_hardlink[] = { 8 };
+int option_hash[] = { 14 };
 int option_verbose[] = { 14 };
 int option_verbose_threads[] = { 14 };
 int option_quiet[] = { 14 };
@@ -705,12 +706,34 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
+    if ((l == 6 && !strncmp("--hash", argv[pos], 6))||
+        (l == 2 && !strncmp("-F", argv[pos], 2))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --hash\n");
+        exit(1);
+      }
+      options[25] = argv[pos+1];
+      pos += 2;
+      // strict_options: is hash allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_hash) / sizeof(option_hash)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_hash[cc] == *command) { ok = 1; }
+        if (option_hash[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'hash' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
     if ((l == 9 && !strncmp("--verbose", argv[pos], 9))||
         (l == 2 && !strncmp("-v", argv[pos], 2))) {
-      if (options[25] == NULL) {
-        options[25] = numstring[0];
+      if (options[26] == NULL) {
+        options[26] = numstring[0];
       } else {
-        options[25] = numstring[atoi(options[25])];
+        options[26] = numstring[atoi(options[26])];
       }
       pos++;
       // strict_options: is verbose allowed?
@@ -729,10 +752,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 17 && !strncmp("--verbose-threads", argv[pos], 17))||
         (l == 2 && !strncmp("-V", argv[pos], 2))) {
-      if (options[26] == NULL) {
-        options[26] = numstring[0];
+      if (options[27] == NULL) {
+        options[27] = numstring[0];
       } else {
-        options[26] = numstring[atoi(options[26])];
+        options[27] = numstring[atoi(options[27])];
       }
       pos++;
       // strict_options: is verbose_threads allowed?
@@ -751,10 +774,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 7 && !strncmp("--quiet", argv[pos], 7))||
         (l == 2 && !strncmp("-q", argv[pos], 2))) {
-      if (options[27] == NULL) {
-        options[27] = numstring[0];
+      if (options[28] == NULL) {
+        options[28] = numstring[0];
       } else {
-        options[27] = numstring[atoi(options[27])];
+        options[28] = numstring[atoi(options[28])];
       }
       pos++;
       // strict_options: is quiet allowed?
@@ -777,7 +800,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --db\n");
         exit(1);
       }
-      options[28] = argv[pos+1];
+      options[29] = argv[pos+1];
       pos += 2;
       // strict_options: is db allowed?
       int ok = 0;
@@ -795,10 +818,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--help", argv[pos], 6))||
         (l == 2 && !strncmp("-h", argv[pos], 2))) {
-      if (options[29] == NULL) {
-        options[29] = numstring[0];
+      if (options[30] == NULL) {
+        options[30] = numstring[0];
       } else {
-        options[29] = numstring[atoi(options[29])];
+        options[30] = numstring[atoi(options[30])];
       }
       pos++;
       // strict_options: is help allowed?
@@ -816,10 +839,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 11 && !strncmp("--no-unique", argv[pos], 11))) {
-      if (options[30] == NULL) {
-        options[30] = numstring[0];
+      if (options[31] == NULL) {
+        options[31] = numstring[0];
       } else {
-        options[30] = numstring[atoi(options[30])];
+        options[31] = numstring[atoi(options[31])];
       }
       pos++;
       // strict_options: is no_unique allowed?
@@ -837,10 +860,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 17 && !strncmp("--x-small-buffers", argv[pos], 17))) {
-      if (options[31] == NULL) {
-        options[31] = numstring[0];
+      if (options[32] == NULL) {
+        options[32] = numstring[0];
       } else {
-        options[31] = numstring[atoi(options[31])];
+        options[32] = numstring[atoi(options[32])];
       }
       pos++;
       // strict_options: is x_small_buffers allowed?
@@ -858,10 +881,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 11 && !strncmp("--x-testing", argv[pos], 11))) {
-      if (options[32] == NULL) {
-        options[32] = numstring[0];
+      if (options[33] == NULL) {
+        options[33] = numstring[0];
       } else {
-        options[32] = numstring[atoi(options[32])];
+        options[33] = numstring[atoi(options[33])];
       }
       pos++;
       // strict_options: is x_testing allowed?
@@ -910,6 +933,15 @@ char opt_char(char * str, char def)
     return def;
   } else {
     return str[0];
+  }
+}
+
+char * opt_string(char * str, char * def)
+{
+  if (str == NULL) {
+    return def;
+  } else {
+    return str;
   }
 }
 
@@ -970,6 +1002,7 @@ void opt_show_help()
   printf("version   show version and exit\n");
   printf("\n");
   printf("General options:\n");
+  printf("  -F --hash NAME           specify alternate hash function\n");
   printf("  -v --verbose             increase verbosity (may be repeated for more)\n");
   printf("  -V --verbose-threads     increase thread verbosity (may be repeated for more)\n");
   printf("  -q --quiet               quiet, supress all output except fatal errors\n");

@@ -27,6 +27,7 @@
 #include "copying.h"
 #include "dbops.h"
 #include "filecompare.h"
+#include "hash.h"
 #include "hashlist.h"
 #include "main.h"
 #include "main_opt.h"
@@ -83,6 +84,8 @@ int only_testing = 0;
 int threaded_sizetree = 1;
 int threaded_hashcompare = 1;
 int hardlink_is_unique = 0;
+int hash_function = HASH_FN_MD5;
+int hash_bufsize = -1;
 long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 
 
@@ -332,6 +335,19 @@ static void process_args(int argc, char * argv[])
   path_sep_string = (char *)malloc(2);
   path_sep_string[0] = (char)path_separator;
   path_sep_string[1] = 0;
+
+  char * hash_name = opt_string(options[OPT_hash], "md5");
+  if (!strcmp("md5", hash_name)) {
+    hash_function = HASH_FN_MD5;
+  } else if (!strcmp("sha1", hash_name)) {
+    hash_function = HASH_FN_SHA1;
+  } else if (!strcmp("sha512", hash_name)) {
+    hash_function = HASH_FN_SHA512;
+  } else {
+    printf("error: unknown hash %s\n", hash_name);
+    exit(1);
+  }
+  hash_bufsize = hash_get_bufsize(hash_function);
 
   if (options[OPT_x_analyze]) {
     opt_compare_two = 0;
