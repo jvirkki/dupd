@@ -245,11 +245,11 @@ void init_hash_lists()
   }
 
   if (x_small_buffers) {
-    path_buffer = (char *)malloc(1 * PATH_MAX);
-    path_buffer_size = 1;
+    path_buffer = (char *)malloc(10);
+    path_buffer_size = 10;
   } else {
     path_buffer = (char *)malloc(DEFAULT_PATH_BUFFER * PATH_MAX);
-    path_buffer_size = DEFAULT_PATH_BUFFER;
+    path_buffer_size = DEFAULT_PATH_BUFFER * PATH_MAX;
   }
 }
 
@@ -386,22 +386,20 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
       }
 
       if (write_db) {
-        if (p->next_index > path_buffer_size) {
-          path_buffer_size *= 2;
-          if (p->next_index > path_buffer_size) {
-            path_buffer_size = p->next_index + 2;
-          }
-          path_buffer = (char *)realloc(path_buffer,
-                                        path_buffer_size * PATH_MAX);
-          path_buffer_realloc++;
-          if (verbosity >= 5) {
-            printf("Had to increase path_buffer to %d\n", path_buffer_size);
-          }
-        }
-
         // print separated list of the paths into buffer
         int pos = 0;
         for (int i = 0; i < p->next_index; i++) {
+
+          // if not enough space (conservatively) in path_buffer, increase
+          if (pos + PATH_MAX > path_buffer_size) {
+            path_buffer_size += PATH_MAX * 10;
+            path_buffer = (char *)realloc(path_buffer, path_buffer_size);
+            path_buffer_realloc++;
+            if (verbosity >= 5) {
+              printf("Had to increase path_buffer to %d\n", path_buffer_size);
+            }
+          }
+
           if (i + 1 < p->next_index) {
             pos += sprintf(path_buffer + pos,
                            "%s%c", *(p->pathptrs + i), path_separator);
