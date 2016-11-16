@@ -35,6 +35,7 @@
 #include "main.h"
 #include "paths.h"
 #include "sizelist.h"
+#include "sizetree.h"
 #include "stats.h"
 #include "utils.h"
 
@@ -710,6 +711,12 @@ void threaded_process_size_list(sqlite3 * dbh)
     printf("%sStarting...\n", spaces);
     usleep(10000);
   }
+
+  // By the time this thread is starting, the size tree is no longer
+  // needed, so free it. Might as well do it while my companion thread
+  // goes and reads me a few bytes. Could be done elsewhere as well,
+  // but it is a convenient time to do it here.
+  free_size_tree();
 
   // Then start going through the size list, processing size entries which
   // have data available.

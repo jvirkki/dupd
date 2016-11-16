@@ -610,15 +610,16 @@ void free_size_tree()
 
   if (tip != NULL) {
     free_node(tip);
-  }
+    tip = NULL;
 
-  for (i = 0; i < QUEUE_COUNT; i++) {
-    t = &queue[i];
-    t = t->next;
-    while (t != NULL) {
-      p = t;
+    for (i = 0; i < QUEUE_COUNT; i++) {
+      t = &queue[i];
       t = t->next;
-      free(p);
+      while (t != NULL) {
+        p = t;
+        t = t->next;
+        free(p);
+      }
     }
   }
 }
