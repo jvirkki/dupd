@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "main.h"
+#include "stats.h"
 #include "utils.h"
 
 
@@ -118,6 +119,7 @@ ssize_t read_file_bytes(char * path, char * output,
   }
 
   ssize_t got = read(file, output, bytes);
+  stats_total_bytes_read += got;
   close(file);
   return got;
 }
