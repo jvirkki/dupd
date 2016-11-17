@@ -52,10 +52,10 @@
 // nodb (--nodb) : do not generate database file
 #define OPT_nodb 1
 
-// file_count (--file-count) : max estimated number of files to scan
+// file_count (--file-count) NUM : max estimated number of files to scan
 #define OPT_file_count 2
 
-// avg_size (--avg-size) : estimated average file path length
+// avg_size (--avg-size) : deprecated
 #define OPT_avg_size 3
 
 // stats_file (--stats-file) FILE : save stats to this file

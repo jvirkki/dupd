@@ -212,12 +212,12 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 12 && !strncmp("--file-count", argv[pos], 12))) {
-      if (options[2] == NULL) {
-        options[2] = numstring[0];
-      } else {
-        options[2] = numstring[atoi(options[2])];
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --file-count\n");
+        exit(1);
       }
-      pos++;
+      options[2] = argv[pos+1];
+      pos += 2;
       // strict_options: is file_count allowed?
       int ok = 0;
       unsigned int cc;
@@ -950,8 +950,7 @@ void opt_show_help()
   printf("scan      scan starting from the given path\n");
   printf("  -p --path PATH              path where scanning will start\n");
   printf("     --nodb                   do not generate database file\n");
-  printf("     --file-count             max estimated number of files to scan\n");
-  printf("     --avg-size               estimated average file path length\n");
+  printf("     --file-count NUM         max estimated number of files to scan\n");
   printf("     --stats-file FILE        save stats to this file\n");
   printf("  -m --minsize SIZE           min size of files to scan\n");
   printf("     --hidden                 include hidden files and dirs in scan\n");

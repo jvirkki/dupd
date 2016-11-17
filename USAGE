@@ -50,16 +50,9 @@ Additional options are available:
                    Note that if this option is given during scan, it cannot
                    be given during interactive operations.
 
-The two remaining options adjust the path block size which needs
-enough capacity to hold all the full pathnames of all the files which
-will be scanned. The path block is allocated once and not expanded.
-The path block size will be (file-count * avg-size).
-
 --file-count       Estimated maximum number of files to scan. The default
-                   is a million files.
-
---avg-size         Estimated average file path length. Default is 512 bytes.
-
+                   is five million files. This is only relevant if
+                   --hardlink-is-unique is also given.
 
 
 Reporting

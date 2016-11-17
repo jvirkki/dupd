@@ -31,10 +31,17 @@
 #include "stats.h"
 #include "utils.h"
 
-static long block_size;
-static char * path_block;
+struct path_block_list {
+  char * ptr;
+  struct path_block_list * next;
+};
+
+static struct path_block_list * first_path_block = NULL;
+static struct path_block_list * last_path_block = NULL;
 static char * next_entry;
 static char * path_block_end;
+static long space_used;
+static long space_allocated;
 
 
 /** ***************************************************************************
@@ -83,24 +90,78 @@ void dump_path_list(const char * line, off_t size, char * head)
 
 
 /** ***************************************************************************
+ * Allocate a path block.
+ *
+ */
+static struct path_block_list * alloc_path_block(int bsize)
+{
+  struct path_block_list * next;
+
+  next = (struct path_block_list *)malloc(sizeof(struct path_block_list));
+  next->next = NULL;
+  next->ptr = (char *)malloc(bsize);
+
+  if (next->ptr == NULL) {                                  // LCOV_EXCL_START
+    printf("Unable to allocate new path block!\n");
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
+  if (verbosity >= 4) {
+    printf("Allocated %d bytes for the next path block.\n", bsize);
+  }
+
+  return next;
+}
+
+
+/** ***************************************************************************
+ * Add another path block.
+ *
+ */
+static void add_path_block()
+{
+  int bsize = 8 * 1024 * 1024;
+  if (x_small_buffers) { bsize = PATH_MAX; }
+
+  struct path_block_list * next = alloc_path_block(bsize);
+  next_entry = next->ptr;
+  path_block_end = next->ptr + bsize;
+  last_path_block->next = next;
+  last_path_block = next;
+
+  space_allocated += bsize;
+}
+
+
+/** ***************************************************************************
+ * Check if current path block can accomodate 'needed' bytes. If not, add
+ * another path block.
+ *
+ */
+inline static void check_space(int needed)
+{
+  if (path_block_end - next_entry - 2 <= needed) {
+    add_path_block();
+  }
+}
+
+
+/** ***************************************************************************
  * Public function, see paths.h
  *
  */
 void init_path_block()
 {
-  block_size = file_count * avg_path_len;
-  path_block = (char *)malloc(block_size);
-  if (path_block == NULL) {                                  // LCOV_EXCL_START
-    printf("Unable to allocate path block!\n");
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
+  int bsize = 1024 * 1024;
+  if (x_small_buffers) { bsize = PATH_MAX; }
 
-  if (verbosity >= 4) {
-    printf("Allocated %ld bytes for the path block.\n", block_size);
-  }
+  first_path_block = alloc_path_block(bsize);
+  next_entry = first_path_block->ptr;
+  path_block_end = first_path_block->ptr + bsize;
+  last_path_block = first_path_block;
 
-  next_entry = path_block;
-  path_block_end = path_block + block_size;
+  space_used = 0;
+  space_allocated = bsize;
 }
 
 
@@ -110,9 +171,18 @@ void init_path_block()
  */
 void free_path_block()
 {
-  if (path_block != NULL) {
-    free(path_block);
+  struct path_block_list * b;
+  struct path_block_list * p;
+
+  p = first_path_block;
+  while (p != NULL) {
+    free(p->ptr);
+    b = p;
+    p = b->next;
+    free(b);
   }
+  first_path_block = NULL;
+  last_path_block = NULL;
 }
 
 
@@ -122,6 +192,10 @@ void free_path_block()
  */
 char * insert_first_path(char * path)
 {
+  int space_needed = (2 * sizeof(char *)) + strlen(path) + 2;
+  check_space((2 * sizeof(char *)) + space_needed); // first entry overhead
+  space_used += (2 * sizeof(char *))+ space_needed;
+
   char * head = next_entry;
   char * new_entry = pl_get_first_entry(head);
 
@@ -143,17 +217,16 @@ char * insert_first_path(char * path)
   strcpy(pl_entry_get_path(new_entry), path);
 
   // Update top of free space to point beyond the space we just used up
-  next_entry = new_entry + (2 * sizeof(char *)) + strlen(path) + 1;
+  next_entry = new_entry + space_needed;
+
+  if (next_entry >= path_block_end) {                        // LCOV_EXCL_START
+    printf("error: path block too small!\n");
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
   if (verbosity > 6) {
     dump_path_list("AFTER insert_first_path", -1, head);
   }
-
-  if (next_entry > path_block_end) {                         // LCOV_EXCL_START
-    printf("error: path block too small!\n");
-    printf("See --file-count and --avg-size options.\n");
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
 
   return head;
 }
@@ -165,6 +238,10 @@ char * insert_first_path(char * path)
  */
 void insert_end_path(char * path, off_t size, char * head)
 {
+  int space_needed = (2 * sizeof(char *)) + strlen(path) + 1;
+  check_space(space_needed);
+  space_used += space_needed;
+
   char * prior = NULL;
   char * new_entry = next_entry;
 
@@ -202,7 +279,12 @@ void insert_end_path(char * path, off_t size, char * head)
   uint32_t path_count = pl_increase_path_count(head);
 
   // Update top of free space to point beyond the space we just used up
-  next_entry = new_entry + (2 * sizeof(char *)) + strlen(path) + 1;
+  next_entry = new_entry + space_needed;
+
+  if (next_entry >= path_block_end) {                        // LCOV_EXCL_START
+    printf("error: path block too small!\n");
+    exit(1);
+  }                                                           // LCOV_EXCL_STOP
 
   if (verbosity >= 6) {
     dump_path_list("AFTER insert_end_path", size, head);
@@ -221,8 +303,7 @@ void insert_end_path(char * path, off_t size, char * head)
  */
 void report_path_block_usage()
 {
-  long used = (long)(next_entry - path_block);
-  int pct = (int)((100 * used) / block_size);
-  printf("Total path block size: %ld\n", block_size);
-  printf("Bytes used in this run: %ld (%d%%)\n", used, pct);
+  int pct = (int)((100 * space_used) / space_allocated);
+  printf("Total path block size: %ld\n", space_allocated);
+  printf("Bytes used in this run: %ld (%d%%)\n", space_used, pct);
 }

@@ -68,8 +68,7 @@ int hash_block_size = 8192;
 int filecmp_block_size = 131072;
 int opt_compare_two = 1;
 int opt_compare_three = 1;
-long file_count = 1000000L;
-int avg_path_len = 512;
+long file_count = 5000000L;
 int save_uniques = 0;
 int have_uniques = 0;
 int no_unique = 0;
@@ -312,8 +311,6 @@ static void process_args(int argc, char * argv[])
   hash_one_max_blocks = opt_int(options[OPT_firstblocks], hash_one_max_blocks);
 
   file_count = opt_int(options[OPT_file_count], file_count);
-
-  avg_path_len = opt_int(options[OPT_avg_size], avg_path_len);
 
   cut_path = options[OPT_cut];
 

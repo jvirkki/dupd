@@ -156,13 +156,10 @@ extern int filecmp_block_size;
 
 
 /** ***************************************************************************
- * The path buffer is allocated a given size so it needs to be large enough.
- * It will be sized to hold file_count files with an average path length
- * of avg_path_len.
+ * Expected total number of files to scan.
  *
  */
 extern long file_count;
-extern int avg_path_len;
 
 
 /** ***************************************************************************
