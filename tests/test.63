@@ -12,7 +12,24 @@ checkrv $?
 DESC="report(files7)"
 $DUPD_CMD report --cut `pwd`/files7/ | grep -v "Duplicate report from database" > nreport
 checkrv $?
-check_nreport output.63
+
+# The pair reported as dups will differ depending on which of the hard linked
+# files is seen first by the scan (the subsequent ones get ignored due to -I)
+# Since can't rely on which files are reported, verify that only two are
+# (for a total output lenght of 7 lines).
+
+WC=`wc nreport | awk -e '{print $1;}'`
+if [ "$WC" != "7" ]; then
+        echo "FAIL ${DESC}"
+        exit 1
+fi
+
+# File 8 is always a true dup (not a hard link, contains same data)
+# so it must always be one of the two reported.
+
+DESC="report(files7) file 8 is always a dup"
+grep '8$' nreport > /dev/null
+checkrv $?
 
 rm -f files7/?
 
