@@ -62,8 +62,6 @@ int get_file_info(const char * path, STRUCT_STAT * info)
   int rv = LSTAT(path, info);
 
   if (rv) {                                                  // LCOV_EXCL_START
-    char line[PATH_MAX];
-    snprintf(line, PATH_MAX, "stat %s", path);
     return -1;
   }                                                          // LCOV_EXCL_STOP
 
