@@ -93,30 +93,6 @@ static struct size_list * new_size_list_entry(off_t size, char * path_list)
 
 
 /** ***************************************************************************
- * Free all content buffers in a path list.
- *
- * Parameters:
- *    entry - First entry of this path list (not its head).
- *
- * Return: none
- *
- */
-static void free_path_list_buffers(char * entry)
-{
-  char * buffer;
-
-  while (entry != NULL) {
-    buffer = pl_entry_get_buffer(entry);
-    if (buffer != NULL) {
-      free(buffer);
-      pl_entry_set_buffer(entry, NULL);
-    }
-    entry = pl_entry_get_next(entry);
-  }
-}
-
-
-/** ***************************************************************************
  * Public function, see header file.
  *
  */
@@ -485,13 +461,6 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
   do {
     path = pl_entry_get_path(node);
 
-    // If the buffer of this node is not NULL, it is the buffer
-    // used in a previous round for this path, so free it first
-    buffer = pl_entry_get_buffer(node);
-    if (buffer != NULL) {
-      free(buffer);
-    }
-
     // The path may be null if this particular path within this pathlist
     // has been discarded as a potential duplicate already. If so, skip.
     if (path[0] != 0) {
@@ -639,6 +608,8 @@ static int build_hash_list_round(sqlite3 * dbh,
     if (path[0] != 0) {
       buffer = pl_entry_get_buffer(node);
       add_hash_list_from_mem(hl, path, buffer, size_node->bytes_read);
+      free(buffer);
+      pl_entry_set_buffer(node, NULL);
     }
 
     node = pl_entry_get_next(node);
@@ -659,7 +630,6 @@ static int build_hash_list_round(sqlite3 * dbh,
     (*counter_no_dups_this_round)++;
     size_node->state = SLS_DONE;
     completed = 1;
-    free_path_list_buffers(pl_get_first_entry(size_node->path_list));
 
   } else {
     // If by now we already have a full hash, publish and we're done!
@@ -669,7 +639,6 @@ static int build_hash_list_round(sqlite3 * dbh,
       publish_duplicate_hash_list(dbh, hl, size_node->size);
       size_node->state = SLS_DONE;
       completed = 1;
-      free_path_list_buffers(pl_get_first_entry(size_node->path_list));
     }
   }
 
@@ -970,9 +939,6 @@ void init_size_list()
  */
 void free_size_list()
 {
-  char * pl;
-  char * entry;
-
   if (size_list_head != NULL) {
     struct size_list * p = size_list_head;
     struct size_list * me = size_list_head;
@@ -980,11 +946,6 @@ void free_size_list()
     while (p != NULL) {
       p = p->next;
       pthread_mutex_destroy(&me->lock);
-      pl = me->path_list;
-      if (pl != NULL) {
-        entry = pl_get_first_entry(pl);
-        free_path_list_buffers(entry);
-      }
       free(me);
       me = p;
     }
