@@ -1,20 +1,6 @@
-
+= dupd
+Jyri J. Virkki <https://github.com/jvirkki[@jvirkki]>
 dupd is a file duplicate detection CLI utility.
-
-The build currently supports Linux, Solaris, OS X and OpenBSD.  Other
-UNIX variants should work with minimal effort. See BUILDING file for
-notes on building dupd.
-
-dupd seeks to be fast and efficient. For most file sets it performs
-better than popular tools such as 'fdupes'.
-
-See this article for some performance comparisons:
-http://www.virkki.com/jyri/articles/index.php/duplicate-file-detection-performance/
-
-Quick howto:
-
-% dupd scan --path $HOME   (or whichever path you want to scan)
-% dupd report
 
 dupd supports a slightly different approach on dealing with duplicates
 than other similar tools I have tried. Other tools tend to fall into
@@ -36,9 +22,24 @@ into an SQLite database. I then drill down into subdirectories where
 duplicates live and using the ls/dups/uniques/file operations, I
 review where duplicates are coming from and why. Then I move or remove
 files around as desired and then analyze other subdirectories.  After
-a few rounds of such cleanup, I then re-run a whole scan to refresh
-the database.
+a few rounds of such cleanup, I then re-run a whole scan to refresh the database.
 
-Read the EXAMPLE file here for a sample walkthrough of using dupd.
+== Supported platforms
+The build currently supports Linux, Solaris, OS X and OpenBSD. Other UNIX variants should work with minimal effort. 
+
+See BUILDING.adoc file for notes on building dupd.
+
+== Project goals & objectives
+dupd seeks to be fast and efficient. For most file sets it performs better than popular tools such as 'fdupes'.
+
+See http://www.virkki.com/jyri/articles/index.php/duplicate-file-detection-performance/
+[this article] for some performance comparisons.
+
+== Quick howto:
+
+% dupd scan --path $HOME   (or whichever path you want to scan)
+% dupd report
+
+Read the EXAMPLE.adoc file here for a sample walkthrough of using dupd.
 
 For more information read the USAGE document or run 'dupd help'.
