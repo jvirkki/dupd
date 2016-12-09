@@ -218,10 +218,7 @@ int hash_get_bufsize(int hash_function)
 int hash_fn(const char * path, char * output, uint64_t blocks,
             int bsize, uint64_t skip)
 {
-  if (verbosity >= 8) {
-    printf("hash_fn: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
-           bsize, blocks, skip, path);
-  }
+  int block_size = bsize;
 
   if (bsize > MAX_BLOCK) {                                   // LCOV_EXCL_START
     printf("error: hash requested block size too big. max is %d\n", MAX_BLOCK);
@@ -230,7 +227,12 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
 
   // When reading the entire file, use max block size to reduce read calls
   if (blocks == 0) {
-    bsize = MAX_BLOCK;
+    block_size = MAX_BLOCK;
+  }
+
+  if (verbosity >= 8) {
+    printf("hash_fn: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
+           block_size, blocks, skip, path);
   }
 
   int file = open(path, O_RDONLY);
@@ -253,13 +255,13 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
   switch(hash_function) {
 
   case HASH_FN_MD5:
-    return md5(output, blocks, bsize, file);
+    return md5(output, blocks, block_size, file);
 
   case HASH_FN_SHA1:
-    return sha1(output, blocks, bsize, file);
+    return sha1(output, blocks, block_size, file);
 
   case HASH_FN_SHA512:
-    return sha512(output, blocks, bsize, file);
+    return sha512(output, blocks, block_size, file);
 
   default:                                                   // LCOV_EXCL_START
     printf("error: invalid hash_function value %d\n", hash_function);
