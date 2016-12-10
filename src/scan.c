@@ -264,13 +264,16 @@ void scan()
       }
     }
   }
+  long t2 = get_current_time_millis();
+  stats_time_scan = t2 - t1;
 
   if (threaded_sizetree) {
     scan_done();
   }
 
   if (verbosity >= 1) {
-    printf("Files scanned: %" PRIu32 "\n", stats_files_count);
+    printf("Files scanned: %" PRIu32 " (%ldms)\n",
+           stats_files_count, stats_time_scan);
   }
 
   if (stats_files_count == 0) {
@@ -282,8 +285,6 @@ void scan()
   }
 
   if (verbosity >= 2) {
-    long t2 = get_current_time_millis();
-    stats_time_scan = t2 - t1;
     printf("Average file size: %ld\n", stats_avg_file_size);
     printf("Special files ignored: %d\n", stats_files_ignored);
     printf("Files with stat errors: %d\n", stats_files_error);
@@ -334,8 +335,9 @@ void scan()
   }
 
   stats_time_process = get_current_time_millis() - t1;
+  printf("Duplicate processing completed in %ldms\n", stats_time_process);
+
   if (verbosity >= 2) {
-    printf("Duplicate processing completed in %ldms\n", stats_time_process);
     printf("Largest duplicate set %d\n", stats_most_dups);
   }
 

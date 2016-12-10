@@ -57,6 +57,48 @@ static int read_count = 0;
 
 
 /** ***************************************************************************
+ * Print total sets processed.
+ *
+ */
+static inline void show_processed_done(int total)
+{
+  if (verbosity == 1) {
+    printf("Done processing %d sets                             \n", total);
+  }
+}
+
+
+/** ***************************************************************************
+ * Print progress on set processing.
+ *
+ */
+static inline void show_processed(int count, int total,
+                                  int files, long size, int loop)
+{
+  int out;
+
+  switch (verbosity) {
+
+  case 1:
+    out = printf("Processed %d/%d (%d files of size %ld)        ",
+                 count, total, files, size);
+    printf("\033[%dD", out);
+    break;
+
+  case 2:
+    printf("Processed %d/%d (%d files of size %ld)\n",
+           count, total, files, size);
+    break;
+
+  default:
+    printf("Processed %d/%d (%d files of size %ld) (loop %d) (round 3)\n",
+           count, total, files, size, loop);
+    break;
+  }
+}
+
+
+/** ***************************************************************************
  * Process entries in size list which are in the state SLS_NEEDS_ROUND_3.
  *
  * These are analyzed by:
@@ -187,17 +229,11 @@ static void process_round_3(sqlite3 * dbh, int done_so_far)
     }                                                        // LCOV_EXCL_STOP
 
     if (did_one) {
-      if (verbosity >= 2) {
+      if (verbosity >= 1) {
         count++;
         path_count = pl_get_path_count(size_node->path_list);
-        if (verbosity == 2) {
-          printf("Processed %d/%d (%d files of size %ld)\n", count,
-                 stats_size_list_count, path_count, size_node->size);
-        } else {
-          printf("Processed %d/%d (%d files of size %ld) "
-                 "(loop %d) (round 3)\n", count, stats_size_list_count,
-                 path_count, size_node->size, loops);
-        }
+        show_processed(count, stats_size_list_count, path_count,
+                       size_node->size, loops);
       }
     }
 
@@ -1021,16 +1057,10 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
 
         } else {
           count++;
-          if (verbosity >= 2) {
+          if (verbosity >= 1) {
             int path_count = pl_get_path_count(size_node->path_list);
-            if (verbosity == 2) {
-              printf("Processed %d/%d (%d files of size %ld)\n", count,
-                     stats_size_list_count, path_count, size_node->size);
-            } else {
-              printf("Processed %d/%d (%d files of size %ld) (loop %d)\n",
-                     count, stats_size_list_count, path_count,
-                     size_node->size, loops);
-            }
+            show_processed(count, stats_size_list_count,
+                           path_count, size_node->size, loops);
           }
         }
 
@@ -1060,6 +1090,8 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.
   process_round_3(dbh, count);
+
+  show_processed_done(stats_size_list_count);
 
   if (thread_verbosity) {
     printf("%sDONE\n", spaces);
@@ -1174,16 +1206,10 @@ void threaded_process_size_list(sqlite3 * dbh)
       }
 
       if (did_one) {
-        if (verbosity >= 2) {
+        if (verbosity >= 1) {
           path_count = pl_get_path_count(size_node->path_list);
-          if (verbosity == 2) {
-            printf("Processed %d/%d (%d files of size %ld)\n", count,
-                   stats_size_list_count, path_count, size_node->size);
-          } else {
-            printf("Processed %d/%d (%d files of size %ld) (loop %d) "
-                   "(round %d)\n", count, stats_size_list_count, path_count,
-                   size_node->size, loops, round);
-          }
+          show_processed(count, stats_size_list_count, path_count,
+                         size_node->size, round);
         }
       }
 
@@ -1208,6 +1234,8 @@ void threaded_process_size_list(sqlite3 * dbh)
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.
   process_round_3(dbh, count);
+
+  show_processed_done(stats_size_list_count);
 
   if (thread_verbosity) {
     printf("%sDONE\n", spaces);
