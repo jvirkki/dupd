@@ -22,6 +22,9 @@
 
 #include <inttypes.h>
 
+#include "sizelist.h"
+
+
 /** ***************************************************************************
  * Functions to manage the path lists.
  *
@@ -30,15 +33,15 @@
  *
  * The head of the path list (returned by insert_first_path()) points to:
  *
- *      head              entry
- *       |                  |
- *    +--v-----+--------+---v----+--------+-------------------+
- *    |PTR2LAST|ListSize|PTR2NEXT|PTR2BITS|path string[0] ... |
- *    +--------+--------+----+---+--------+-------------------+
- *                           |
- *                      +----v---+--------+-------------------+
- *                      |PTR2NEXT|PTR2BITS|path string[1] ... |
- *                      +--------+--------+-------------------+
+ *      head                      entry
+ *       |                          |
+ *    +--v-----+-------+--------+---v----+--------+-------------------+
+ *    |PTR2LAST|PTR2SZL|ListSize|PTR2NEXT|PTR2BITS|path string[0] ... |
+ *    +--------+-------+--------+----+---+--------+-------------------+
+ *                                   |
+ *                              +----v---+--------+-------------------+
+ *                              |PTR2NEXT|PTR2BITS|path string[1] ... |
+ *                              +--------+--------+-------------------+
  *
  */
 
@@ -95,14 +98,17 @@ char * insert_first_path(char * path);
  * gets added to the size list for processing.
  *
  * Parameters:
- *    path  - The path of the file to add. Gets copied into the path block.
- *    size  - The size of the files in this path list.
- *    head  - The head of this path list (from insert_first_path() earlier).
+ *    path   - The path of the file to add. Gets copied into the path block.
+ *    device - The device of this path.
+ *    inode  - The inode of this path.
+ *    size   - The size of the files in this path list.
+ *    head   - The head of this path list (from insert_first_path() earlier).
  *
  * Return: none
  *
  */
-void insert_end_path(char * path, off_t size, char * head);
+void insert_end_path(char * path,
+                     dev_t device, ino_t inode, off_t size, char * head);
 
 
 /** ***************************************************************************
@@ -127,7 +133,38 @@ void report_path_block_usage();
  */
 static inline char * pl_get_first_entry(char * head)
 {
-  return head + 2 * sizeof(char *);
+  return head + 3 * sizeof(char *);
+}
+
+
+/** ***************************************************************************
+ * Return pointer to the sizelist associated with this pathlist.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *
+ * Return: pointer to sizelist
+ *
+ */
+static inline struct size_list * pl_get_szl_entry(char * head)
+{
+  return (struct size_list *)*(char **)(head + sizeof(char *));
+}
+
+
+/** ***************************************************************************
+ * Set sizelist associated with this pathlist.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *    szl  - size list
+ *
+ * Return: none
+ *
+ */
+static inline void pl_set_szl_entry(char * head, struct size_list * szl)
+{
+  *(char **)(head + sizeof(char *)) = (char *)szl;
 }
 
 
@@ -157,7 +194,7 @@ static inline char * pl_get_last_entry(char * head)
  */
 static inline void pl_init_path_count(char * head)
 {
-  char * list_len = head + sizeof(char *);
+  char * list_len = head + 2 * sizeof(char *);
   *(uint32_t *)list_len = 1;
 }
 
@@ -173,7 +210,7 @@ static inline void pl_init_path_count(char * head)
  */
 static inline uint32_t pl_get_path_count(char * head)
 {
-  char * list_len = head + sizeof(char *);
+  char * list_len = head + 2 * sizeof(char *);
   return(uint32_t)*(uint32_t *)list_len;
 }
 
@@ -189,7 +226,7 @@ static inline uint32_t pl_get_path_count(char * head)
  */
 static inline uint32_t pl_increase_path_count(char * head)
 {
-  char * list_len = head + 1 * sizeof(char *);
+  char * list_len = head + 2 * sizeof(char *);
   uint32_t path_count = (uint32_t)*(uint32_t *)list_len;
   path_count++;
   *(uint32_t *)list_len = path_count;

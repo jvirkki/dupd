@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -17,59 +17,71 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DUPD_SCAN_H
-#define _DUPD_SCAN_H
+#ifndef _DUPD_READLIST_H
+#define _DUPD_READLIST_H
 
-#define SCAN_SIZE_UNKNOWN -42
-#define SCAN_INODE_UNKNOWN 0
-#define SCAN_DEV_UNKNOWN -1
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+
+struct read_list_entry {
+  dev_t device;
+  ino_t inode;
+  char * pathlist_head;
+  char * pathlist_self;
+};
+
+extern struct read_list_entry * read_list;
+extern long read_list_end;
 
 
 /** ***************************************************************************
- * Initialize memory structures for scan.
+ * Initialize read list.
  *
  * Parameters: none
  *
  * Return: none
  *
  */
-void init_scanlist();
+void init_read_list();
 
 
 /** ***************************************************************************
- * Free memory initialized with init_scanlist()
+ * Free read list.
  *
  * Parameters: none
  *
  * Return: none
  *
  */
-void free_scanlist();
+void free_read_list();
 
 
 /** ***************************************************************************
- * Walk down the directory path given and process each file found.
+ * Add a file to the read list.
  *
  * Parameters:
- *    dbh          - sqlite3 database handle.
- *    path         - The path to process. Must not be null or empty.
- *    process_file - Function to call on each file as it is found.
+ *    device - The device of this file.
+ *    inode  - The inode of this file.
+ *    head   - Pointer to the head of the path list which contains this file.
+ *    entry  - Pointer to path list entry corresponding to this file.
+ *
  * Return: none
  *
  */
-void walk_dir(sqlite3 * dbh, const char * path,
-              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *));
+void add_to_read_list(dev_t device, ino_t inode, char * head, char * entry);
 
 
 /** ***************************************************************************
- * This is the public entry point for scanning files.
+ * Sort the read list.
  *
  * Parameters: none
  *
  * Return: none
  *
  */
-void scan();
+void sort_read_list();
 
 
 #endif

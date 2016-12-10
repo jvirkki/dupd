@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+source common
+
+# Test provides code coverage for the case where nothing got scanned.
+
+mkdir -p empty
+
+DESC="scan -q empty dir"
+$DUPD_CMD scan --path `pwd`/empty -q
+checkrv $?
+
+rmdir empty
+
+tdone

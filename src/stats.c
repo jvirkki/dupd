@@ -182,10 +182,10 @@ void report_stats()
     stats_set_dups_done_round_two +stats_set_no_dups_full_round +
     stats_set_dups_done_full_round + stats_two_file_compare +
     stats_three_file_compare;;
-  if (totals_from_rounds != stats_size_list_count) {
+  if (totals_from_rounds != stats_size_list_count) {         // LCOV_EXCL_START
     printf("\nwarning: total size sets %d != sets confirmed %d\n",
            stats_size_list_count, totals_from_rounds);
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 

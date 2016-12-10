@@ -41,10 +41,10 @@
 
 //
 // The following short options are NOT yet taken:
-// ab..e.g.ijkl.no..rstu.w.yzABCDE.G..JK.MNOPQRSTU.WXYZ0123456789
+// ab..e.g.ijkl.no..rstu.w.yzABC.E.G..JK.MNOPQRSTU.WXYZ0123456789
 //
 
-#define COUNT_OPTIONS 34
+#define COUNT_OPTIONS 37
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -67,86 +67,95 @@
 // hidden (--hidden) : include hidden files and dirs in scan
 #define OPT_hidden 6
 
+// hdd (-D,--hdd) : select HDD mode
+#define OPT_hdd 7
+
 // hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
-#define OPT_hardlink_is_unique 7
+#define OPT_hardlink_is_unique 8
 
 // no_thread_scan (--no-thread-scan) : do scan phase in a single thread
-#define OPT_no_thread_scan 8
+#define OPT_no_thread_scan 9
 
 // no_thread_hash (--no-thread-hash) : do hash/compare phase in a single thread
-#define OPT_no_thread_hash 9
+#define OPT_no_thread_hash 10
 
 // pathsep (--pathsep) CHAR : change internal path separator to CHAR
-#define OPT_pathsep 10
+#define OPT_pathsep 11
 
 // firstblocks (--firstblocks) N : max blocks to read in first hash pass
-#define OPT_firstblocks 11
+#define OPT_firstblocks 12
 
 // firstblocksize (--firstblocksize) N : size of firstblocks to read
-#define OPT_firstblocksize 12
+#define OPT_firstblocksize 13
 
 // intblocks (--intblocks) N : blocks to read in intermediate hash
-#define OPT_intblocks 13
+#define OPT_intblocks 14
 
 // blocksize (--blocksize) N : size of regular blocks to read
-#define OPT_blocksize 14
+#define OPT_blocksize 15
 
 // fileblocksize (--fileblocksize) N : size of blocks to read in file compare
-#define OPT_fileblocksize 15
+#define OPT_fileblocksize 16
 
 // skip_two (--skip-two) : do not compare two files directly
-#define OPT_skip_two 16
+#define OPT_skip_two 17
 
 // skip_three (--skip-three) : do not compare three files directly
-#define OPT_skip_three 17
+#define OPT_skip_three 18
+
+// cmp_two (--cmp-two) : force direct comparison of two files
+#define OPT_cmp_two 19
+
+// cmp_three (--cmp-three) : force direct comparison of three files
+#define OPT_cmp_three 20
 
 // uniques (--uniques) : save info about unique files
-#define OPT_uniques 18
+#define OPT_uniques 21
 
 // x_analyze (--x-analyze) : for testing only
-#define OPT_x_analyze 19
+#define OPT_x_analyze 22
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 20
+#define OPT_cut 23
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 21
+#define OPT_file 24
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 22
+#define OPT_exclude_path 25
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 23
+#define OPT_link 26
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 24
+#define OPT_hardlink 27
 
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 25
+#define OPT_hash 28
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 26
+#define OPT_verbose 29
 
 // verbose_threads (-V,--verbose-threads) : increase thread verbosity (may be repeated for more)
-#define OPT_verbose_threads 27
+#define OPT_verbose_threads 30
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 28
+#define OPT_quiet 31
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 29
+#define OPT_db 32
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 30
+#define OPT_help 33
 
 // no_unique (--no-unique) : ignore unique table even if present, for testing
-#define OPT_no_unique 31
+#define OPT_no_unique 34
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 32
+#define OPT_x_small_buffers 35
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 33
+#define OPT_x_testing 36
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

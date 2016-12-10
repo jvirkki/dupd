@@ -2,8 +2,8 @@
 
 source common
 
-DESC="scan(files)"
-$DUPD_CMD scan --path `pwd`/files -q --uniques
+DESC="scan(files) SHA1"
+$DUPD_CMD scan --path `pwd`/files -q --uniques -F sha1
 checkrv $?
 
 DESC="dups with --uniques"

@@ -31,6 +31,7 @@
 #include "hashlist.h"
 #include "main.h"
 #include "paths.h"
+#include "readlist.h"
 #include "scan.h"
 #include "sizelist.h"
 #include "sizetree.h"
@@ -79,7 +80,7 @@ void free_scanlist()
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path,
-              int (*process_file)(sqlite3 *, off_t, ino_t, char *))
+              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *))
 {
   STRUCT_STAT new_stat_info;
   int rv;
@@ -88,8 +89,9 @@ void walk_dir(sqlite3 * dbh, const char * path,
   char newpath[PATH_MAX];
   char current[PATH_MAX];
 
-  off_t size;
+  dev_t device;
   ino_t inode;
+  off_t size;
   long type;
 
   if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
@@ -109,12 +111,12 @@ void walk_dir(sqlite3 * dbh, const char * path,
     scan_list_pos--;
 
     DIR * dir = opendir(current);
-    if (dir == NULL) {
+    if (dir == NULL) {                                       // LCOV_EXCL_START
       if (verbosity >= 3) {
-        perror(path);                                        //  LCOV_EXCL_LINE
+        perror(path);
       }
       continue;
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     while ((entry = readdir(dir))) {
 
@@ -154,6 +156,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
 #ifdef DIRENT_HAS_TYPE
       size = SCAN_SIZE_UNKNOWN;
       inode = SCAN_INODE_UNKNOWN;
+      device = SCAN_DEV_UNKNOWN;
       if (entry->d_type == DT_REG) {
         type = D_FILE;
       } else if (entry->d_type == DT_DIR) {
@@ -164,6 +167,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
         rv = get_file_info(newpath, &new_stat_info);
         size = new_stat_info.st_size;
         inode = new_stat_info.st_ino;
+        device = new_stat_info.st_dev;
         if (rv != 0) {
           type = D_ERROR;
         } else if (S_ISDIR(new_stat_info.st_mode)) {
@@ -199,7 +203,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
 
       case D_FILE:
         // If it is a file, just process it now
-        (*process_file)(dbh, size, inode, newpath);
+        (*process_file)(dbh, device, inode, size, newpath);
         break;
 
       case D_OTHER:
@@ -237,6 +241,8 @@ void scan()
   init_filecompare();
   init_sizetree();
   init_scanlist();
+
+  if (hdd_mode) { init_read_list(); }
 
   if (write_db) {
     dbh = open_database(db_path, 1);
@@ -300,6 +306,15 @@ void scan()
     find_unique_sizes(dbh);
   }
 
+  if (hdd_mode) {
+    t1 = get_current_time_millis();
+    sort_read_list();
+    if (verbosity >= 2) {
+      long sort_time = get_current_time_millis() - t1;
+      printf("Time to sort read list: %ldms\n", sort_time);
+    }
+  }
+
   // Processing phase - walk through size list whittling down the potentials
 
   t1 = get_current_time_millis();
@@ -307,10 +322,14 @@ void scan()
   if (x_analyze) {
     analyze_process_size_list(dbh);
   } else {
-    if (threaded_hashcompare) {
-      threaded_process_size_list(dbh);
+    if (hdd_mode) {
+      threaded_process_size_list_hdd(dbh);
     } else {
-      process_size_list(dbh);
+      if (threaded_hashcompare) {
+        threaded_process_size_list(dbh);
+      } else {
+        process_size_list(dbh);
+      }
     }
   }
 

@@ -18,6 +18,11 @@ Additional options are available:
 --hidden           Include hidden files and directories in the scan.
                    By default these are not included.
 
+--hdd              Enable HDD (hard disk drive) mode. The default dupd
+                   algorithms assume an SSD (solid state drive). The HDD
+                   mode has additional overhead but can be much faster
+                   on a first run (empty caches) when reading off a HDD.
+
 --db PATH          Override the default database file location.
                    If you override the path during scan, remember to
                    provide this argument and the path for subsequent
@@ -253,10 +258,14 @@ files are different it will save having to completely read them.
                     need to be read completely so it can be more efficient
                     to read and hash one at a time.
 
+--cmp-two           Force comparing two files directly if otherwise disabled.
+
 By default dupd also compares three files of the same size directly, for
 the same reasons.
 
 --skip-three        This option disables the three file comparison.
+
+--cmp-three         Force comparing three files directly if otherwise disabled.
 
 When doing these direct file comparisons, the default block size
 can be adjusted.

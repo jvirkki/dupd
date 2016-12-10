@@ -33,6 +33,7 @@
 #include "main_opt.h"
 #include "optgen.h"
 #include "paths.h"
+#include "readlist.h"
 #include "refresh.h"
 #include "report.h"
 #include "scan.h"
@@ -80,6 +81,7 @@ char * path_sep_string = NULL;
 int x_small_buffers = 0;
 int x_analyze = 0;
 int only_testing = 0;
+int hdd_mode = 0;
 int threaded_sizetree = 1;
 int threaded_hashcompare = 1;
 int hardlink_is_unique = 0;
@@ -226,7 +228,7 @@ static void free_start_paths()
  * Shows usage and exits if errors are detected in argument usage.
  *
  */
-static void process_args(int argc, char * argv[])
+static int process_args(int argc, char * argv[])
 {
   char * options[COUNT_OPTIONS];
 
@@ -234,7 +236,7 @@ static void process_args(int argc, char * argv[])
 
   if (options[OPT_help]) {
     show_help();
-    exit(0);
+    return 1;
   }
 
   if (rv == OPTGEN_NONE) {
@@ -242,13 +244,23 @@ static void process_args(int argc, char * argv[])
     printf("\n");
     printf("Run 'dupd help' for a summary of available options.\n");
     printf("Run 'dupd usage' for more documentation.\n");
-    exit(0);
+    return 1;
   }
 
   if (rv != OPTGEN_OK) {                                     // LCOV_EXCL_START
     printf("error parsing command line arguments\n");
-    exit(1);
+    return 2;
   }                                                          // LCOV_EXCL_STOP
+
+  if (options[OPT_cmp_two] && options[OPT_skip_two]) {
+    printf("error: unable to both skip and compare two!\n");
+    return 2;
+  }
+
+  if (options[OPT_cmp_three] && options[OPT_skip_three]) {
+    printf("error: unable to both skip and compare three!\n");
+    return 2;
+  }
 
   if (options[OPT_x_small_buffers]) { x_small_buffers = 1; }
   if (options[OPT_x_testing]) { only_testing = 1; }
@@ -287,6 +299,7 @@ static void process_args(int argc, char * argv[])
     snprintf(db_path, PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
+  if (options[OPT_hdd]) { hdd_mode = 1; }
   if (options[OPT_nodb]) { write_db = 0; }
   if (options[OPT_link]) { rmsh_link = RMSH_LINK_SOFT; }
   if (options[OPT_hardlink]) { rmsh_link = RMSH_LINK_HARD; }
@@ -317,7 +330,7 @@ static void process_args(int argc, char * argv[])
   exclude_path = options[OPT_exclude_path];
   if (exclude_path != NULL && exclude_path[0] != '/') {
     printf("error: --exclude-path must be absolute\n");
-    exit(1);
+    return 2;
   }
 
   stats_file = options[OPT_stats_file];
@@ -326,7 +339,7 @@ static void process_args(int argc, char * argv[])
 
   if (save_uniques && !write_db) {
     printf("error: --uniques and --nodb are incompatible\n");
-    exit(1);
+    return 2;
   }
 
   path_sep_string = (char *)malloc(2);
@@ -342,7 +355,7 @@ static void process_args(int argc, char * argv[])
     hash_function = HASH_FN_SHA512;
   } else {
     printf("error: unknown hash %s\n", hash_name);
-    exit(1);
+    return 2;
   }
   hash_bufsize = hash_get_bufsize(hash_function);
 
@@ -352,8 +365,22 @@ static void process_args(int argc, char * argv[])
     threaded_sizetree = 0;
     threaded_hashcompare = 0;
     save_uniques = 0;
+    hdd_mode = 0;
     x_analyze = 1;
   }
+
+  if (hdd_mode) {
+    opt_compare_two = 0;
+    opt_compare_three = 0;
+    if (options[OPT_cmp_two]) {
+      opt_compare_two = 1;
+    }
+    if (options[OPT_cmp_three]) {
+      opt_compare_three = 1;
+    }
+  }
+
+  return 0;
 }
 
 
@@ -366,7 +393,16 @@ int main(int argc, char * argv[])
   long t1 = get_current_time_millis();
   int rv = 0;
 
-  process_args(argc, argv);
+  rv = process_args(argc, argv);
+
+  // If process_args returns non-zero it means we need to exit right away
+  // with an exit code one less than the returned value. Need to exit via
+  // the DONE section both to free any memory that may have been allocated
+  // already and also to properly return (not exit) from main (see below).
+  if (rv) {
+    rv--;
+    goto DONE;
+  }
 
   // If bad --path values given, don't try to process them. Arguably one
   // could process the good ones (if any) but better to flag the path
@@ -409,6 +445,7 @@ int main(int argc, char * argv[])
   free_filecompare();
   free_scanlist();
   free_start_paths();
+  free_read_list();
 
   stats_time_total = get_current_time_millis() - t1;
 

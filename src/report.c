@@ -325,9 +325,11 @@ void operation_report()
  *    1+ - Number of duplicates identified.
  *
  */
-static int file_callback(sqlite3 * dbh, off_t size, ino_t inode, char * path)
+static int file_callback(sqlite3 * dbh,
+                         dev_t device, ino_t inode, off_t size, char * path)
 {
   (void)size;                   /* not used */
+  (void)device;
   (void)inode;                  /* not used */
   char * unique_pfx = "";
   char * dup_pfx = "";
@@ -403,7 +405,7 @@ void operation_file()
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
-  file_callback(dbh, 0, 0, file_path);
+  file_callback(dbh, 0, 0, 0, file_path);
   close_database(dbh);
   free_get_known_duplicates();
 }

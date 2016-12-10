@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan -q --hdd"
+$DUPD_CMD scan --path `pwd`/files -q --hdd --x-small-buffers
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.01
+
+DESC="validate with SHA1"
+$DUPD_CMD validate -F sha1
+checkrv $?
+
+DESC="validate with SHA512"
+$DUPD_CMD validate --hash sha512
+checkrv $?
+
+tdone

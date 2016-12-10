@@ -2,9 +2,9 @@
 
 source common
 
-DESC="scan(files)"
+DESC="scan(files) SHA512"
 
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q -F sha512
 checkrv $?
 
 DESC="dups without --uniques"

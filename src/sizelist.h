@@ -22,6 +22,16 @@
 
 #include <sqlite3.h>
 
+struct size_list {
+  off_t size;
+  char * path_list;
+  int state;
+  int fully_read;
+  off_t bytes_read;
+  pthread_mutex_t lock;
+  struct size_list * next;
+};
+
 
 /** ***************************************************************************
  * Initialize size list.
@@ -55,7 +65,7 @@ void free_size_list();
  * Return: An intialized/allocated size list node.
  *
  */
-void add_to_size_list(off_t size, char * path_list);
+struct size_list * add_to_size_list(off_t size, char * path_list);
 
 
 /** ***************************************************************************
@@ -87,6 +97,15 @@ void process_size_list(sqlite3 * dbh);
  *
  */
 void analyze_process_size_list(sqlite3 * dbh);
+
+
+/** ***************************************************************************
+ * Process the size list in two threads using read list ordering for HDDs.
+ *
+ * Otherwise same as process_size_list() above.
+ *
+ */
+void threaded_process_size_list_hdd(sqlite3 * dbh);
 
 
 /** ***************************************************************************

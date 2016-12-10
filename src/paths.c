@@ -26,6 +26,7 @@
 #include "hashlist.h"
 #include "main.h"
 #include "paths.h"
+#include "readlist.h"
 #include "sizelist.h"
 #include "sizetree.h"
 #include "stats.h"
@@ -57,6 +58,16 @@ void dump_path_list(const char * line, off_t size, char * head)
 
   char * last_elem = pl_get_last_entry(head);
   printf("  last_elem: %p\n", last_elem);
+
+  struct size_list * szl = pl_get_szl_entry(head);
+  printf("  sizelist back ptr: %p\n", szl);
+  if (szl != NULL) {
+    printf("   forward ptr back to me: %p\n", szl->path_list);
+    if (szl->path_list != head) {                            // LCOV_EXCL_START
+      printf("error: mismatch!\n");
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
+  }
 
   uint32_t list_len = pl_get_path_count(head);
   printf("  list_len: %d\n", (int)list_len);
@@ -204,6 +215,9 @@ char * insert_first_path(char * path)
   // Initialize ListSize (to 1)
   pl_init_path_count(head);
 
+  // The associated sizelist does not exist yet
+  pl_set_szl_entry(head, NULL);
+
   // PTR2LAST - Set to point to self since we're the first and last elem now
   pl_entry_set_next(head, new_entry);
 
@@ -236,7 +250,8 @@ char * insert_first_path(char * path)
  * Public function, see paths.h
  *
  */
-void insert_end_path(char * path, off_t size, char * head)
+void insert_end_path(char * path,
+                     dev_t device, ino_t inode, off_t size, char * head)
 {
   int space_needed = (2 * sizeof(char *)) + strlen(path) + 1;
   check_space(space_needed);
@@ -252,12 +267,42 @@ void insert_end_path(char * path, off_t size, char * head)
     // we have just identified a size which is a candidate for duplicate
     // processing later, so add it to the size list now.
 
-    add_to_size_list(size, head);
+    struct size_list * new_szl = add_to_size_list(size, head);
+    pl_set_szl_entry(head, new_szl);
+
+    if (verbosity >= 3) {
+      struct size_list * szl = pl_get_szl_entry(head);
+      if (szl != new_szl) {                                  // LCOV_EXCL_START
+        printf("error: set szl to %p, but got back %p\n", new_szl, szl);
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+    }
+
     prior = pl_get_first_entry(head);
+
+    if (hdd_mode) {
+      // Add the first entry to the read list. It wasn't added earlier
+      // because we didn't know it needed to be there but now we do.
+      // We'll need to re-stat() it to get info. This should be fast
+      // because it should be in the cache already. (Alternatively,
+      // could keep this info in the path list head.)
+      char * first_path = pl_entry_get_path(prior);
+      STRUCT_STAT info;
+      if (get_file_info(first_path, &info)) {                // LCOV_EXCL_START
+        printf("error: unable to stat %s\n", first_path);
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+      add_to_read_list(info.st_dev, info.st_ino, head, prior);
+    }
 
   } else {
     // Just jump to the end of the path list
     prior = pl_get_last_entry(head);
+  }
+
+  if (hdd_mode) {
+    // Then add the current path to the read list as well.
+    add_to_read_list(device, inode, head, new_entry);
   }
 
   // Update PTR2LAST to point to the new last entry

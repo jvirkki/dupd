@@ -163,6 +163,13 @@ extern long file_count;
 
 
 /** ***************************************************************************
+ * HDD mode if true.
+ *
+ */
+extern int hdd_mode;
+
+
+/** ***************************************************************************
  * Start and end of the usage info document buffer.
  *
  */

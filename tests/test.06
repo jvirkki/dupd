@@ -12,4 +12,14 @@ checkrv $?
 
 check_nreport output.01
 
+DESC="scan -v -v -v -v -v -v -v --no-thread-hash"
+$DUPD_CMD scan --no-thread-hash --intblocks 2 --uniques --path `pwd`/files -v -v -v -v -v -v -v --x-testing > /dev/null
+checkrv $?
+
+DESC="generate report"
+$DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+
+check_nreport output.01
+
 tdone

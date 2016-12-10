@@ -44,8 +44,9 @@ static struct bloom inode_filter;
 
 struct stat_queue {
   int end;
-  off_t size;
+  dev_t device;
   ino_t inode;
+  off_t size;
   char path[PATH_MAX];
   struct stat_queue * next;
 };
@@ -138,7 +139,8 @@ static struct size_node * new_node(off_t size, char * path)
  * Return: none
  *
  */
-static void add_below(struct size_node * node, off_t size, char * path)
+static void add_below(struct size_node * node,
+                      dev_t device, ino_t inode, off_t size, char * path)
 {
   struct size_node * p = node;
 
@@ -146,7 +148,7 @@ static void add_below(struct size_node * node, off_t size, char * path)
     off_t s = size - p->size;
 
     if (!s) {
-      insert_end_path(path, size, p->paths);
+      insert_end_path(path, device, inode, size, p->paths);
       return;
     }
 
@@ -270,8 +272,8 @@ static void * worker_main(void * arg)
         done = 1;
 
       } else {
-        add_file(NULL, worker_next->size,
-                 worker_next->inode, worker_next->path);
+        add_file(NULL, worker_next->device, worker_next->inode,
+                 worker_next->size, worker_next->path);
         queue_removed[current_worker_queue]++;
         worker_next = worker_next->next;
       }
@@ -332,7 +334,8 @@ static void free_node(struct size_node * node)
  * Public function, see header file.
  *
  */
-int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path)
+int add_file(sqlite3 * dbh,
+             dev_t device, ino_t inode, off_t size,  char * path)
 {
   (void)dbh;                    /* not used */
   static STRUCT_STAT new_stat_info;
@@ -357,6 +360,7 @@ int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path)
 
     size = new_stat_info.st_size;
     inode = new_stat_info.st_ino;
+    device = new_stat_info.st_dev;
   }
 
   stats_files_count++;
@@ -401,7 +405,7 @@ int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path)
     return(-2);
   }
 
-  add_below(tip, size, path);
+  add_below(tip, device, inode, size, path);
 
   return(-2);
 }
@@ -411,7 +415,8 @@ int add_file(sqlite3 * dbh, off_t size, ino_t inode, char * path)
  * Public function, see header file.
  *
  */
-int add_queue(sqlite3 * dbh, off_t size, ino_t inode, char * path)
+int add_queue(sqlite3 * dbh,
+              dev_t device, ino_t inode, off_t size, char * path)
 {
   (void)dbh;                    /* not used */
   static char * spaces = "[scan] ";
@@ -423,6 +428,7 @@ int add_queue(sqlite3 * dbh, off_t size, ino_t inode, char * path)
   // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;
   producer_next->inode = inode;
+  producer_next->device = device;
   strcpy(producer_next->path, path);
   producer_next = producer_next->next;
   queue_added[current_producer_queue]++;
@@ -611,10 +617,13 @@ void free_size_tree()
   if (tip != NULL) {
     free_node(tip);
     tip = NULL;
+  }
 
-    for (i = 0; i < QUEUE_COUNT; i++) {
-      t = &queue[i];
+  for (i = 0; i < QUEUE_COUNT; i++) {
+    t = &queue[i];
+    if (t) {
       t = t->next;
+      queue[i].next = NULL;
       while (t != NULL) {
         p = t;
         t = t->next;

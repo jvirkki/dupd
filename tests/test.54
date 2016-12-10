@@ -3,7 +3,7 @@
 source common
 
 DESC="verbose scan(files), single threaded"
-$DUPD_CMD scan --intblocks 1 --path `pwd`/files -v -v -v -v -v -v --no-thread-scan > /dev/null
+$DUPD_CMD scan --intblocks 2 --path `pwd`/files -v -v -v -v -v -v --no-thread-scan > /dev/null
 checkrv $?
 
 DESC="generate report"

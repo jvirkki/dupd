@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan with duplicate directory"
+$DUPD_CMD scan --path /tmp -p /tmp > /dev/null
+checkerr $?
+
+DESC="scan with bad hash"
+$DUPD_CMD scan --path /tmp -F myhash > /dev/null
+checkerr $?
+
+tdone
