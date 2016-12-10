@@ -20,6 +20,7 @@
 #ifndef _DUPD_SIZELIST_H
 #define _DUPD_SIZELIST_H
 
+#include <pthread.h>
 #include <sqlite3.h>
 
 struct size_list {
