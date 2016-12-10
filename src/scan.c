@@ -335,7 +335,10 @@ void scan()
   }
 
   stats_time_process = get_current_time_millis() - t1;
-  printf("Duplicate processing completed in %ldms\n", stats_time_process);
+
+  if (verbosity >= 1) {
+    printf("Duplicate processing completed in %ldms\n", stats_time_process);
+  }
 
   if (verbosity >= 2) {
     printf("Largest duplicate set %d\n", stats_most_dups);
