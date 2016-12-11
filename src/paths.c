@@ -204,8 +204,8 @@ void free_path_block()
 char * insert_first_path(char * path)
 {
   int space_needed = (2 * sizeof(char *)) + strlen(path) + 2;
-  check_space((2 * sizeof(char *)) + space_needed); // first entry overhead
-  space_used += (2 * sizeof(char *))+ space_needed;
+  check_space((3 * sizeof(char *)) + space_needed); // first entry overhead
+  space_used += (3 * sizeof(char *)) + space_needed;
 
   char * head = next_entry;
   char * new_entry = pl_get_first_entry(head);
