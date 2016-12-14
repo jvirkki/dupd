@@ -243,11 +243,6 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
     return(-1);
   }                                                          // LCOV_EXCL_STOP
 
-#ifndef __APPLE__
-  off_t len = blocks > 0 ? blocks * bsize : 0;
-  posix_fadvise(file, skip * bsize, len, POSIX_FADV_WILLNEED);
-#endif
-
   if (skip > 0) {
     lseek(file, skip * bsize, SEEK_SET);
   }
