@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan(files8)"
+
+(cd ./files8 && ./create_files)
+
+$DUPD_CMD scan --path `pwd`/files8 -q
+checkrv $?
+
+DESC="report"
+$DUPD_CMD report --cut `pwd`/files8/ | grep -v "Duplicate report from database" > nreport
+checkrv $?
+check_nreport output.72
+
+(cd ./files8 && ./clean_files)
+
+tdone

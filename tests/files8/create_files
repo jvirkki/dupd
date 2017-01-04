@@ -1,0 +1,7 @@
+rm -f ?
+echo first file > 1
+echo second file > 2
+cp 1 3
+cp 1 5
+chmod 000 2
+chmod 000 3
