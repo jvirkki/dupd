@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -140,6 +140,15 @@ static inline int dupd_memcmp(const char * b1, const char * b2, size_t n)
  */
 ssize_t read_file_bytes(char * path, char * output,
                         uint64_t bytes, uint64_t skip);
+
+
+/** ***************************************************************************
+ * Return number of available cores on system.
+ *
+ * Return: number of available cores on system.
+ *
+ */
+int cpu_cores();
 
 
 /** ***************************************************************************

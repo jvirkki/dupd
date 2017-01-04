@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -120,6 +120,16 @@ ssize_t read_file_bytes(char * path, char * output,
   stats_total_bytes_read += got;
   close(file);
   return got;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int cpu_cores()
+{
+  return sysconf(_SC_NPROCESSORS_ONLN);
 }
 
 
