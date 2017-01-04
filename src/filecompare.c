@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -154,6 +154,7 @@ void compare_three_files(sqlite3 * dbh,
     if (verbosity >= 1) {
       printf("Error opening [%s]\n", path1);
     }
+    compare_two_files(dbh, path2, path3, size);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -163,6 +164,7 @@ void compare_three_files(sqlite3 * dbh,
       printf("Error opening [%s]\n", path2);
     }
     close(file[1]);
+    compare_two_files(dbh, path1, path3, size);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -173,6 +175,7 @@ void compare_three_files(sqlite3 * dbh,
     }
     close(file[1]);
     close(file[2]);
+    compare_two_files(dbh, path1, path2, size);
     return;
   }                                                          // LCOV_EXCL_STOP
 
