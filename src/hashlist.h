@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -85,6 +85,21 @@ void free_hash_lists();
  *
  */
 struct hash_list * get_hash_list(int kind);
+
+
+/** ***************************************************************************
+ * Adds a new file (path) to a given hash list. The hash list capacity gets
+ * expanded if necessary to hold the new file.
+ *
+ * Parameters:
+ *     hl   - Add file to this hash list.
+ *     path - Path of the file to add.
+ *     hash - The hash of this file (full or partial depending on round).
+ *
+ * Return: none.
+ *
+ */
+void add_to_hash_list(struct hash_list * hl, char * path, char * hash);
 
 
 /** ***************************************************************************

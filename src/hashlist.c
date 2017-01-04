@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -147,18 +147,10 @@ static void reset_hash_list(struct hash_list * hl)
 
 
 /** ***************************************************************************
- * Adds a new file (path) to a given hash list. The hash list capacity gets
- * expanded if necessary to hold the new file.
- *
- * Parameters:
- *     hl   - Add file to this hash list.
- *     path - Path of the file to add.
- *     hash - The hash of this file (full or partial depending on round).
- *
- * Return: none.
+ * Public function, see header file.
  *
  */
-static void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
+void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
 {
   struct hash_list * p = hl;
   struct hash_list * tail = hl;
