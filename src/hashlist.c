@@ -304,12 +304,12 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
 
   char hash_out[HASH_MAX_BUFSIZE];
   int rv = hash_fn(path, hash_out, blocks, bsize, skip);
-  if (rv != 0) {                                             // LCOV_EXCL_START
+  if (rv != 0) {
     if (verbosity >= 1) {
       printf("SKIP [%s]: Unable to compute hash\n", path);
-      return;
     }
-  }                                                          // LCOV_EXCL_STOP
+    return;
+  }
 
   add_to_hash_list(hl, path, hash_out);
 }

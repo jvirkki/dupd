@@ -236,12 +236,12 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
   }
 
   int file = open(path, O_RDONLY);
-  if (file < 0) {                                            // LCOV_EXCL_START
+  if (file < 0) {
     if (verbosity >= 1) {
       printf("HASH: Error opening [%s]\n", path);
     }
     return(-1);
-  }                                                          // LCOV_EXCL_STOP
+  }
 
   if (skip > 0) {
     lseek(file, skip * bsize, SEEK_SET);
