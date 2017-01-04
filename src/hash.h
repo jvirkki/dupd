@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -79,6 +79,49 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
  *
  */
 int hash_fn_buf(const char * buffer, int bufsize, char * output);
+
+
+/** ***************************************************************************
+ * Initialize appropriate hash context depending on algorithm selected.
+ *
+ * Parameters: none
+ *
+ * Return: pointer to hash context
+ *
+ */
+void * hash_fn_buf_init();
+
+
+/** ***************************************************************************
+ * Compute hash update on data in memory.
+ *
+ * Parameters:
+ *    ctx     - Algorith-specific context for this hash operation.
+ *    buffer  - Read data from here.
+ *    bufsize - Size of buffer.
+ *
+ * Return:
+ *    0 - On success
+ *
+ */
+int hash_fn_buf_update(void * ctx, const char * buffer, int bufsize);
+
+
+/** ***************************************************************************
+ * Process final block of data and return the hash.
+ *
+ * Parameters:
+ *    ctx     - Algorith-specific context for this hash operation.
+ *    buffer  - Read data from here.
+ *    bufsize - Size of buffer.
+ *    output  - Buffer where output will be stored.
+ *
+ * Return:
+ *    0 - On success
+ *
+ */
+int hash_fn_buf_final(void * ctx, const char * buffer, int bufsize,
+                      char * output);
 
 
 #endif

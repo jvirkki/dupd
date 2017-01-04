@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -286,4 +286,101 @@ int hash_fn_buf(const char * buffer, int bufsize, char * output)
     printf("error: invalid hash_function value %d\n", hash_function);
     exit(1);                                                 // LCOV_EXCL_STOP
   }
+}
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+void * hash_fn_buf_init()
+{
+  switch(hash_function) {
+
+  case HASH_FN_MD5: {
+    MD5_CTX * ctx = (MD5_CTX *)malloc(sizeof(MD5_CTX));
+    MD5_Init(ctx);
+    return (void *)ctx;
+  }
+
+  case HASH_FN_SHA1: {
+    SHA_CTX * ctx = (SHA_CTX *)malloc(sizeof(SHA_CTX));
+    SHA1_Init(ctx);
+    return (void *)ctx;
+  }
+
+  case HASH_FN_SHA512: {
+    SHA512_CTX * ctx = (SHA512_CTX *)malloc(sizeof(SHA512_CTX));
+    SHA512_Init(ctx);
+    return (void *)ctx;
+  }
+
+  default:                                                   // LCOV_EXCL_START
+    printf("error: invalid hash_function value %d\n", hash_function);
+    exit(1);                                                 // LCOV_EXCL_STOP
+  }
+
+  return 0;
+}
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+int hash_fn_buf_update(void * ctx, const char * buffer, int bufsize)
+{
+  switch(hash_function) {
+
+  case HASH_FN_MD5:
+    MD5_Update((MD5_CTX *)ctx, buffer, bufsize);
+    break;
+
+  case HASH_FN_SHA1:
+    SHA1_Update((SHA_CTX *)ctx, buffer, bufsize);
+    break;
+
+  case HASH_FN_SHA512:
+    SHA512_Update((SHA512_CTX *)ctx, buffer, bufsize);
+    break;
+
+  default:                                                   // LCOV_EXCL_START
+    printf("error: invalid hash_function value %d\n", hash_function);
+    exit(1);                                                 // LCOV_EXCL_STOP
+  }
+
+  return 0;
+}
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+int hash_fn_buf_final(void * ctx, const char * buffer, int bufsize,
+                      char * output)
+{
+  switch(hash_function) {
+
+  case HASH_FN_MD5:
+    MD5_Update((MD5_CTX *)ctx, buffer, bufsize);
+    MD5_Final((unsigned char *)output, (MD5_CTX *)ctx);
+    break;
+
+  case HASH_FN_SHA1:
+    SHA1_Update((SHA_CTX *)ctx, buffer, bufsize);
+    SHA1_Final((unsigned char *)output, (SHA_CTX *)ctx);
+    break;
+
+  case HASH_FN_SHA512:
+    SHA512_Update((SHA512_CTX *)ctx, buffer, bufsize);
+    SHA512_Final((unsigned char *)output, (SHA512_CTX *)ctx);
+    break;
+
+  default:                                                   // LCOV_EXCL_START
+    printf("error: invalid hash_function value %d\n", hash_function);
+    exit(1);                                                 // LCOV_EXCL_STOP
+  }
+
+  return 0;
 }
