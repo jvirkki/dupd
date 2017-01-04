@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,8 @@ static sqlite3_stmt * stmt_duplicate_to_db = NULL;
 static sqlite3_stmt * stmt_delete_duplicate = NULL;
 static sqlite3_stmt * stmt_unique_to_db = NULL;
 static sqlite3_stmt * stmt_get_known_duplicates = NULL;
+
+static pthread_mutex_t dbh_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /** ***************************************************************************
@@ -361,6 +364,8 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
                      "VALUES(?, ?, ?)";
   int rv;
 
+  pthread_mutex_lock(&dbh_lock);
+
   if (stmt_duplicate_to_db == NULL) {
     rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_duplicate_to_db, NULL);
     rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -383,6 +388,8 @@ void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
   if (count > stats_most_dups) {
     stats_most_dups = count;
   }
+
+  pthread_mutex_unlock(&dbh_lock);
 }
 
 
@@ -429,6 +436,8 @@ void unique_to_db(sqlite3 * dbh, char * path, char * msg)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
+  pthread_mutex_lock(&dbh_lock);
+
   if (stmt_unique_to_db == NULL) {
     rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_unique_to_db, NULL);
     rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -443,6 +452,8 @@ void unique_to_db(sqlite3 * dbh, char * path, char * msg)
   stats_uniques_saved++;
 
   sqlite3_reset(stmt_unique_to_db);
+
+  pthread_mutex_unlock(&dbh_lock);
 
   if (verbosity >= 4) {
     printf("Unique file (%s): [%s]\n", msg, path);
