@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -295,6 +295,13 @@ extern int hash_function;
  *
  */
 extern int hash_bufsize;
+
+
+/** ***************************************************************************
+ * System open file limit for dupd process.
+ *
+ */
+extern int max_open_files;
 
 
 /** ***************************************************************************
