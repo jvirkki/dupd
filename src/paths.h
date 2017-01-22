@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -229,6 +229,26 @@ static inline uint32_t pl_increase_path_count(char * head)
   char * list_len = head + 2 * sizeof(char *);
   uint32_t path_count = (uint32_t)*(uint32_t *)list_len;
   path_count++;
+  *(uint32_t *)list_len = path_count;
+  return path_count;
+}
+
+
+/** ***************************************************************************
+ * Decrease the number of entries in this pathlist.
+ *
+ * Parameters:
+ *    head - head of this pathlist
+ *    n    - decrease by n
+ *
+ * Return: updated number of entries
+ *
+ */
+static inline uint32_t pl_decrease_path_count(char * head, int n)
+{
+  char * list_len = head + 2 * sizeof(char *);
+  uint32_t path_count = (uint32_t)*(uint32_t *)list_len;
+  path_count = path_count - n;
   *(uint32_t *)list_len = path_count;
   return path_count;
 }
