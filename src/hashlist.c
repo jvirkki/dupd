@@ -434,8 +434,9 @@ void print_hash_list(struct hash_list * src)
  * Public function, see header file.
  *
  */
-void skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db)
+int skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db)
 {
+  int skimmed = 0;
   struct hash_list * p = src;
   while (p != NULL && p->hash_valid) {
     if (p->next_index == 1) {
@@ -443,7 +444,9 @@ void skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db)
         unique_to_db(dbh, *(p->pathptrs), "hashlist");
       }
       *(p->pathptrs)[0] = 0;
+      skimmed++;
     }
     p = p->next;
   }
+  return skimmed;
 }

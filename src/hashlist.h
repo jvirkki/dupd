@@ -208,10 +208,10 @@ void print_hash_list(struct hash_list * src);
  *     dbh - Database handle.
  *     src - Source hash list.
  *
- * Return: none.
+ * Return: The number of skimmed (nulled out) entries.
  *
  */
-void skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db);
+int skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db);
 
 
 #endif
