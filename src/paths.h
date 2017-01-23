@@ -331,4 +331,32 @@ static inline char * pl_entry_get_next(char * entry)
 }
 
 
+/** ***************************************************************************
+ * Return pointer to an entry containing a valid path given a starting point.
+ * The node returned might be entry itself, if it contains a path. Or else,
+ * the next available one.
+ *
+ * Parameters:
+ *    entry - The entry
+ *
+ * Return: pointer to entry with valid path (or NULL if end of the path list)
+ *
+ */
+static inline char * pl_entry_get_valid_node(char * entry)
+{
+  char * n = entry;
+  char * p;
+
+  do {
+    p = pl_entry_get_path(n);
+    if (p != NULL && p[0] != 0) {
+      return n;
+    }
+    n = pl_entry_get_next(n);
+  } while (n != NULL);
+
+  return NULL;
+}
+
+
 #endif
