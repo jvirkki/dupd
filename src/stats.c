@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -44,8 +44,8 @@ int stats_full_hash_second = 0;
 int stats_partial_hash_second = 0;
 int stats_one_block_hash_first = 0;
 int stats_set_dups_done_full_round = 0;
-int stats_set_dups_done_round_one = 0;
-int stats_set_dups_done_round_two = 0;
+int stats_set_dup_done_round_one = 0;
+int stats_set_dup_done_round_two = 0;
 int stats_set_full_round = 0;
 int stats_set_no_dups_full_round = 0;
 int stats_set_no_dups_round_one = 0;
@@ -110,7 +110,7 @@ void report_stats()
     printf("  Sets with dups ruled out in first round: %d\n",
            stats_set_no_dups_round_one);
     printf("  Sets with dups confirmed in first round: %d\n",
-           stats_set_dups_done_round_one);
+           stats_set_dup_done_round_one);
 
     printf("Round two: hash list processed for %d size sets\n",
            stats_set_round_two);
@@ -119,7 +119,7 @@ void report_stats()
     printf("  Sets with dups ruled out in second round: %d\n",
            stats_set_no_dups_round_two);
     printf("  Sets with dups confirmed in second round: %d\n",
-           stats_set_dups_done_round_two);
+           stats_set_dup_done_round_two);
 
     printf("Round three: hash list processed for %d size sets\n",
            stats_set_full_round);
@@ -178,8 +178,8 @@ void report_stats()
 
   // Some sanity checking
   int totals_from_rounds = stats_set_no_dups_round_one +
-    stats_set_dups_done_round_one + stats_set_no_dups_round_two +
-    stats_set_dups_done_round_two +stats_set_no_dups_full_round +
+    stats_set_dup_done_round_one + stats_set_no_dups_round_two +
+    stats_set_dup_done_round_two +stats_set_no_dups_full_round +
     stats_set_dups_done_full_round + stats_two_file_compare +
     stats_three_file_compare;;
   if (totals_from_rounds != stats_size_list_count) {         // LCOV_EXCL_START
@@ -211,9 +211,9 @@ void save_stats()
   fprintf(fp, "stats_set_dups_done_full_round %d\n",
           stats_set_dups_done_full_round);
   fprintf(fp, "stats_set_dups_done_round_one %d\n",
-          stats_set_dups_done_round_one);
+          stats_set_dup_done_round_one);
   fprintf(fp, "stats_set_dups_done_round_two %d\n",
-          stats_set_dups_done_round_two);
+          stats_set_dup_done_round_two);
   fprintf(fp, "stats_set_full_round %d\n", stats_set_full_round);
   fprintf(fp, "stats_set_no_dups_full_round %d\n",
           stats_set_no_dups_full_round);

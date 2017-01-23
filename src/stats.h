@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -39,8 +39,8 @@ extern int stats_mid_blocks_count;
 extern int stats_one_block_hash_first;
 extern int stats_partial_hash_second;
 extern int stats_set_dups_done_full_round;
-extern int stats_set_dups_done_round_one;
-extern int stats_set_dups_done_round_two;
+extern int stats_set_dup_done_round_one;
+extern int stats_set_dup_done_round_two;
 extern int stats_set_full_round;
 extern int stats_set_no_dups_full_round;
 extern int stats_set_no_dups_round_one;
