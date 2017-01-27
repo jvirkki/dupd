@@ -298,13 +298,6 @@ extern int hash_bufsize;
 
 
 /** ***************************************************************************
- * System open file limit for dupd process.
- *
- */
-extern int max_open_files;
-
-
-/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

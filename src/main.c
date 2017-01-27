@@ -87,7 +87,6 @@ int threaded_hashcompare = 1;
 int hardlink_is_unique = 0;
 int hash_function = HASH_FN_MD5;
 int hash_bufsize = -1;
-int max_open_files = 32;
 long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 
 
