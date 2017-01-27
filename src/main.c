@@ -96,7 +96,7 @@ long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
  */
 static void show_banner()
 {
-  printf("dupd " DUPD_VERSION " Copyright 2012-2016 Jyri J. Virkki\n");
+  printf("dupd " DUPD_VERSION " Copyright 2012-2017 Jyri J. Virkki\n");
   printf("This program comes with ABSOLUTELY NO WARRANTY.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
   printf("under certain conditions. Run 'dupd license' for details.\n");
@@ -380,6 +380,10 @@ static int process_args(int argc, char * argv[])
     }
   }
 
+  if (thread_verbosity > 0 && verbosity < 2) {
+    verbosity = 2;
+  }
+
   return 0;
 }
 
@@ -455,6 +459,11 @@ int main(int argc, char * argv[])
 
   if (stats_file != NULL) {
     save_stats();
+  }
+
+  if (!strcmp("dev", DUPD_VERSION + strlen(DUPD_VERSION) - 3)) {
+    printf("\nNote: This is a development version of dupd ("
+           DUPD_VERSION ")\n");
   }
 
   // Call return() instead of exit() just to make valgrind mark as
