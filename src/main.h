@@ -174,8 +174,8 @@ extern int hdd_mode;
  *
  */
 #ifndef __APPLE__
-extern char _binary_USAGE_start;
-extern char _binary_USAGE_end;
+extern char _binary_man_dupd_start;
+extern char _binary_man_dupd_end;
 #endif
 
 

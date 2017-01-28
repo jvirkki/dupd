@@ -97,8 +97,8 @@ $(BUILD)/%.o: src/%.c src/%.h
 		-DDUPD_VERSION=\"$(VERSION)\" -DGITHASH=\"$(GITHASH)\" \
 		 -c $< -o $@
 
-$(BUILD)/usage.o: USAGE
-	$(OBJCP) -I binary $(USAGE_ARCH) USAGE $(BUILD)/usage.o
+$(BUILD)/usage.o: man/dupd
+	$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
 
 clean:
 	rm -f dupd
@@ -145,3 +145,7 @@ ifeq (/,$(OPTGEN))
 else
 	@echo optgen not found, unable to regenerate option code
 endif
+
+.PHONY: man
+man:
+	MANWIDTH=80 man -l man/dupd.1 > man/dupd

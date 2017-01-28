@@ -128,15 +128,15 @@ static void show_usage()
   show_banner();
 
 #ifndef __APPLE__
-  char * p = &_binary_USAGE_start;
-  while (p != &_binary_USAGE_end) {
+  char * p = &_binary_man_dupd_start;
+  while (p != &_binary_man_dupd_end) {
     putchar(*p++);
   }
 #else
   printf("Usage documentation not available on Darwin!\n");
   printf("\n");
   printf("Alternatively, refer to the document here:\n");
-  printf("https://github.com/jvirkki/dupd/blob/master/USAGE\n");
+  printf("https://github.com/jvirkki/dupd\n");
 #endif
 }
 
@@ -430,6 +430,7 @@ int main(int argc, char * argv[])
     case COMMAND_rmsh:      operation_shell_script();    break;
     case COMMAND_validate:  rv = operation_validate();   break;
     case COMMAND_usage:     show_usage();                break;
+    case COMMAND_man:       show_usage();                break;
     case COMMAND_help:      show_help();                 break;
     case OPTGEN_NO_COMMAND: show_help();                 rv = 1; break;
 
