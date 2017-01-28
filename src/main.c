@@ -464,7 +464,7 @@ int main(int argc, char * argv[])
   if (!strcmp("dev", DUPD_VERSION + strlen(DUPD_VERSION) - 3)) {
     if (isatty(fileno(stdout))) {
       fprintf(stdout, "\nNote: This is a development version of dupd ("
-              DUPD_VERSION ")\n");
+              DUPD_VERSION ") (" GITHASH ")\n");
     }
   }
 

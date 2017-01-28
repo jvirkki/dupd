@@ -1,5 +1,5 @@
 #
-#  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -20,6 +20,7 @@
 TOP:=$(shell  pwd)
 BUILD_OS:=$(shell uname)
 VERSION:=$(shell cat version)
+GITHASH:=$(shell git rev-parse HEAD)
 OPTGEN:=$(shell which optgen | head -c1)
 
 ifeq ($(LCOV_OUTPUT_DIR),)
@@ -92,7 +93,9 @@ dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
 
 $(BUILD)/%.o: src/%.c src/%.h
 	mkdir -p $(BUILD)
-	$(CCC) $(INC) $(CFLAGS) -DDUPD_VERSION=\"$(VERSION)\" -c $< -o $@
+	$(CCC) $(INC) $(CFLAGS) \
+		-DDUPD_VERSION=\"$(VERSION)\" -DGITHASH=\"$(GITHASH)\" \
+		 -c $< -o $@
 
 $(BUILD)/usage.o: USAGE
 	$(OBJCP) -I binary $(USAGE_ARCH) USAGE $(BUILD)/usage.o
