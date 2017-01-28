@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -113,7 +113,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
     DIR * dir = opendir(current);
     if (dir == NULL) {                                       // LCOV_EXCL_START
       if (verbosity >= 3) {
-        perror(path);
+        perror(current);
       }
       continue;
     }                                                        // LCOV_EXCL_STOP
