@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -28,6 +28,7 @@ struct size_list {
   char * path_list;
   int state;
   int fully_read;
+  uint32_t buffers_filled;
   off_t bytes_read;
   pthread_mutex_t lock;
   struct size_list * next;

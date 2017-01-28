@@ -76,7 +76,7 @@ static pthread_cond_t queue_producer_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t queue_worker_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t worker_thread;
 
-#define PRINT_INFO  { if (thread_verbosity >= 2) { \
+#define PRINT_INFO  { if (thread_verbosity >= 3) { \
       printf("%scurrent_worker_queue=%s, current_producer_queue=%s\n",  \
              spaces, queue_state(current_worker_queue),                 \
              queue_state(current_worker_queue)); } }
@@ -218,7 +218,7 @@ static void * worker_main(void * arg)
   struct stat_queue * worker_next;
   int want_queue = 0;
 
-  if (thread_verbosity) {
+  if (thread_verbosity >= 1) {
     printf("%sthread created\n", spaces);
   }
 
@@ -229,7 +229,7 @@ static void * worker_main(void * arg)
 
     while (want_queue == current_producer_queue ||
            last_owner[want_queue] == WORKER) {
-      if (thread_verbosity) {
+      if (thread_verbosity >= 2) {
         printf("%sWant Q%d, not available, WAIT\n", spaces, want_queue);
         PRINT_INFO;
       }
@@ -247,7 +247,7 @@ static void * worker_main(void * arg)
 
     last_owner[current_worker_queue] = WORKER;
 
-    if (thread_verbosity) {
+    if (thread_verbosity >= 2) {
       printf("%sTook Q%d\n", spaces, current_worker_queue);
       PRINT_INFO;
     }
@@ -256,7 +256,7 @@ static void * worker_main(void * arg)
 
     // Work through the current queue to its end (or to the path marked end)
 
-    if (thread_verbosity) {
+    if (thread_verbosity >= 2) {
       printf("%sProcessing Q%d\n", spaces, current_worker_queue);
       PRINT_INFO;
     }
@@ -265,7 +265,7 @@ static void * worker_main(void * arg)
 
     while (!done && worker_next != NULL) {
       if (worker_next->end) {
-        if (thread_verbosity) {
+        if (thread_verbosity >= 1) {
           printf("%sGot END flag: DONE\n", spaces);
           PRINT_INFO;
         }
@@ -279,7 +279,7 @@ static void * worker_main(void * arg)
       }
     }
 
-    if (thread_verbosity) {
+    if (thread_verbosity >= 2) {
       printf("%sFinished queue %d, removed from it %ld so far\n", spaces,
              current_worker_queue, queue_removed[current_worker_queue]);
       PRINT_INFO;
@@ -310,7 +310,7 @@ static void * worker_main(void * arg)
     }
   }
 
-  if (thread_verbosity) {
+  if (thread_verbosity >= 1) {
     printf("%sthread finished\n", spaces);
   }
 
@@ -444,7 +444,7 @@ int add_queue(sqlite3 * dbh,
   }
 
   // If we did reach the end of this queue, need to move to the next one.
-  if (thread_verbosity) {
+  if (thread_verbosity >= 2) {
     printf("%sFinished filling Q%d\n", spaces, current_producer_queue);
     PRINT_INFO;
   }
@@ -456,7 +456,7 @@ int add_queue(sqlite3 * dbh,
   current_producer_queue = WANT_QUEUE;
 
   while (want == current_worker_queue || last_owner[want] == PRODUCER) {
-    if (thread_verbosity) {
+    if (thread_verbosity >= 2) {
       printf("%sWant Q%d, not available, WAIT\n", spaces, want);
       PRINT_INFO;
     }
@@ -472,7 +472,7 @@ int add_queue(sqlite3 * dbh,
 
   producer_next = &queue[current_producer_queue];
 
-  if (thread_verbosity) {
+  if (thread_verbosity >= 2) {
     printf("%sTook Q%d\n", spaces, current_producer_queue);
     PRINT_INFO;
   }
@@ -491,7 +491,7 @@ void scan_done()
 
   pthread_mutex_lock(&queue_lock);
 
-  if (thread_verbosity) {
+  if (thread_verbosity >= 1) {
     printf("scan_done: END in %s\n", queue_state(current_producer_queue));
     PRINT_INFO;
   }
@@ -502,7 +502,7 @@ void scan_done()
   pthread_cond_signal(&queue_worker_cond);
   pthread_mutex_unlock(&queue_lock);
 
-  if (thread_verbosity) {
+  if (thread_verbosity >= 1) {
     printf("Waiting for sizetree worker thread to finish...\n");
   }
 
@@ -512,7 +512,7 @@ void scan_done()
   uint32_t removed = 0;
   uint32_t added = 0;
   for (int i = 0; i < QUEUE_COUNT; i++) {
-    if (thread_verbosity) {
+    if (thread_verbosity >= 2) {
       printf("Q%d: added %ld, removed %ld\n",
              i, queue_added[i], queue_removed[i]);
     }
@@ -520,7 +520,7 @@ void scan_done()
     added += queue_added[i];
   }
 
-  if (thread_verbosity) {
+  if (thread_verbosity >= 2) {
     printf("Total added %" PRIu32 ", removed %" PRIu32 "\n", added, removed);
   }
 
