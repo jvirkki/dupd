@@ -1201,8 +1201,10 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
       received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
 
       if (received != size_node->bytes_read) {
-        printf("error: read %zd bytes from [%s] but wanted %ld\n",
-               received, path, size_node->bytes_read);
+        if (verbosity > 0) {
+          printf("error: read %zd bytes from [%s] but wanted %ld\n",
+                 received, path, size_node->bytes_read);
+        }
         path[0] = 0;
         pl_decrease_path_count(size_node->path_list, 1);
         free(buffer);
