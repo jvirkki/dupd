@@ -181,7 +181,7 @@ very fast because the files are in the cache, so that is the best option.
 .PP
 However, when dealing with a set of files large enough that they don't fit
 in the cache, re-running the scan may take a long time.
-The refresh command offers a much faster alternative.
+For those cases the refresh command offers a much faster alternative.
 .PP
 The refresh command checks whether all the files in the dupd database still
 exist and removes those which do not.
@@ -272,8 +272,8 @@ This option can be given either during scan or to the interactive
 reporting commands (file, ls, uniques, dups).
 .SH EXAMPLES
 .PP
-Scan all files in your home directory and then show the sets of duplicates:
-found.
+Scan all files in your home directory and then show the sets of duplicates
+found:
 .PP
 .RS
 % dupd scan --path $HOME

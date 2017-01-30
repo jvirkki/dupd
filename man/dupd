@@ -180,8 +180,8 @@ OPTIONS
        fast because the files are in the cache, so that is the best option.
 
        However,  when dealing with a set of files large enough that they don't
-       fit in the cache, re-running the  scan  may  take  a  long  time.   The
-       refresh command offers a much faster alternative.
+       fit in the cache, re-running the scan may take a long time.  For  those
+       cases the refresh command offers a much faster alternative.
 
        The  refresh  command checks whether all the files in the dupd database
        still exist and removes those which do not.
@@ -267,7 +267,7 @@ HARD LINKS
 
 EXAMPLES
        Scan  all files in your home directory and then show the sets of dupli‐
-       cates: found.
+       cates found:
 
               % dupd scan --path $HOME
 
