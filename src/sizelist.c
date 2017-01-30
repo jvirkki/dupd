@@ -150,9 +150,14 @@ static inline void show_processed(int total, int files, long size,
     break;
 
   default:
-    printf("Processed %d/%d [%c] (%d files of size %ld) (loop %d) (round 3)\n",
+    printf("Processed %d/%d [%c] (%d files of size %ld) (loop %d)\n",
            show_processed_count, total, phase, files, size, loop);
     break;
+  }
+
+  if (show_processed_count > total) {
+    printf("\nThat's not right...\n");
+    exit(1);
   }
 
   pthread_mutex_unlock(&show_processed_lock);
@@ -1265,8 +1270,8 @@ static void * reader_main(void * arg)
       pthread_mutex_lock(&size_node->lock);
 
       if (thread_verbosity >= 2) {
-        printf("%s(loop %d) size:%ld state:%d\n",
-               spaces, loops, size_node->size, size_node->state);
+        printf("%s(loop %d) size:%ld state:%s\n",
+               spaces, loops, size_node->size, state_name(size_node->state));
       }
 
       switch(size_node->state) {
@@ -1850,18 +1855,18 @@ void threaded_process_size_list(sqlite3 * dbh)
     size_node = size_list_head;
     loops++;
     work_remains = 0;
-    did_one = 0;
 
     if (thread_verbosity >= 1) {
       printf("%sStarting size list loop #%d\n", spaces, loops);
     }
 
     do {
+      did_one = 0;
       pthread_mutex_lock(&size_node->lock);
 
       if (thread_verbosity >= 2) {
-        printf("%s(loop %d) size:%ld state:%d\n",
-               spaces, loops, size_node->size, size_node->state);
+        printf("%s(loop %d) size:%ld state:%s\n",
+               spaces, loops, size_node->size, state_name(size_node->state));
       }
 
       switch(size_node->state) {
