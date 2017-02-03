@@ -56,6 +56,9 @@ static pthread_cond_t reader_main_hdd_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t show_processed_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t r3_loop_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t r3_loop_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t r12_loop_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t r12_loop_cond = PTHREAD_COND_INITIALIZER;
+static int r3_hasher_done = 0;
 
 // Size list states.
 #define SLS_NEED_BYTES_ROUND_1 88
@@ -503,9 +506,18 @@ static void * round3_hasher(void * arg)
       }
       pthread_cond_wait(&r3_loop_cond, &r3_loop_lock);
       pthread_mutex_unlock(&r3_loop_lock);
+    } else {
+      pthread_mutex_lock(&r3_loop_lock);
+      pthread_cond_signal(&r3_loop_cond);
+      pthread_mutex_unlock(&r3_loop_lock);
     }
 
   } while (!done);
+
+  r3_hasher_done = 1;
+  pthread_mutex_lock(&r3_loop_lock);
+  pthread_cond_signal(&r3_loop_cond);
+  pthread_mutex_unlock(&r3_loop_lock);
 
   if (thread_verbosity >= 1) {
     printf("%sDONE (%d loops)\n", spaces, loops);
@@ -579,6 +591,11 @@ static void process_round_3(sqlite3 * dbh)
   int skipped;
   int set_count;
   int free_myself;
+  int read_two;
+  int read_three;
+  int read_partial;
+  int read_final;
+
   char * node;
   char * path = NULL;
 
@@ -614,6 +631,10 @@ static void process_round_3(sqlite3 * dbh)
     set_count = 1;
     skipped = 0;
     done_something = 0;
+    read_two = 0;
+    read_three = 0;
+    read_partial = 0;
+    read_final = 0;
 
     do {
       did_one = 0;
@@ -646,6 +667,7 @@ static void process_round_3(sqlite3 * dbh)
           size_node->state = SLS_DONE;
           did_one = 1;
           done_something = 1;
+          read_two++;
           break;
         }
 
@@ -663,6 +685,7 @@ static void process_round_3(sqlite3 * dbh)
           size_node->state = SLS_DONE;
           did_one = 1;
           done_something = 1;
+          read_three++;
           break;
         }
 
@@ -696,6 +719,7 @@ static void process_round_3(sqlite3 * dbh)
                 status->state = SLS_R3_HASH_ME;
                 changed = 1;
                 done_something = 1;
+                read_partial++;
               }
               break;
 
@@ -707,6 +731,7 @@ static void process_round_3(sqlite3 * dbh)
               status->state = SLS_R3_HASH_ME_FINAL;
               changed = 1;
               done_something = 1;
+              read_final++;
               break;
 
             case SLS_R3_HASH_ME:
@@ -773,24 +798,40 @@ static void process_round_3(sqlite3 * dbh)
 
     } while (size_node != NULL);
 
+    if (thread_verbosity >= 1) {
+      printf("%sFinished size list loop #%d: R2:%d R3:%d Rp:%d Rf:%d\n",
+             spaces, loops, read_two, read_three, read_partial, read_final);
+    }
+
     // Let the hasher thread know I did something.
     if (done_something) {
       pthread_mutex_lock(&r3_loop_lock);
       pthread_cond_signal(&r3_loop_cond);
       pthread_mutex_unlock(&r3_loop_lock);
+    } else {
+      if (!r3_hasher_done) {
+        pthread_mutex_lock(&r3_loop_lock);
+        if (thread_verbosity >= 1) {
+          printf("%sWaiting for something to do...\n", spaces);
+        }
+        pthread_cond_wait(&r3_loop_cond, &r3_loop_lock);
+        pthread_mutex_unlock(&r3_loop_lock);
+      }
     }
 
   } while (!done);
 
 
-  if (thread_verbosity >= 2) {
-    printf("%swaiting for hasher thread\n", spaces);
-  }
+  if (!r3_hasher_done) {
+    if (thread_verbosity >= 2) {
+      printf("%swaiting for hasher thread\n", spaces);
+    }
 
-  pthread_mutex_lock(&r3_loop_lock);
-  pthread_cond_signal(&r3_loop_cond);
-  pthread_mutex_unlock(&r3_loop_lock);
-  pthread_join(hasher_thread, NULL);
+    pthread_mutex_lock(&r3_loop_lock);
+    pthread_cond_signal(&r3_loop_cond);
+    pthread_mutex_unlock(&r3_loop_lock);
+    pthread_join(hasher_thread, NULL);
+  }
 
   if (thread_verbosity >= 1) {
     printf("%sDONE (%d loops)\n", spaces, loops);
@@ -1252,6 +1293,8 @@ static void * reader_main(void * arg)
   (void)arg;
   char * spaces = "                                        [reader] ";
   struct size_list * size_node;
+  int round_one;
+  int round_two;
   int loops = 0;
   off_t max_to_read;
 
@@ -1262,6 +1305,8 @@ static void * reader_main(void * arg)
   do {
     size_node = size_list_head;
     loops++;
+    round_one = 0;
+    round_two = 0;
     if (thread_verbosity >= 1) {
       printf("%sStarting size list loop #%d\n", spaces, loops);
     }
@@ -1283,12 +1328,14 @@ static void * reader_main(void * arg)
           max_to_read = hash_one_block_size;
         }
         reader_read_bytes(size_node, max_to_read);
+        round_one++;
         size_node->state = SLS_READY_1;
         break;
 
       case SLS_NEED_BYTES_ROUND_2:
         max_to_read = hash_block_size * intermediate_blocks;
         reader_read_bytes(size_node, max_to_read);
+        round_two++;
         size_node->state = SLS_READY_2;
         break;
       }
@@ -1297,6 +1344,22 @@ static void * reader_main(void * arg)
       size_node = size_node->next;
 
     } while (size_node != NULL && reader_continue);
+
+    if (thread_verbosity >= 1) {
+      printf("%sFinished loop %d: round_one:%d, round_two:%d\n",
+             spaces, loops, round_one, round_two);
+    }
+
+    /*
+    if (round_one == 0 && round_two == 0) {
+      pthread_mutex_lock(&r12_loop_lock);
+      if (thread_verbosity >= 1) {
+        printf("%sWaiting for something to do...\n", spaces);
+      }
+      pthread_cond_wait(&r12_loop_cond, &r12_loop_lock);
+      pthread_mutex_unlock(&r12_loop_lock);
+    }
+    */
 
   } while (reader_continue);
 
