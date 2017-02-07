@@ -17,12 +17,10 @@ While dupd can be used in mode #1 ('dupd report') and it can be sort
 of coaxed into mode #2 ('dupd rmsh'), dupd is best when used in an
 interactive exploratory style.
 
-I generate a scan of the entire filesystem first, which dupd saves
-into an SQLite database. I then drill down into subdirectories where
-duplicates live and using the ls/dups/uniques/file operations, I
-review where duplicates are coming from and why. Then I move or remove
-files around as desired and then analyze other subdirectories.  After
-a few rounds of such cleanup, I then re-run a whole scan to refresh the database.
+- Generate a scan of the entire filesystem first, which dupd saves into an SQLite database.
+- Drill down into subdirectories where duplicates live and using the ls/dups/uniques/file operations, reviewing where duplicates are coming from and why.
+- Move or remove files around as desired and then analyze other subdirectories.  
+- After a few rounds of such cleanup, then re-run a whole scan to refresh the database.
 
 == Supported platforms
 The build currently supports Linux, Solaris, OS X and OpenBSD. Other UNIX variants should work with minimal effort. 
