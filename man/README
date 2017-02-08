@@ -1,0 +1,8 @@
+
+dupd.1 is a man page for dupd suitable for installing wherever your
+distribution installs man page sources.
+
+dupd is a rendering of dupd.1 into plain text for the benefit or
+online viewing (https://github.com/jvirkki/dupd/blob/master/man/dupd).
+It is generated from dupd.1 with 'make man'.
+
