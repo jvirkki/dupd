@@ -466,6 +466,10 @@ int main(int argc, char * argv[])
     if (isatty(fileno(stdout))) {
       fprintf(stdout, "\nNote: This is a development version of dupd ("
               DUPD_VERSION ") (" GITHASH ")\n");
+      fprintf(stdout,
+              "May contain known bugs or unstable work in progress!\n");
+      fprintf(stdout,
+              "If stability is desired, use a release version of dupd.\n");
     }
   }
 
