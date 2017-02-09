@@ -67,10 +67,10 @@ operations.
 
 Here is an example from one system I have where the data is on a HDD:
 
-First scan in SSD mode: 13 minutes
-First scan in HDD mode: 1 minute
-Second scan in SSD mode: 2 seconds
-Second scan in HDD mode: 4 seconds
+* First scan in SSD mode: 13 minutes
+* First scan in HDD mode: 1 minute
+* Second scan in SSD mode: 2 seconds
+* Second scan in HDD mode: 4 seconds
 
 As you can see, the HDD mode is vastly faster when reading from the
 physical disk, but twice as slow when reading from the populated file
