@@ -41,3 +41,4 @@ Documentation Links
 * [BUILDING](../BUILDING)
 * [Manual page](../man/dupd)
 * [Finding duplicates the dupd way](examples.md)
+* [dupd Performance](performance.md)
