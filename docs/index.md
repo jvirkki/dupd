@@ -39,4 +39,5 @@ Documentation Links
 
 * [README](../README)
 * [BUILDING](../BUILDING)
+* [Manual page](../man/dupd)
 * [Finding duplicates the dupd way](examples.md)
