@@ -135,7 +135,7 @@ static inline void show_processed(int total, int files, long size,
 {
   int out;
 
-  pthread_mutex_lock(&show_processed_lock);
+  d_mutex_lock(&show_processed_lock, "show_processed");
 
   show_processed_count++;
 
@@ -163,7 +163,7 @@ static inline void show_processed(int total, int files, long size,
     exit(1);
   }
 
-  pthread_mutex_unlock(&show_processed_lock);
+  d_mutex_unlock(&show_processed_lock);
 }
 
 
@@ -271,7 +271,7 @@ static void * round3_hasher(void * arg)
     loop_set_processed = 0;
 
     do {
-      pthread_mutex_lock(&size_node->lock);
+      d_mutex_lock(&size_node->lock, "r3-hasher top");
 
       int count = pl_get_path_count(size_node->path_list);
       if ( (opt_compare_two && count == 2) ||
@@ -476,7 +476,7 @@ static void * round3_hasher(void * arg)
 
     R3H_NEXT_NODE:
       size_node_next = size_node->next;
-      pthread_mutex_unlock(&size_node->lock);
+      d_mutex_unlock(&size_node->lock);
       size_node = size_node_next;
 
       if (set_changed) { sets--; }
@@ -500,24 +500,25 @@ static void * round3_hasher(void * arg)
     // try again. Instead, wait until there might be some work.
     if (!done && loop_buf_init == 0 && loop_partial_hash == 0 &&
         loop_hash_completed == 0 && loop_set_processed == 0) {
-      pthread_mutex_lock(&r3_loop_lock);
+      d_mutex_lock(&r3_loop_lock, "r3-hasher loop end no work");
+      d_cond_signal(&r3_loop_cond);
       if (thread_verbosity >= 1) {
         printf("%sWaiting for something to do...\n", spaces);
       }
-      pthread_cond_wait(&r3_loop_cond, &r3_loop_lock);
-      pthread_mutex_unlock(&r3_loop_lock);
+      d_cond_wait(&r3_loop_cond, &r3_loop_lock);
+      d_mutex_unlock(&r3_loop_lock);
     } else {
-      pthread_mutex_lock(&r3_loop_lock);
-      pthread_cond_signal(&r3_loop_cond);
-      pthread_mutex_unlock(&r3_loop_lock);
+      d_mutex_lock(&r3_loop_lock, "r3-hasher loop end work done");
+      d_cond_signal(&r3_loop_cond);
+      d_mutex_unlock(&r3_loop_lock);
     }
 
   } while (!done);
 
   r3_hasher_done = 1;
-  pthread_mutex_lock(&r3_loop_lock);
-  pthread_cond_signal(&r3_loop_cond);
-  pthread_mutex_unlock(&r3_loop_lock);
+  d_mutex_lock(&r3_loop_lock, "r3-hasher all done");
+  d_cond_signal(&r3_loop_cond);
+  d_mutex_unlock(&r3_loop_lock);
 
   if (thread_verbosity >= 1) {
     printf("%sDONE (%d loops)\n", spaces, loops);
@@ -639,7 +640,7 @@ static void process_round_3(sqlite3 * dbh)
     do {
       did_one = 0;
       free_myself = 0;
-      pthread_mutex_lock(&size_node->lock);
+      d_mutex_lock(&size_node->lock, "r3-reader top");
       path_count = pl_get_path_count(size_node->path_list);
 
       if (thread_verbosity >= 2) {
@@ -764,9 +765,9 @@ static void process_round_3(sqlite3 * dbh)
       case SLS_DONE:
         if (previous_size_node != NULL) {
           if (size_node->next != NULL) {
-            pthread_mutex_lock(&previous_size_node->lock);
+            d_mutex_lock(&previous_size_node->lock, "r3-reader previous to prune");
             previous_size_node->next = size_node->next;
-            pthread_mutex_unlock(&previous_size_node->lock);
+            d_mutex_unlock(&previous_size_node->lock);
             free_myself = 1;
           }
         }
@@ -786,7 +787,7 @@ static void process_round_3(sqlite3 * dbh)
       }
 
       next_node_next = size_node->next;
-      pthread_mutex_unlock(&size_node->lock);
+      d_mutex_unlock(&size_node->lock);
 
       if (free_myself) {
         pthread_mutex_destroy(&size_node->lock);
@@ -805,17 +806,18 @@ static void process_round_3(sqlite3 * dbh)
 
     // Let the hasher thread know I did something.
     if (done_something) {
-      pthread_mutex_lock(&r3_loop_lock);
-      pthread_cond_signal(&r3_loop_cond);
-      pthread_mutex_unlock(&r3_loop_lock);
+      d_mutex_lock(&r3_loop_lock, "r3-reader loop end work done");
+      d_cond_signal(&r3_loop_cond);
+      d_mutex_unlock(&r3_loop_lock);
     } else {
       if (!r3_hasher_done) {
-        pthread_mutex_lock(&r3_loop_lock);
+        d_mutex_lock(&r3_loop_lock, "r3-reader loop end no work");
+        d_cond_signal(&r3_loop_cond);
         if (thread_verbosity >= 1) {
           printf("%sWaiting for something to do...\n", spaces);
         }
-        pthread_cond_wait(&r3_loop_cond, &r3_loop_lock);
-        pthread_mutex_unlock(&r3_loop_lock);
+        d_cond_wait(&r3_loop_cond, &r3_loop_lock);
+        d_mutex_unlock(&r3_loop_lock);
       }
     }
 
@@ -827,9 +829,9 @@ static void process_round_3(sqlite3 * dbh)
       printf("%swaiting for hasher thread\n", spaces);
     }
 
-    pthread_mutex_lock(&r3_loop_lock);
-    pthread_cond_signal(&r3_loop_cond);
-    pthread_mutex_unlock(&r3_loop_lock);
+    d_mutex_lock(&r3_loop_lock, "r3-reader all done");
+    d_cond_signal(&r3_loop_cond);
+    d_mutex_unlock(&r3_loop_lock);
     pthread_join(hasher_thread, NULL);
   }
 
@@ -1312,7 +1314,7 @@ static void * reader_main(void * arg)
     }
 
     do {
-      pthread_mutex_lock(&size_node->lock);
+      d_mutex_lock(&size_node->lock, "reader top");
 
       if (thread_verbosity >= 2) {
         printf("%s(loop %d) size:%ld state:%s\n",
@@ -1340,7 +1342,7 @@ static void * reader_main(void * arg)
         break;
       }
 
-      pthread_mutex_unlock(&size_node->lock);
+      d_mutex_unlock(&size_node->lock);
       size_node = size_node->next;
 
     } while (size_node != NULL && reader_continue);
@@ -1352,12 +1354,12 @@ static void * reader_main(void * arg)
 
     /*
     if (round_one == 0 && round_two == 0) {
-      pthread_mutex_lock(&r12_loop_lock);
+      d_mutex_lock(&r12_loop_lock);
       if (thread_verbosity >= 1) {
         printf("%sWaiting for something to do...\n", spaces);
       }
-      pthread_cond_wait(&r12_loop_cond, &r12_loop_lock);
-      pthread_mutex_unlock(&r12_loop_lock);
+      d_cond_wait(&r12_loop_cond, &r12_loop_lock);
+      d_mutex_unlock(&r12_loop_lock);
     }
     */
 
@@ -1422,7 +1424,7 @@ static void process_readlist(char * spaces,
       }                                                      // LCOV_EXCL_STOP
     }
 
-    pthread_mutex_lock(&sizelist->lock);
+    d_mutex_lock(&sizelist->lock, "process_readlist");
 
     switch(sizelist->state) {
     case SLS_NEED_BYTES_ROUND_1: break;
@@ -1503,7 +1505,7 @@ static void process_readlist(char * spaces,
     }
 
   PRL_NODE_DONE:
-    pthread_mutex_unlock(&sizelist->lock);
+    d_mutex_unlock(&sizelist->lock);
     rlpos++;
 
   } while (rlpos < read_list_end);
@@ -1552,9 +1554,9 @@ static void * reader_main_hdd(void * arg)
     printf("%sDone first loop for round 1, waiting for instructions...\n",
            spaces);
   }
-  pthread_mutex_lock(&reader_main_hdd_lock);
-  pthread_cond_wait(&reader_main_hdd_cond, &reader_main_hdd_lock);
-  pthread_mutex_unlock(&reader_main_hdd_lock);
+  d_mutex_lock(&reader_main_hdd_lock, "reader_main_hdd_lock");
+  d_cond_wait(&reader_main_hdd_cond, &reader_main_hdd_lock);
+  d_mutex_unlock(&reader_main_hdd_lock);
 
   if (thread_verbosity >= 1) {
     printf("%sWaking up: round_2:%d\n", spaces, reader_main_hdd_round_2);
@@ -1725,7 +1727,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
     }
 
     do {
-      pthread_mutex_lock(&size_node->lock);
+      d_mutex_lock(&size_node->lock, "hdd-main top");
 
       switch(size_node->state) {
       case SLS_NEED_BYTES_ROUND_1: in_round_1++; phase = '1'; break;
@@ -1821,7 +1823,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
         exit(1);
       }
 
-      pthread_mutex_unlock(&size_node->lock);
+      d_mutex_unlock(&size_node->lock);
       size_node = size_node->next;
 
     } while (size_node != NULL);
@@ -1838,9 +1840,9 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
     // the reader thread will do so, otherwise it'll just end.
     if (out_round_1 == 0) {
       if (out_round_2 > 0) { reader_main_hdd_round_2 = out_round_2; }
-      pthread_mutex_lock(&reader_main_hdd_lock);
-      pthread_cond_signal(&reader_main_hdd_cond);
-      pthread_mutex_unlock(&reader_main_hdd_lock);
+      d_mutex_lock(&reader_main_hdd_lock, "hdd-main waking reader");
+      d_cond_signal(&reader_main_hdd_cond);
+      d_mutex_unlock(&reader_main_hdd_lock);
     }
 
     if (out_round_1 > 0 || out_round_2 > 0) {
@@ -1925,7 +1927,7 @@ void threaded_process_size_list(sqlite3 * dbh)
 
     do {
       did_one = 0;
-      pthread_mutex_lock(&size_node->lock);
+      d_mutex_lock(&size_node->lock, "main top");
 
       if (thread_verbosity >= 2) {
         printf("%s(loop %d) size:%ld state:%s\n",
@@ -1984,7 +1986,7 @@ void threaded_process_size_list(sqlite3 * dbh)
         }
       }
 
-      pthread_mutex_unlock(&size_node->lock);
+      d_mutex_unlock(&size_node->lock);
       size_node = size_node->next;
 
     } while (size_node != NULL);

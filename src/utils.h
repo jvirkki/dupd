@@ -165,4 +165,81 @@ int cpu_cores();
 void memdump(char * text, char * ptr, int bytes);
 
 
+/** ***************************************************************************
+ * Wrapper for pthread_cond_wait, exit on failure.
+ *
+ * Parameters:
+ *    cond  - condition variable
+ *    mutex - mutex
+ *
+ * Return: none
+ *
+ */
+static inline void d_cond_wait(pthread_cond_t * cond, pthread_mutex_t * mutex)
+{
+  int rv = pthread_cond_wait(cond, mutex);
+  if (rv != 0) {
+    printf("error: pthread_cond_wait == %d\n", rv);
+    exit(1);
+  }
+}
+
+
+/** ***************************************************************************
+ * Wrapper for pthread_cond_signal, exit on failure.
+ *
+ * Parameters:
+ *    cond - condition variable
+ *
+ * Return: none
+ *
+ */
+static inline void d_cond_signal(pthread_cond_t * cond)
+{
+  int rv = pthread_cond_signal(cond);
+  if (rv != 0) {
+    printf("error: pthread_cond_signal == %d\n", rv);
+    exit(1);
+  }
+}
+
+
+/** ***************************************************************************
+ * Wrapper for pthread_mutex_lock, exit on failure.
+ *
+ * Parameters:
+ *    mutex - mutex
+ *    line  - message
+ *
+ * Return: none
+ *
+ */
+static inline void d_mutex_lock(pthread_mutex_t * mutex, char * line)
+{
+  int rv = pthread_mutex_lock(mutex);
+  if (rv != 0) {
+    printf("error: %s: pthread_mutex_lock == %d\n", line, rv);
+    exit(1);
+  }
+}
+
+
+/** ***************************************************************************
+ * Wrapper for pthread_mutex_unlock, exit on failure.
+ *
+ * Parameters:
+ *    mutex
+ *
+ * Return: none
+ *
+ */
+static inline void d_mutex_unlock(pthread_mutex_t * mutex)
+{
+  int rv = pthread_mutex_unlock(mutex);
+  if (rv != 0) {
+    printf("error: pthread_mutex_unlock == %d\n", rv);
+    exit(1);
+  }
+}
+
 #endif
