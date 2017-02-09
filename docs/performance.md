@@ -105,3 +105,7 @@ sets and publish the results on my blog, which might be of interest.
 * [Performance improvements in dupd 1.2 (2015)](http://www.virkki.com/jyri/articles/index.php/some-dupd-performance-improvements/)
 * [dupd 1.1 benchmarking (2015)](http://www.virkki.com/jyri/articles/index.php/duplicate-file-detection-performance/)
 * [dupd 1.0 benchmarking (2012)](http://www.virkki.com/jyri/articles/index.php/duplicate-file-detection-with-dupd/)
+
+---
+[Back to the dupd documentation index](index.md)
+
