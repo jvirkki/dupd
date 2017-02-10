@@ -42,5 +42,5 @@ Documentation Links
 * [Manual page](../man/dupd)
 * [Finding duplicates the dupd way](examples.md)
 * [Performance](performance.md)
-* [Design Choices)(design.md)
+* [Design Choices](design.md)
 
