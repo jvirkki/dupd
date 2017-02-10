@@ -21,6 +21,7 @@
 #define _DUPD_UTILS_H
 
 #include <fcntl.h>
+#include <pthread.h>
 #include <sqlite3.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -238,6 +239,26 @@ static inline void d_mutex_unlock(pthread_mutex_t * mutex)
   int rv = pthread_mutex_unlock(mutex);
   if (rv != 0) {
     printf("error: pthread_mutex_unlock == %d\n", rv);
+    exit(1);
+  }
+}
+
+
+/** ***************************************************************************
+ * Wrapper for pthread_join, exit on failure.
+ *
+ * Parameters:
+ *    thread
+ *    retval
+ *
+ * Return: none
+ *
+ */
+static inline void d_join(pthread_t thread, void **retval)
+{
+  int rv = pthread_join(thread, retval);
+  if (rv != 0) {
+    printf("error: pthread_join == %d\n", rv);
     exit(1);
   }
 }

@@ -506,7 +506,7 @@ void scan_done()
     printf("Waiting for sizetree worker thread to finish...\n");
   }
 
-  pthread_join(worker_thread, NULL);
+  d_join(worker_thread, NULL);
 
   // Verify counts for sanity checking...
   uint32_t removed = 0;

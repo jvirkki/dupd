@@ -43,6 +43,8 @@
 static int round1_max_bytes;
 static struct size_list * size_list_head;
 static struct size_list * size_list_tail;
+static struct size_list * deleted_list_head;
+static struct size_list * deleted_list_tail;
 static int reader_continue = 1;
 static int avg_read_time = 0;
 static int read_count = 0;
@@ -73,6 +75,7 @@ static int r3_hasher_done = 0;
 #define SLS_R3_READ_MORE 99
 #define SLS_R3_READ_FINAL 100
 #define SLS_R3_HASHER_IGNORE 101
+#define SLS_DELETED 102
 
 #define R3_BUFSIZE (1024 * 256)
 #define R3_MAX_SETS 4
@@ -109,6 +112,7 @@ static char * state_name(int state)
   case SLS_R3_READ_MORE: return "SLS_R3_READ_MORE";
   case SLS_R3_READ_FINAL: return "SLS_R3_READ_FINAL";
   case SLS_R3_HASHER_IGNORE: return "SLS_R3_HASHER_IGNORE";
+  case SLS_DELETED: return "SLS_DELETED";
   default: return "*** UNKNOWN ***";
   }
 }
@@ -164,6 +168,54 @@ static inline void show_processed(int total, int files, long size,
   }
 
   d_mutex_unlock(&show_processed_lock);
+}
+
+
+/** ***************************************************************************
+ * Remove 'entry' from the size list by pointing previous->next to entry->next.
+ * 'entry' is then placed onto the deleted_size_list to be freed later.
+ *
+ * The caller MUST hold lock on 'entry', if this is called during a
+ * multi-threaded stage. The lock is RELEASED here.
+ *
+ */
+static void unlink_size_list_entry(char * spaces,
+                                   struct size_list * entry,
+                                   struct size_list * previous)
+{
+  d_mutex_lock(&previous->lock, "unlink entry, lock previous");
+
+  if (entry->next == NULL) {
+    previous->next = NULL;
+  } else {
+    d_mutex_lock(&entry->next->lock, "unlink entry, lock next");
+    previous->next = entry->next;
+    d_mutex_unlock(&entry->next->lock);
+  }
+
+  if (thread_verbosity >= 2) {
+    printf("%sRemoving size list entry of size %ld\n", spaces, entry->size);
+  }
+
+  entry->state = SLS_DELETED;
+  entry->next = NULL;
+  entry->dnext = NULL;
+
+  d_mutex_unlock(&entry->lock);
+  d_mutex_unlock(&previous->lock);
+
+  // The reason entry is added to a deleted list instead of just freed here
+  // is that the other thread might be waiting on entry->lock right about now
+  // so we can't just destroy the mutex here. Instead, let it be and point
+  // entry->next to null so it doesn't continue walking that way.
+
+  if (deleted_list_tail == NULL) {
+    deleted_list_head = entry;
+    deleted_list_tail = entry;
+  } else {
+    deleted_list_tail->dnext = entry;
+    deleted_list_tail = entry;
+  }
 }
 
 
@@ -271,7 +323,15 @@ static void * round3_hasher(void * arg)
     loop_set_processed = 0;
 
     do {
+
       d_mutex_lock(&size_node->lock, "r3-hasher top");
+
+      // SLS_DELETED means we managed to grab a node that has been moved
+      // to the deleted list, so there's nothing to do with it.
+      if (size_node->state == SLS_DELETED) {
+        done = 0;
+        goto R3H_NEXT_NODE;
+      }
 
       int count = pl_get_path_count(size_node->path_list);
       if ( (opt_compare_two && count == 2) ||
@@ -494,6 +554,10 @@ static void * round3_hasher(void * arg)
              spaces, loops, loop_buf_init, loop_partial_hash,
              loop_hash_completed, loop_set_processed);
 
+    }
+
+    if (only_testing) {
+      slow_down(10, 100);
     }
 
     // If we didn't accomplish anything at all in this loop, let's not
@@ -764,12 +828,7 @@ static void process_round_3(sqlite3 * dbh)
 
       case SLS_DONE:
         if (previous_size_node != NULL) {
-          if (size_node->next != NULL) {
-            d_mutex_lock(&previous_size_node->lock, "r3-reader previous to prune");
-            previous_size_node->next = size_node->next;
-            d_mutex_unlock(&previous_size_node->lock);
-            free_myself = 1;
-          }
+          free_myself = 1;
         }
         break;
 
@@ -787,14 +846,15 @@ static void process_round_3(sqlite3 * dbh)
       }
 
       next_node_next = size_node->next;
-      d_mutex_unlock(&size_node->lock);
 
       if (free_myself) {
-        pthread_mutex_destroy(&size_node->lock);
-        free(size_node);
+        unlink_size_list_entry(spaces, size_node, previous_size_node);
         size_node = NULL;
+      } else {
+        previous_size_node = size_node;
+        d_mutex_unlock(&size_node->lock);
       }
-      previous_size_node = size_node;
+
       size_node = next_node_next;
 
     } while (size_node != NULL);
@@ -802,6 +862,10 @@ static void process_round_3(sqlite3 * dbh)
     if (thread_verbosity >= 1) {
       printf("%sFinished size list loop #%d: R2:%d R3:%d Rp:%d Rf:%d\n",
              spaces, loops, read_two, read_three, read_partial, read_final);
+    }
+
+    if (only_testing) {
+      slow_down(10, 100);
     }
 
     // Let the hasher thread know I did something.
@@ -832,8 +896,9 @@ static void process_round_3(sqlite3 * dbh)
     d_mutex_lock(&r3_loop_lock, "r3-reader all done");
     d_cond_signal(&r3_loop_cond);
     d_mutex_unlock(&r3_loop_lock);
-    pthread_join(hasher_thread, NULL);
   }
+
+  d_join(hasher_thread, NULL);
 
   if (thread_verbosity >= 1) {
     printf("%sDONE (%d loops)\n", spaces, loops);
@@ -1857,7 +1922,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
   }
 
   reader_continue = 0;
-  pthread_join(reader_thread, NULL);
+  d_join(reader_thread, NULL);
 
   if (thread_verbosity >= 1) {
     printf("%sjoined reader thread\n", spaces);
@@ -1998,7 +2063,7 @@ void threaded_process_size_list(sqlite3 * dbh)
   }
 
   reader_continue = 0;
-  pthread_join(reader_thread, NULL);
+  d_join(reader_thread, NULL);
 
   if (thread_verbosity >= 1) {
     printf("%sjoined reader thread\n", spaces);
@@ -2024,6 +2089,8 @@ void init_size_list()
 {
   size_list_head = NULL;
   size_list_tail = NULL;
+  deleted_list_head = NULL;
+  deleted_list_tail = NULL;
   stats_size_list_count = 0;
   stats_size_list_avg = 0;
   round1_max_bytes = hash_one_block_size * hash_one_max_blocks;
@@ -2042,6 +2109,18 @@ void free_size_list()
 
     while (p != NULL) {
       p = p->next;
+      pthread_mutex_destroy(&me->lock);
+      free(me);
+      me = p;
+    }
+  }
+
+  if (deleted_list_head != NULL) {
+    struct size_list * p = deleted_list_head;
+    struct size_list * me = deleted_list_head;
+
+    while (p != NULL) {
+      p = p->dnext;
       pthread_mutex_destroy(&me->lock);
       free(me);
       me = p;

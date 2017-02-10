@@ -32,6 +32,7 @@ struct size_list {
   off_t bytes_read;
   pthread_mutex_t lock;
   struct size_list * next;
+  struct size_list * dnext;
 };
 
 
