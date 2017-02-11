@@ -298,6 +298,16 @@ extern int hash_bufsize;
 
 
 /** ***************************************************************************
+ * Report output format.
+ *
+ */
+#define REPORT_FORMAT_TEXT 1
+#define REPORT_FORMAT_CSV 2
+#define REPORT_FORMAT_JSON 3
+extern int report_format;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

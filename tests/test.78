@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan(files)"
+$DUPD_CMD scan --path `pwd`/files -q --hdd
+checkrv $?
+
+DESC="json report"
+$DUPD_CMD report --format json --cut `pwd`/files/ > nreport
+checkrv $?
+
+check_nreport output.78
+
+tdone

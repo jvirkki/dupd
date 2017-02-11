@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -42,6 +42,28 @@ static int list_all_duplicates = 0;
 
 
 /** ***************************************************************************
+ * Prints the given path, escaping as necessary.
+ *
+ * Parameters:
+ *    path   - The path to print.
+ *    quote  - How to print a quote.
+ *
+ * Return: none
+ *
+ */
+static void print_quoted(char * path, char * quote)
+{
+  int len = strlen(path);
+  printf("\"");
+  for (int i = 0; i < len; i++) {
+    if (path[i] != '"') { printf("%c", path[i]); }
+    else { printf(quote); }
+  }
+  printf("\"");
+}
+
+
+/** ***************************************************************************
  * Prints the given path, excluding the prefix from cut_path, if applicable.
  *
  * Parameters:
@@ -53,18 +75,28 @@ static int list_all_duplicates = 0;
  */
 static void print_path(char * prefix, char * path)
 {
-  if (cut_path == NULL) {
-    printf("%s%s\n", prefix, path);
-    return;
+  char * pos = path;
+
+  if (cut_path != NULL) {
+    char * cut = strstr(path, cut_path);
+    if (cut != NULL) {
+      pos = path + strlen(cut_path);
+    }
   }
 
-  char * cut = strstr(path, cut_path);
-  if (cut == NULL) {
-    printf("%s%s\n", prefix, path);
-    return;
+  switch (report_format) {
+  case REPORT_FORMAT_TEXT:
+    printf("%s%s\n", prefix, pos);
+    break;
+  case REPORT_FORMAT_CSV:
+    printf("%s", prefix);
+    print_quoted(pos, "\"\"");
+    break;
+  case REPORT_FORMAT_JSON:
+    printf("%s", prefix);
+    print_quoted(pos, "\\\"");
+    break;
   }
-
-  printf("%s%s\n", prefix, path + strlen(cut_path));
 }
 
 
@@ -262,13 +294,20 @@ void operation_report()
                      "FROM duplicates ORDER BY total";
   sqlite3_stmt * statement = NULL;
   int rv;
+  int first = 1;
   char * path_list;
   char * pos = NULL;
   char * token;
   uint64_t used = 0;
 
-  if (verbosity >= 1) {
-    printf("Duplicate report from database %s:\n\n", db_path);
+  switch (report_format) {
+  case REPORT_FORMAT_TEXT:
+    if (verbosity >= 1) {
+      printf("Duplicate report from database %s:\n\n", db_path);
+    }
+    break;
+  case REPORT_FORMAT_JSON:
+    printf("[\n");
   }
 
   sqlite3 * dbh = open_database(db_path, 0);
@@ -287,25 +326,57 @@ void operation_report()
     off_t total = sqlite3_column_int64(statement, 1);
 
     if (total >= minimum_file_size) {
-      printf("%lu total bytes used by duplicates:\n", total);
+
+      if (!first && report_format == REPORT_FORMAT_JSON) {
+        printf(",\n");
+      }
+      first = 0;
+
+      switch (report_format) {
+      case REPORT_FORMAT_TEXT:
+        printf("%lu total bytes used by duplicates:\n", total);
+        break;
+      case REPORT_FORMAT_CSV:  printf("%lu,", total); break;
+      case REPORT_FORMAT_JSON: printf("[ %lu,", total); break;
+      }
+
       used += (uint64_t)total;
       if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
-        print_path("  ", token);
+        switch (report_format) {
+        case REPORT_FORMAT_TEXT:  print_path("  ", token); break;
+        case REPORT_FORMAT_CSV:   print_path("", token); break;
+        case REPORT_FORMAT_JSON:  print_path(" ", token); break;
+        }
         while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
-          print_path("  ", token);
+          switch (report_format) {
+          case REPORT_FORMAT_TEXT:  print_path("  ", token); break;
+          case REPORT_FORMAT_CSV:   print_path(",", token); break;
+          case REPORT_FORMAT_JSON:  print_path(", ", token); break;
+          }
         }
       }
 
-      printf("\n\n");
+      switch (report_format) {
+      case REPORT_FORMAT_TEXT: printf("\n\n"); break;
+      case REPORT_FORMAT_JSON: printf(" ]\n"); break;
+      case REPORT_FORMAT_CSV:  printf("\n"); break;
+      }
+
     }
   }
 
-  unsigned long long kb = used / 1024;
-  unsigned long mb = kb / 1024;
-  unsigned long gb = mb / 1024;
+  if (report_format == REPORT_FORMAT_TEXT) {
+    unsigned long long kb = used / 1024;
+    unsigned long mb = kb / 1024;
+    unsigned long gb = mb / 1024;
 
-  printf("Total used: %" PRIu64 " bytes (%llu KiB, %lu MiB, %lu GiB)\n",
-         used, kb, mb, gb);
+    printf("Total used: %" PRIu64 " bytes (%llu KiB, %lu MiB, %lu GiB)\n",
+           used, kb, mb, gb);
+  }
+
+  if (report_format == REPORT_FORMAT_JSON) {
+    printf("]\n");
+  }
 
   sqlite3_finalize(statement);
   close_database(dbh);

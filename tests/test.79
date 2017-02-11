@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan(files)"
+$DUPD_CMD scan --path `pwd`/files -q --hdd
+checkrv $?
+
+DESC="unknown report"
+$DUPD_CMD report --format unknown --cut `pwd`/files/ > nreport
+checkerr $?
+
+tdone

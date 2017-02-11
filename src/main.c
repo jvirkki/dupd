@@ -88,6 +88,7 @@ int hardlink_is_unique = 0;
 int hash_function = HASH_FN_MD5;
 int hash_bufsize = -1;
 long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
+int report_format = REPORT_FORMAT_TEXT;
 
 
 /** ***************************************************************************
@@ -359,6 +360,18 @@ static int process_args(int argc, char * argv[])
   }
   hash_bufsize = hash_get_bufsize(hash_function);
 
+  char * report_format_name = opt_string(options[OPT_format], "text");
+  if (!strcmp("text", report_format_name)) {
+    report_format = REPORT_FORMAT_TEXT;
+  } else if (!strcmp("csv", report_format_name)) {
+    report_format = REPORT_FORMAT_CSV;
+  } else if (!strcmp("json", report_format_name)) {
+    report_format = REPORT_FORMAT_JSON;
+  } else {
+    printf("error: unknown report format %s\n", report_format_name);
+    return 2;
+  }
+
   if (options[OPT_x_analyze]) {
     opt_compare_two = 0;
     opt_compare_three = 0;
@@ -462,14 +475,21 @@ int main(int argc, char * argv[])
     save_stats();
   }
 
-  if (!strcmp("dev", DUPD_VERSION + strlen(DUPD_VERSION) - 3)) {
-    if (isatty(fileno(stdout))) {
-      fprintf(stdout, "\nNote: This is a development version of dupd ("
-              DUPD_VERSION ") (" GITHASH ")\n");
-      fprintf(stdout,
-              "May contain known bugs or unstable work in progress!\n");
-      fprintf(stdout,
-              "If stability is desired, use a release version of dupd.\n");
+  if (operation == COMMAND_scan ||
+      operation == COMMAND_refresh || operation == COMMAND_license ||
+      operation == COMMAND_version || operation == COMMAND_validate ||
+      operation == COMMAND_usage || operation == COMMAND_man ||
+      operation == COMMAND_help) {
+
+    if (!strcmp("dev", DUPD_VERSION + strlen(DUPD_VERSION) - 3)) {
+      if (isatty(fileno(stdout))) {
+        fprintf(stdout, "\nNote: This is a development version of dupd ("
+                DUPD_VERSION ") (" GITHASH ")\n");
+        fprintf(stdout,
+                "May contain known bugs or unstable work in progress!\n");
+        fprintf(stdout,
+                "If stability is desired, use a release version of dupd.\n");
+      }
     }
   }
 

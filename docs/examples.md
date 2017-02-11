@@ -300,6 +300,14 @@ although three of them have been deleted and thus
   /tmp/dupd/files4/three1diffB
 ```
 
+It is also possible to generate the report in either CSV or JSON formats
+suitable for post-processing with other tools or scripts.
+
+```
+% dupd report --format csv > report.csv
+% dupd report --format json > report.json
+```
+
 Hopefully this walkthrough gave a good feel for how to use `dupd`.
 
 ---
