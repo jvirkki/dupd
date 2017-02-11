@@ -99,10 +99,6 @@ static void compare_two_open_files(sqlite3 * dbh,
  */
 void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
 {
-  if (path1[0] == 0 || path2[0] == 0) {
-    return;
-  }
-
   if (verbosity >= 4) {
     printf("compare_two_files: [%s] vs [%s]\n", path1, path2);
   }

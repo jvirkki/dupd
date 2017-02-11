@@ -429,6 +429,10 @@ int main(int argc, char * argv[])
     goto DONE;
   }
 
+  if (verbosity >= 4) {
+    printf("Claimed CPU cores: %d\n", cpu_cores());
+  }
+
   switch (operation) {
 
     case COMMAND_scan:      scan();                      break;

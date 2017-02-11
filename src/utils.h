@@ -179,10 +179,10 @@ void memdump(char * text, char * ptr, int bytes);
 static inline void d_cond_wait(pthread_cond_t * cond, pthread_mutex_t * mutex)
 {
   int rv = pthread_cond_wait(cond, mutex);
-  if (rv != 0) {
+  if (rv != 0) {                                             // LCOV_EXCL_START
     printf("error: pthread_cond_wait == %d\n", rv);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 
@@ -198,10 +198,10 @@ static inline void d_cond_wait(pthread_cond_t * cond, pthread_mutex_t * mutex)
 static inline void d_cond_signal(pthread_cond_t * cond)
 {
   int rv = pthread_cond_signal(cond);
-  if (rv != 0) {
+  if (rv != 0) {                                             // LCOV_EXCL_START
     printf("error: pthread_cond_signal == %d\n", rv);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 
@@ -218,10 +218,10 @@ static inline void d_cond_signal(pthread_cond_t * cond)
 static inline void d_mutex_lock(pthread_mutex_t * mutex, char * line)
 {
   int rv = pthread_mutex_lock(mutex);
-  if (rv != 0) {
+  if (rv != 0) {                                             // LCOV_EXCL_START
     printf("error: %s: pthread_mutex_lock == %d\n", line, rv);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 
@@ -237,10 +237,10 @@ static inline void d_mutex_lock(pthread_mutex_t * mutex, char * line)
 static inline void d_mutex_unlock(pthread_mutex_t * mutex)
 {
   int rv = pthread_mutex_unlock(mutex);
-  if (rv != 0) {
+  if (rv != 0) {                                             // LCOV_EXCL_START
     printf("error: pthread_mutex_unlock == %d\n", rv);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 
@@ -257,10 +257,10 @@ static inline void d_mutex_unlock(pthread_mutex_t * mutex)
 static inline void d_join(pthread_t thread, void **retval)
 {
   int rv = pthread_join(thread, retval);
-  if (rv != 0) {
+  if (rv != 0) {                                             // LCOV_EXCL_START
     printf("error: pthread_join == %d\n", rv);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 }
 
 #endif

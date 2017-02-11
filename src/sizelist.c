@@ -162,10 +162,10 @@ static inline void show_processed(int total, int files, long size,
     break;
   }
 
-  if (show_processed_count > total) {
+  if (show_processed_count > total) {                        // LCOV_EXCL_START
     printf("\nThat's not right...\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   d_mutex_unlock(&show_processed_lock);
 }
@@ -269,9 +269,6 @@ static inline void release_round3_info_buffer(struct round3_info * info)
  */
 static inline void free_round3_info(struct round3_info * info)
 {
-  if (info->buffer != NULL) {
-    free(info->buffer);
-  }
   free(info);
 }
 
@@ -443,11 +440,11 @@ static void * round3_hasher(void * arg)
             case SLS_R3_HASH_DONE:
               break;
 
-            default:
+            default:                                         // LCOV_EXCL_START
               printf("error: impossible inner state %s in round3_hasher!\n",
                      state_name(status->state));
               exit(1);
-            }
+            }                                                // LCOV_EXCL_STOP
           }
 
           if (entry_changed && thread_verbosity >= 2) {
@@ -528,11 +525,11 @@ static void * round3_hasher(void * arg)
 
         break;
 
-      default:
+      default:                                               // LCOV_EXCL_START
         printf("error: impossible state %s in round3_hasher!\n",
                state_name(size_node->state));
         exit(1);
-      }
+      }                                                      // LCOV_EXCL_STOP
 
     R3H_NEXT_NODE:
       size_node_next = size_node->next;
@@ -666,6 +663,7 @@ static void process_round_3(sqlite3 * dbh)
 
   // Purge sets which are already SLS_DONE by skipping over them so
   // we don't need to look at them again.
+  skipped = 0;
   size_node = size_list_head;
   while (size_node != NULL) {
     next_node = size_node->next;
@@ -673,10 +671,14 @@ static void process_round_3(sqlite3 * dbh)
       next_node_next = next_node->next;
       pthread_mutex_destroy(&next_node->lock);
       free(next_node);
+      skipped++;
       next_node = next_node_next;
     }
     size_node->next = next_node;
     size_node = size_node->next;
+  }
+  if (verbosity >= 3) {
+    printf("Purged %d size list entries in DONE state\n", skipped);
   }
 
   // Start my companion hasher thread
@@ -804,11 +806,11 @@ static void process_round_3(sqlite3 * dbh)
             case SLS_R3_HASH_DONE:
               break;
 
-            default:
+            default:                                         // LCOV_EXCL_START
               printf("error: impossible inner state %d in process_round3!\n",
                      status->state);
               exit(1);
-            }
+            }                                                // LCOV_EXCL_STOP
           }
 
           if (thread_verbosity >= 2 && changed) {
@@ -1800,10 +1802,10 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
       case SLS_NEEDS_ROUND_3:      in_round_3++; goto NODE_DONE;
       case SLS_DONE:               seen_done++;  goto NODE_DONE;
 
-      default:
+      default:                                               // LCOV_EXCL_START
         printf("error: unexpected state.a %d\n", size_node->state);
         exit(1);
-      }
+      }                                                      // LCOV_EXCL_STOP
 
       uint32_t path_count = pl_get_path_count(size_node->path_list);
       int completed = path_count == size_node->buffers_filled;
@@ -1851,10 +1853,10 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
                                                 &stats_set_dup_done_round_two);
           break;
 
-        default:
+        default:                                             // LCOV_EXCL_START
           printf("error: impossible state %s\n", state_name(size_node->state));
           exit(1);
-        }
+        }                                                    // LCOV_EXCL_STOP
 
         if (!set_completed) {
           // If the file is not huge (using R3_BUFSIZE as cutoff) then
@@ -1883,10 +1885,10 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
       case SLS_NEEDS_ROUND_3:      out_round_3++; break;
       case SLS_DONE: break;
 
-      default:
+      default:                                               // LCOV_EXCL_START
         printf("error: unexpected state.b %d\n", size_node->state);
         exit(1);
-      }
+      }                                                      // LCOV_EXCL_STOP
 
       d_mutex_unlock(&size_node->lock);
       size_node = size_node->next;

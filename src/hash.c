@@ -346,8 +346,8 @@ int hash_fn_buf_update(void * ctx, const char * buffer, int bufsize)
 
   default:                                                   // LCOV_EXCL_START
     printf("error: invalid hash_function value %d\n", hash_function);
-    exit(1);                                                 // LCOV_EXCL_STOP
-  }
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
   return 0;
 }
