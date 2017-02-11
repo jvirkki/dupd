@@ -7,7 +7,7 @@ $DUPD_CMD scan --path `pwd`/files -q --hdd
 checkrv $?
 
 DESC="csv report"
-$DUPD_CMD report --format csv --cut `pwd`/files/ | sed s/,/\\n/g > nreport
+$DUPD_CMD report --format csv --cut `pwd`/files/ | tr ',' '\n'  > nreport
 checkrv $?
 
 # The CSV output was split into lines above, not entirely realistic,
