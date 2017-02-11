@@ -7,8 +7,11 @@ $DUPD_CMD scan --path `pwd`/files -q --hdd
 checkrv $?
 
 DESC="json report"
-$DUPD_CMD report --format json --cut `pwd`/files/ > nreport
+$DUPD_CMD report --format json --cut `pwd`/files/  | sed s/,/\\n/g | sed s/\]//g > nreport
 checkrv $?
+
+# The JSON output was split into lines above, not entirely realistic,
+# but needed to have a consistent ordering to compare.
 
 check_nreport output.78
 
