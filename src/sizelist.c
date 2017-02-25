@@ -58,8 +58,6 @@ static pthread_cond_t reader_main_hdd_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t show_processed_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t r3_loop_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t r3_loop_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t r12_loop_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t r12_loop_cond = PTHREAD_COND_INITIALIZER;
 static int r3_hasher_done = 0;
 
 // Size list states.
