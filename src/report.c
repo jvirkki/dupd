@@ -57,7 +57,7 @@ static void print_quoted(char * path, char * quote)
   printf("\"");
   for (int i = 0; i < len; i++) {
     if (path[i] != '"') { printf("%c", path[i]); }
-    else { printf(quote); }
+    else { printf("%s", quote); }
   }
   printf("\"");
 }
