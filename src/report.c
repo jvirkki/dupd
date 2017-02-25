@@ -334,10 +334,10 @@ void operation_report()
 
       switch (report_format) {
       case REPORT_FORMAT_TEXT:
-        printf("%lu total bytes used by duplicates:\n", total);
+        printf("%lu total bytes used by duplicates:\n", (unsigned long)total);
         break;
-      case REPORT_FORMAT_CSV:  printf("%lu,", total); break;
-      case REPORT_FORMAT_JSON: printf("[ %lu,", total); break;
+      case REPORT_FORMAT_CSV:  printf("%lu,", (unsigned long)total); break;
+      case REPORT_FORMAT_JSON: printf("[ %lu,", (unsigned long)total); break;
       }
 
       used += (uint64_t)total;

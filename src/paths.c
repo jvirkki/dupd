@@ -51,7 +51,7 @@ static long space_allocated;
  */
 void dump_path_list(const char * line, off_t size, char * head)
 {
-  printf("----- dump_size_list for size %ld -----\n", size);
+  printf("----- dump_size_list for size %ld -----\n", (long)size);
   printf("%s\n", line);
 
   printf("  head: %p\n", head);

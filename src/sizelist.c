@@ -194,7 +194,8 @@ static void unlink_size_list_entry(char * spaces,
   }
 
   if (thread_verbosity >= 2) {
-    printf("%sRemoving size list entry of size %ld\n", spaces, entry->size);
+    printf("%sRemoving size list entry of size %ld\n",
+	   spaces, (long)entry->size);
   }
 
   entry->state = SLS_DELETED;
@@ -342,7 +343,7 @@ static void * round3_hasher(void * arg)
       if (thread_verbosity >= 2) {
         int count = pl_get_path_count(size_node->path_list);
         printf("%sSET %d (%d files of size %ld) (loop %d) state: %s\n",
-               spaces, set_count++, count, size, loops,
+               spaces, set_count++, count, (long)size, loops,
                state_name(size_node->state));
       }
 
@@ -712,7 +713,7 @@ static void process_round_3(sqlite3 * dbh)
       if (thread_verbosity >= 2) {
         off_t size = size_node->size;
         printf("%sSET %d (%d files of size %ld) (loop %d) state: %s\n",
-               spaces, set_count++, path_count, size, loops,
+               spaces, set_count++, path_count, (long)size, loops,
                state_name(size_node->state));
       }
 
@@ -767,7 +768,7 @@ static void process_round_3(sqlite3 * dbh)
               printf("%s   entry state: NULL [%s]\n", spaces, path);
             } else {
               printf("%s   entry state: %s @%ld [%s]\n", spaces,
-                     state_name(status->state), status->read_from, path);
+                     state_name(status->state), (long)status->read_from, path);
             }
           }
 
@@ -945,7 +946,7 @@ static struct size_list * new_size_list_entry(off_t size, char * path_list)
 struct size_list * add_to_size_list(off_t size, char * path_list)
 {
   if (size < 0) {
-    printf("add_to_size_list: bad size! %ld\n", size);       // LCOV_EXCL_START
+    printf("add_to_size_list: bad size! %ld\n", (long)size); // LCOV_EXCL_START
     dump_path_list("bad size", size, path_list);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
@@ -1007,8 +1008,8 @@ void analyze_process_size_list(sqlite3 * dbh)
       uint32_t path_count = pl_get_path_count(path_list_head);
       printf("Processing %d/%d "
              "(%d files of size %ld) (%ld blocks of size %d)\n",
-             count, stats_size_list_count,
-             path_count, size_node->size, total_blocks, analyze_block_size);
+             count, stats_size_list_count, path_count, (long)size_node->size,
+	     total_blocks, analyze_block_size);
     }
 
     // Build initial hash list for these files
@@ -1055,7 +1056,7 @@ void analyze_process_size_list(sqlite3 * dbh)
       total_blocks--;
 
       if (verbosity >= 4) {
-        printf("Next round of filtering: skip = %zu\n", skip);
+        printf("Next round of filtering: skip = %ld\n", (long)skip);
       }
       filter_hash_list(hl_previous, 1, analyze_block_size, hl_one, skip);
 
@@ -1081,8 +1082,8 @@ void analyze_process_size_list(sqlite3 * dbh)
     }                                                        // LCOV_EXCL_STOP
 
     if (verbosity >=3) {
-      printf(" Completed after %zu blocks read (%ld remaining)\n",
-             skip, total_blocks);
+      printf(" Completed after %ld blocks read (%zd remaining)\n",
+             (long)skip, total_blocks);
     }
 
     size_node = size_node->next;
@@ -1119,7 +1120,7 @@ void process_size_list(sqlite3 * dbh)
     if (verbosity >= 2) {
       if (verbosity >= 4) { printf("\n"); }
       printf("Processing %d/%d (%d files of size %ld)\n",
-             count, stats_size_list_count, path_count, size_node->size);
+             count, stats_size_list_count, path_count, (long)size_node->size);
       if (size_node->size < 0) {
         printf("Or not, since size makes no sense!\n");       // LCOV_EXCL_LINE
         exit(1);                                              // LCOV_EXCL_LINE
@@ -1317,8 +1318,8 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
 
       if (received != size_node->bytes_read) {
         if (verbosity > 0) {
-          printf("error: read %zd bytes from [%s] but wanted %ld\n",
-                 received, path, size_node->bytes_read);
+          printf("error: read %ld bytes from [%s] but wanted %ld\n",
+                 (long)received, path, (long)size_node->bytes_read);
         }
         path[0] = 0;
         pl_decrease_path_count(size_node->path_list, 1);
@@ -1329,7 +1330,8 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
       }
 
       if (thread_verbosity >= 3 && received == size_node->bytes_read) {
-        printf("%sread %ld bytes from %s\n",spaces,size_node->bytes_read,path);
+        printf("%sread %ld bytes from %s\n", spaces,
+	       (long)size_node->bytes_read,path);
       }
 
     } else {
@@ -1384,8 +1386,8 @@ static void * reader_main(void * arg)
       d_mutex_lock(&size_node->lock, "reader top");
 
       if (thread_verbosity >= 2) {
-        printf("%s(loop %d) size:%ld state:%s\n",
-               spaces, loops, size_node->size, state_name(size_node->state));
+        printf("%s(loop %d) size:%ld state:%s\n", spaces,
+	       loops, (long)size_node->size, state_name(size_node->state));
       }
 
       switch(size_node->state) {
@@ -1507,7 +1509,7 @@ static void process_readlist(char * spaces,
 
     size = sizelist->size;
     if (size < 0) {                                          // LCOV_EXCL_START
-      printf("error: size %ld makes no sense\n", size);
+      printf("error: size %ld makes no sense\n", (long)size);
       exit(1);
     }                                                        // LCOV_EXCL_STOP
 
@@ -1527,7 +1529,7 @@ static void process_readlist(char * spaces,
 
       if (thread_verbosity >= 2) {
         printf("%sSet (%d files of size %ld): read %s\n",
-               spaces, count, size, path);
+               spaces, count, (long)size, path);
       }
 
       buffer = pl_entry_get_buffer(pathlist_entry);
@@ -1543,8 +1545,8 @@ static void process_readlist(char * spaces,
       if (received != max_to_read) {
         // File may be unreadable or changed size, either way, ignore it.
         if (verbosity >= 1) {
-          printf("error: read %zd bytes from [%s] but wanted %ld\n",
-                 received, path, max_to_read);
+          printf("error: read %ld bytes from [%s] but wanted %ld\n",
+                 (long)received, path, (long)max_to_read);
         }
         path[0] = 0;
         pl_decrease_path_count(pathlist_head, 1);
@@ -1812,8 +1814,9 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
 
       if (thread_verbosity >= 2) {
         printf("%sSet (%d files of size %ld; %d read) ready?=%d, state: %s\n",
-               spaces, path_count, size_node->size, size_node->buffers_filled,
-               completed, state_name(size_node->state));
+               spaces, path_count, (long)size_node->size,
+	       size_node->buffers_filled, completed,
+	       state_name(size_node->state));
       }
 
       if (!completed) {
@@ -1823,8 +1826,8 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
         // This size set has all the buffers available by now, so do
         // round 1 or 2 on this set.
         if (thread_verbosity >= 2) {
-          printf("%s(loop %d) size:%ld state: %s\n",
-                 spaces, loops, size_node->size, state_name(size_node->state));
+          printf("%s(loop %d) size:%ld state: %s\n", spaces,
+		 loops, (long)size_node->size, state_name(size_node->state));
         }
 
         switch(size_node->state) {
@@ -1997,8 +2000,8 @@ void threaded_process_size_list(sqlite3 * dbh)
       d_mutex_lock(&size_node->lock, "main top");
 
       if (thread_verbosity >= 2) {
-        printf("%s(loop %d) size:%ld state:%s\n",
-               spaces, loops, size_node->size, state_name(size_node->state));
+        printf("%s(loop %d) size:%ld state:%s\n", spaces,
+	       loops, (long)size_node->size, state_name(size_node->state));
       }
 
       switch(size_node->state) {
