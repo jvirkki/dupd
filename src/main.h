@@ -311,7 +311,7 @@ extern int report_format;
  * Used as the max path+filename length.
  *
  */
-#define PATH_MAX 4096
+#define DUPD_PATH_MAX 4096
 
 
 #endif

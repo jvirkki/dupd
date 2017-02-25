@@ -240,8 +240,8 @@ void init_hash_lists()
     path_buffer = (char *)malloc(10);
     path_buffer_size = 10;
   } else {
-    path_buffer = (char *)malloc(DEFAULT_PATH_BUFFER * PATH_MAX);
-    path_buffer_size = DEFAULT_PATH_BUFFER * PATH_MAX;
+    path_buffer = (char *)malloc(DEFAULT_PATH_BUFFER * DUPD_PATH_MAX);
+    path_buffer_size = DEFAULT_PATH_BUFFER * DUPD_PATH_MAX;
   }
 }
 
@@ -383,8 +383,8 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
         for (int i = 0; i < p->next_index; i++) {
 
           // if not enough space (conservatively) in path_buffer, increase
-          if (pos + PATH_MAX > path_buffer_size) {
-            path_buffer_size += PATH_MAX * 10;
+          if (pos + DUPD_PATH_MAX > path_buffer_size) {
+            path_buffer_size += DUPD_PATH_MAX * 10;
             path_buffer = (char *)realloc(path_buffer, path_buffer_size);
             path_buffer_realloc++;
             if (verbosity >= 5) {

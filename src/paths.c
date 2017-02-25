@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -132,7 +132,7 @@ static struct path_block_list * alloc_path_block(int bsize)
 static void add_path_block()
 {
   int bsize = 8 * 1024 * 1024;
-  if (x_small_buffers) { bsize = PATH_MAX; }
+  if (x_small_buffers) { bsize = DUPD_PATH_MAX; }
 
   struct path_block_list * next = alloc_path_block(bsize);
   next_entry = next->ptr;
@@ -164,7 +164,7 @@ inline static void check_space(int needed)
 void init_path_block()
 {
   int bsize = 1024 * 1024;
-  if (x_small_buffers) { bsize = PATH_MAX; }
+  if (x_small_buffers) { bsize = DUPD_PATH_MAX; }
 
   first_path_block = alloc_path_block(bsize);
   next_entry = first_path_block->ptr;

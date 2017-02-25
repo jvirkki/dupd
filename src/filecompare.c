@@ -33,7 +33,7 @@
 #include "stats.h"
 
 static char * buffers[4];
-static char paths[PATH_MAX * 3];
+static char paths[DUPD_PATH_MAX * 3];
 
 
 /** ***************************************************************************
@@ -79,7 +79,7 @@ static void compare_two_open_files(sqlite3 * dbh,
   }
 
   if (write_db) {
-    snprintf(paths, 2 * PATH_MAX, "%s%c%s", path1, path_separator, path2);
+    snprintf(paths, 2 * DUPD_PATH_MAX, "%s%c%s", path1, path_separator, path2);
     duplicate_to_db(dbh, 2, size, paths);
   }
 
@@ -263,7 +263,7 @@ void compare_three_files(sqlite3 * dbh,
   }
 
   if (write_db) {
-    snprintf(paths, 3 * PATH_MAX, "%s%c%s%c%s",
+    snprintf(paths, 3 * DUPD_PATH_MAX, "%s%c%s%c%s",
              path1, path_separator, path2, path_separator, path3);
     duplicate_to_db(dbh, 3, size, paths);
   }

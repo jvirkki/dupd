@@ -147,8 +147,8 @@ sqlite3 * open_database(char * path, int newdb)
   if (newdb && rv == 1) {       /* need to delete old one */
     rv = unlink(path);
     if (rv != 0) {                                           // LCOV_EXCL_START
-      char line[PATH_MAX];
-      snprintf(line, PATH_MAX, "unlink %s", path);
+      char line[DUPD_PATH_MAX];
+      snprintf(line, DUPD_PATH_MAX, "unlink %s", path);
       perror(line);
       exit(1);
     }                                                        // LCOV_EXCL_STOP
@@ -528,7 +528,7 @@ void init_get_known_duplicates()
     (char * *)calloc(known_dup_path_list_size, sizeof(char *));
 
   for (int i = 0; i < known_dup_path_list_size; i++) {
-    known_dup_path_list[i] = (char *)malloc(PATH_MAX);
+    known_dup_path_list[i] = (char *)malloc(DUPD_PATH_MAX);
   }
 }
 
@@ -543,7 +543,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
   const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
   int rv;
   int copied = 0;
-  char line[PATH_MAX];
+  char line[DUPD_PATH_MAX];
   char * pos = NULL;
   char * token;
 
@@ -566,7 +566,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
   }
 
-  snprintf(line, PATH_MAX, "%%%s%%", path);
+  snprintf(line, DUPD_PATH_MAX, "%%%s%%", path);
   rv = sqlite3_bind_text(stmt_get_known_duplicates, 1, line, -1,SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
 

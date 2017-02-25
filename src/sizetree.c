@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -47,7 +47,7 @@ struct stat_queue {
   dev_t device;
   ino_t inode;
   off_t size;
-  char path[PATH_MAX];
+  char path[DUPD_PATH_MAX];
   struct stat_queue * next;
 };
 

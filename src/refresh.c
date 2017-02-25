@@ -1,5 +1,5 @@
 /*
-  Copyright 2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -45,7 +45,7 @@ void operation_refresh()
   char * entry_path_list;
   char * pos;
 
-  int new_list_size = PATH_MAX;
+  int new_list_size = DUPD_PATH_MAX;
   int new_entry_count;
   int new_pos;
   char * token;

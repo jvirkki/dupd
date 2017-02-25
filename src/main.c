@@ -168,8 +168,8 @@ int opt_add_path(char * arg, int command)
     start_path[start_path_count] = (char *)malloc(x + 2);
     strcpy(start_path[start_path_count], arg);
   } else {
-    start_path[start_path_count] = (char *)malloc(PATH_MAX);
-    getcwd(start_path[start_path_count], PATH_MAX);
+    start_path[start_path_count] = (char *)malloc(DUPD_PATH_MAX);
+    getcwd(start_path[start_path_count], DUPD_PATH_MAX);
     strcat(start_path[start_path_count], "/");
     strcat(start_path[start_path_count], arg);
   }
@@ -273,8 +273,8 @@ static int process_args(int argc, char * argv[])
   path_separator = opt_char(options[OPT_pathsep], path_separator);
 
   if (start_path_state == START_PATH_NULL) {
-    start_path[0] = (char *)malloc(PATH_MAX);
-    getcwd(start_path[0], PATH_MAX);
+    start_path[0] = (char *)malloc(DUPD_PATH_MAX);
+    getcwd(start_path[0], DUPD_PATH_MAX);
     start_path_count = 1;
     if (verbosity >= 3) {
       printf("Defaulting --path to [%s]\n", start_path[0]);
@@ -285,9 +285,9 @@ static int process_args(int argc, char * argv[])
     file_path = options[OPT_file];
     // file path can be relative, normalize in that case
     if (file_path[0] != '/') {
-      file_path = (char *)malloc(PATH_MAX);
+      file_path = (char *)malloc(DUPD_PATH_MAX);
       free_file_path = 1;
-      getcwd(file_path, PATH_MAX);
+      getcwd(file_path, DUPD_PATH_MAX);
       strcat(file_path, "/");
       strcat(file_path, options[OPT_file]);
     }
@@ -295,9 +295,9 @@ static int process_args(int argc, char * argv[])
 
   db_path = options[OPT_db];
   if (db_path == NULL) {
-    db_path = (char *)malloc(PATH_MAX);
+    db_path = (char *)malloc(DUPD_PATH_MAX);
     free_db_path = 1;
-    snprintf(db_path, PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
+    snprintf(db_path, DUPD_PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
   if (options[OPT_hdd]) { hdd_mode = 1; }

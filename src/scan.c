@@ -56,7 +56,7 @@ static int scan_list_pos = -1;
 void init_scanlist()
 {
   scan_list_capacity = x_small_buffers ? 1 : 1000;
-  scan_list = (char *)malloc(PATH_MAX * scan_list_capacity);
+  scan_list = (char *)malloc(DUPD_PATH_MAX * scan_list_capacity);
   scan_list_pos = -1;
 }
 
@@ -86,8 +86,8 @@ void walk_dir(sqlite3 * dbh, const char * path,
   int rv;
 
   struct dirent * entry;
-  char newpath[PATH_MAX];
-  char current[PATH_MAX];
+  char newpath[DUPD_PATH_MAX];
+  char current[DUPD_PATH_MAX];
 
   dev_t device;
   ino_t inode;
@@ -104,7 +104,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
 
   while (scan_list_pos >= 0) {
 
-    strcpy(current, scan_list + PATH_MAX * scan_list_pos);
+    strcpy(current, scan_list + DUPD_PATH_MAX * scan_list_pos);
     if (verbosity >= 6) {
       printf("\nDIR: (%d)[%s]\n", scan_list_pos, current);
     }
@@ -141,7 +141,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
         continue;
       }
 
-      snprintf(newpath, PATH_MAX, "%s/%s", current, entry->d_name);
+      snprintf(newpath, DUPD_PATH_MAX, "%s/%s", current, entry->d_name);
 
       // If DIRENT_HAS_TYPE, we can get the type of the file from entry->d_type
       // which means we can skip doing stat() on it here and instead let
@@ -189,13 +189,13 @@ void walk_dir(sqlite3 * dbh, const char * path,
           scan_list_resizes++;
           scan_list_capacity *= 2;
           scan_list =
-            (char *)realloc(scan_list, PATH_MAX * scan_list_capacity);
+            (char *)realloc(scan_list, DUPD_PATH_MAX * scan_list_capacity);
           if (verbosity >= 5) {
             printf("Had to increase scan_list_capacity to %d\n",
                    scan_list_capacity);
           }
         }
-        strcpy(scan_list + PATH_MAX * scan_list_pos, newpath);
+        strcpy(scan_list + DUPD_PATH_MAX * scan_list_pos, newpath);
         if (verbosity >= 8) {
           printf("queued dir at %d: %s\n", scan_list_pos, newpath);
         }

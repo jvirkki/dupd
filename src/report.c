@@ -544,7 +544,7 @@ void operation_dups()
 void operation_shell_script()
 {
   const char * sql = "SELECT paths FROM duplicates";
-  char kept[PATH_MAX];
+  char kept[DUPD_PATH_MAX];
   sqlite3_stmt * statement = NULL;
   int rv;
   char * path_list;
@@ -574,7 +574,7 @@ void operation_shell_script()
     if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
       printf("\n#\n# KEEPING: %s\n#\n", token);
       if (rmsh_link) {
-        snprintf(kept, PATH_MAX, "%s", token);
+        snprintf(kept, DUPD_PATH_MAX, "%s", token);
       }
       while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
         printf("rm \"%s\"\n", token);
@@ -603,7 +603,7 @@ int operation_validate()
 {
   sqlite3_stmt * statement = NULL;
   const char * sql = "SELECT count,paths FROM duplicates";
-  char path[PATH_MAX];
+  char path[DUPD_PATH_MAX];
   int rv;
   char * path_list;
   char * pos = NULL;
