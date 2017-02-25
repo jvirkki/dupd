@@ -43,8 +43,8 @@
 #endif
 
 #ifdef __APPLE__
-#define STRUCT_STAT struct stat64
-#define LSTAT lstat64
+#define STRUCT_STAT struct stat
+#define LSTAT lstat
 #endif
 
 
