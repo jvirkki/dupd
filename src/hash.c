@@ -37,9 +37,9 @@
 #define MD5_Update CC_MD5_Update
 #define MD5_Final CC_MD5_Final
 #define SHA_CTX CC_SHA1_CTX
-#define SHA_Init CC_SHA1_Init
-#define SHA_Update CC_SHA1_Update
-#define SHA_Final CC_SHA1_Final
+#define SHA1_Init CC_SHA1_Init
+#define SHA1_Update CC_SHA1_Update
+#define SHA1_Final CC_SHA1_Final
 #define SHA512_CTX CC_SHA512_CTX
 #define SHA512_Init CC_SHA512_Init
 #define SHA512_Update CC_SHA512_Update
