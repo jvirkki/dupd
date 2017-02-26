@@ -1,3 +1,20 @@
+2017-02-25  Jyri J. Virkki  <jyri@virkki.com>
+
+	* Version 1.4
+	* Added HDD mode for much better performance on hard drives.
+	* Added 'refresh' operation to remove deleted files from database.
+	* Added -I|--hardlink-is-unique to ignore hard link duplicates.
+	* Allow --path value to be relative to current directory.
+	* Added more documentation and a man page.
+	* Added support for CSV and JSON report formats.
+	* Added 'validate' operation.
+	* Some reduction in RAM consumption.
+	* Added multithreaded support.
+	* OpenBSD build support.
+	* Deprecated --pathsep option as it should not be needed anymore.
+	* Warn if db seems too old.
+	* Added support for additional hash choices (SHA1, SHA512)
+
 2015-12-31  Jyri J. Virkki  <jyri@virkki.com>
 
 	* Version 1.3
