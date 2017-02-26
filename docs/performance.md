@@ -100,6 +100,7 @@ documentation doesn't include specific numbers.
 However, I do occasionaly run tests and comparisons on various data
 sets and publish the results on my blog, which might be of interest.
 
+* [dupd 1.4 --hdd mode (2017)](http://www.virkki.com/jyri/articles/index.php/dupd-introducing-hdd-mode/)
 * [dupd 1.3 vs. jdupes (take two) (2016)](http://www.virkki.com/jyri/articles/index.php/dupd-vs-jdupes-take-2/)
 * [dupd 1.3 vs. jdupes (2016)](http://www.virkki.com/jyri/articles/index.php/dupd-vs-jdupes/)
 * [Performance improvements in dupd 1.2 (2015)](http://www.virkki.com/jyri/articles/index.php/some-dupd-performance-improvements/)
