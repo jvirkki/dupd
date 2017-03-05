@@ -610,6 +610,12 @@ static inline ssize_t round3_reader(char * entry, struct round3_info * status)
       perror(NULL);
       exit(1);
     }                                                        // LCOV_EXCL_STOP
+
+    // We will be reading the entire file in round3
+    if (FADVISE) {
+      posix_fadvise(status->fd, 0, 0, POSIX_FADV_WILLNEED);
+    }
+
     open_files++;
   }
 

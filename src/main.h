@@ -22,6 +22,22 @@
 
 #include <sys/types.h>
 
+#ifdef __APPLE__
+#define FADVISE 0
+#endif
+
+#ifdef __linux__
+#define FADVISE 1
+#endif
+
+#ifdef __sun__
+#define FADVISE 1
+#endif
+
+#ifdef __OpenBSD__
+#define FADVISE 1
+#endif
+
 
 /** ***************************************************************************
  * Verbosity is 1 by default, increased by one for every -v command
