@@ -43,4 +43,5 @@ Documentation Links
 * [Finding duplicates the dupd way](examples.md)
 * [Performance](performance.md)
 * [Design Choices](design.md)
+* [Contribution guidelines](contributing.md)
 
