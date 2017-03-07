@@ -19,6 +19,7 @@
 
 TOP:=$(shell  pwd)
 BUILD_OS:=$(shell uname)
+BUILD_MACHINE:=$(shell uname -m)
 VERSION:=$(shell cat version)
 GITHASH:=$(shell git rev-parse HEAD)
 OPTGEN:=$(shell which optgen | head -c1)
@@ -103,6 +104,7 @@ $(BUILD)/usage.o: man/dupd
 clean:
 	rm -f dupd
 	rm -rf $(BUILD)
+	rm -f dupd*.tar.gz
 
 lint:
 	lint -x -errfmt=simple $(LIB) $(INC) $(SRCS)
@@ -149,3 +151,19 @@ endif
 .PHONY: man
 man:
 	MANWIDTH=80 man -l man/dupd.1 > man/dupd
+
+release:
+	$(MAKE) clean
+	DEBUG=0 $(MAKE)
+	rm -rf tar/
+	mkdir tar
+	( cd tar && \
+	mkdir bin man docs && \
+	cp ../dupd bin/ && strip bin/dupd && \
+	cp ../man/dupd.1 man/ && \
+	cp ../docs/* docs/ && \
+	tar -cvf dupd_$(VERSION)_$(BUILD_OS)_$(BUILD_MACHINE).tar \
+		bin docs man && \
+	gzip --best *.tar)
+	cp tar/*.tar.gz .
+	rm -rf tar/
