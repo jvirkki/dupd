@@ -158,8 +158,7 @@ static inline void show_processed(int total, int files, long size,
  * multi-threaded stage. The lock is RELEASED here.
  *
  */
-static void unlink_size_list_entry(char * spaces,
-                                   struct size_list * entry,
+static void unlink_size_list_entry(struct size_list * entry,
                                    struct size_list * previous)
 {
   d_mutex_lock(&previous->lock, "unlink entry, lock previous");
@@ -172,8 +171,8 @@ static void unlink_size_list_entry(char * spaces,
     d_mutex_unlock(&entry->next->lock);
   }
 
-  LOG(L_MORE_THREADS, "%sRemoving size list entry of size %ld\n",
-      spaces, (long)entry->size);
+  LOG(L_MORE_THREADS, "Removing size list entry of size %ld\n",
+      (long)entry->size);
 
   entry->state = SLS_DELETED;
   entry->next = NULL;
@@ -264,7 +263,6 @@ static inline void free_round3_info(struct round3_info * info)
 static void * round3_hasher(void * arg)
 {
   sqlite3 * dbh = (sqlite3 *)arg;
-  char * spaces = "                                        [r3-hasher] ";
   struct size_list * size_node;
   struct size_list * size_node_next;
   struct round3_info * status;
@@ -281,8 +279,10 @@ static void * round3_hasher(void * arg)
   char * entry;
   char * path;
   int set_count;
+  char * self = "                                        [r3-hasher] ";
 
-  LOG(L_THREADS, "%sthread created\n", spaces);
+  pthread_setspecific(thread_name, self);
+  LOG(L_THREADS, "thread created\n");
 
   do {
     size_node = size_list_head;
@@ -317,9 +317,10 @@ static void * round3_hasher(void * arg)
 
       LOG_MORE_THREADS {
         int count = pl_get_path_count(size_node->path_list);
-        printf("%sSET %d (%d files of size %ld) (loop %d) state: %s\n",
-               spaces, set_count++, count, (long)size, loops,
-               state_name(size_node->state));
+        LOG(L_MORE_THREADS,
+            "SET %d (%d files of size %ld) (loop %d) state: %s\n",
+            set_count++, count, (long)size, loops,
+            state_name(size_node->state));
       }
 
       set_changed = 0;
@@ -342,10 +343,10 @@ static void * round3_hasher(void * arg)
 
           LOG_MORE_THREADS {
             if (status == NULL) {
-              printf("%s   entry state: NULL [%s]\n", spaces, path);
+              LOG(L_MORE_THREADS, "   entry state: NULL [%s]\n", path);
             } else {
-              printf("%s   entry state: %s [%s]\n", spaces,
-                     state_name(status->state), path);
+              LOG(L_MORE_THREADS, "   entry state: %s [%s]\n",
+                  state_name(status->state), path);
             }
           }
 
@@ -424,8 +425,8 @@ static void * round3_hasher(void * arg)
           }
 
           if (entry_changed) {
-            LOG(L_MORE_THREADS, "%s          => : %s [%s]\n",
-                spaces, state_name(status->state), path);
+            LOG(L_MORE_THREADS, "          => : %s [%s]\n",
+                state_name(status->state), path);
           }
 
           entry = pl_entry_get_next(entry);
@@ -453,7 +454,7 @@ static void * round3_hasher(void * arg)
           } while (entry != NULL);
 
           LOG_TRACE {
-            printf("Contents of hash list hl_full:\n");
+            LOG(L_TRACE, "Contents of hash list hl_full:\n");
             print_hash_list(hl_full);
           }
 
@@ -465,17 +466,17 @@ static void * round3_hasher(void * arg)
           if (HASH_LIST_NO_DUPS(hl_full)) {
 
             LOG_TRACE {
-              printf("No potential dups left, done!\n");
-              printf("Discarded in round 3 the potentials: ");
+              LOG(L_TRACE, "No potential dups left, done!\n");
+              LOG(L_TRACE, "Discarded in round 3 the potentials: ");
               entry = pl_get_first_entry(size_node->path_list);
               do {
                 path = pl_entry_get_path(entry);
                 if (path[0] != 0) {
-                  printf("%s ", path);
+                  LOG(L_TRACE, "%s ", path);
                 }
                 entry = pl_entry_get_next(entry);
               } while (entry != NULL);
-              printf("\n");
+              LOG(L_TRACE, "\n");
             }
 
             stats_set_no_dups_full_round++;
@@ -519,9 +520,9 @@ static void * round3_hasher(void * arg)
 
     } while (size_node != NULL);
 
-    LOG(L_THREADS, "%sFinished size list loop #%d: init: %d, partial: %d, "
+    LOG(L_THREADS, "Finished size list loop #%d: init: %d, partial: %d, "
         "final: %d, sets completed: %d\n",
-        spaces, loops, loop_buf_init, loop_partial_hash,
+        loops, loop_buf_init, loop_partial_hash,
         loop_hash_completed, loop_set_processed);
 
     if (only_testing) {
@@ -534,7 +535,7 @@ static void * round3_hasher(void * arg)
         loop_hash_completed == 0 && loop_set_processed == 0) {
       d_mutex_lock(&r3_loop_lock, "r3-hasher loop end no work");
       d_cond_signal(&r3_loop_cond);
-      LOG(L_THREADS, "%sWaiting for something to do...\n", spaces);
+      LOG(L_THREADS, "Waiting for something to do...\n");
       d_cond_wait(&r3_loop_cond, &r3_loop_lock);
       d_mutex_unlock(&r3_loop_lock);
     } else {
@@ -550,7 +551,7 @@ static void * round3_hasher(void * arg)
   d_cond_signal(&r3_loop_cond);
   d_mutex_unlock(&r3_loop_lock);
 
-  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
+  LOG(L_THREADS, "DONE (%d loops)\n", loops);
 
   return NULL;
 }
@@ -610,7 +611,6 @@ static inline ssize_t round3_reader(char * entry, struct round3_info * status)
  */
 static void process_round_3(sqlite3 * dbh)
 {
-  static char * spaces = "[r3-reader] ";
   struct size_list * size_node;
   struct size_list * previous_size_node;
   struct size_list * next_node;
@@ -683,9 +683,10 @@ static void process_round_3(sqlite3 * dbh)
 
       LOG_MORE_THREADS {
         off_t size = size_node->size;
-        printf("%sSET %d (%d files of size %ld) (loop %d) state: %s\n",
-               spaces, set_count++, path_count, (long)size, loops,
-               state_name(size_node->state));
+        LOG(L_MORE_THREADS,
+            "SET %d (%d files of size %ld) (loop %d) state: %s\n",
+            set_count++, path_count, (long)size, loops,
+            state_name(size_node->state));
       }
 
       switch(size_node->state) {
@@ -736,10 +737,10 @@ static void process_round_3(sqlite3 * dbh)
           LOG_TRACE {
             path = pl_entry_get_path(node);
             if (status == NULL) {
-              printf("%s   entry state: NULL [%s]\n", spaces, path);
+              LOG(L_TRACE, "   entry state: NULL [%s]\n", path);
             } else {
-              printf("%s   entry state: %s @%ld [%s]\n", spaces,
-                     state_name(status->state), (long)status->read_from, path);
+              LOG(L_TRACE, "   entry state: %s @%ld [%s]\n",
+                  state_name(status->state), (long)status->read_from, path);
             }
           }
 
@@ -750,8 +751,8 @@ static void process_round_3(sqlite3 * dbh)
               if (status->read_from == 0 && open_files > R3_MAX_OPEN_FILES) {
                 skipped = 1;
                 LOG(L_TRACE,
-                    "%s     (delay open, too many open files %d/%d)\n",
-                    spaces, open_files, R3_MAX_OPEN_FILES);
+                    "     (delay open, too many open files %d/%d)\n",
+                    open_files, R3_MAX_OPEN_FILES);
 
               } else {
                 round3_reader(node, status);
@@ -786,8 +787,8 @@ static void process_round_3(sqlite3 * dbh)
           }
 
           if (changed) {
-            LOG(L_THREADS, "%s          => : %s [%s]\n",
-                spaces, state_name(status->state), path);
+            LOG(L_THREADS, "          => : %s [%s]\n",
+                state_name(status->state), path);
           }
 
           if (skipped) {
@@ -822,7 +823,7 @@ static void process_round_3(sqlite3 * dbh)
       next_node_next = size_node->next;
 
       if (free_myself) {
-        unlink_size_list_entry(spaces, size_node, previous_size_node);
+        unlink_size_list_entry(size_node, previous_size_node);
         size_node = NULL;
       } else {
         previous_size_node = size_node;
@@ -833,8 +834,8 @@ static void process_round_3(sqlite3 * dbh)
 
     } while (size_node != NULL);
 
-    LOG(L_THREADS, "%sFinished size list loop #%d: R2:%d R3:%d Rp:%d Rf:%d\n",
-        spaces, loops, read_two, read_three, read_partial, read_final);
+    LOG(L_THREADS, "Finished size list loop #%d: R2:%d R3:%d Rp:%d Rf:%d\n",
+        loops, read_two, read_three, read_partial, read_final);
 
     if (only_testing) {
       slow_down(10, 100);
@@ -849,7 +850,7 @@ static void process_round_3(sqlite3 * dbh)
       if (!r3_hasher_done) {
         d_mutex_lock(&r3_loop_lock, "r3-reader loop end no work");
         d_cond_signal(&r3_loop_cond);
-        LOG(L_THREADS, "%sWaiting for something to do...\n", spaces);
+        LOG(L_THREADS, "Waiting for something to do...\n");
         d_cond_wait(&r3_loop_cond, &r3_loop_lock);
         d_mutex_unlock(&r3_loop_lock);
       }
@@ -859,7 +860,7 @@ static void process_round_3(sqlite3 * dbh)
 
 
   if (!r3_hasher_done) {
-    LOG(L_THREADS, "%swaiting for hasher thread\n", spaces);
+    LOG(L_THREADS, "Waiting for hasher thread...\n");
     d_mutex_lock(&r3_loop_lock, "r3-reader all done");
     d_cond_signal(&r3_loop_cond);
     d_mutex_unlock(&r3_loop_lock);
@@ -867,7 +868,7 @@ static void process_round_3(sqlite3 * dbh)
 
   d_join(hasher_thread, NULL);
 
-  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
+  LOG(L_THREADS, "DONE (%d loops)\n", loops);
 }
 
 
@@ -968,10 +969,10 @@ void analyze_process_size_list(sqlite3 * dbh)
 
     LOG_PROGRESS {
       uint32_t path_count = pl_get_path_count(path_list_head);
-      printf("Processing %d/%d "
-             "(%d files of size %ld) (%ld blocks of size %d)\n",
-             count, stats_size_list_count, path_count, (long)size_node->size,
-             total_blocks, analyze_block_size);
+      LOG(L_PROGRESS, "Processing %d/%d "
+          "(%d files of size %ld) (%ld blocks of size %d)\n",
+          count, stats_size_list_count, path_count, (long)size_node->size,
+          total_blocks, analyze_block_size);
     }
 
     // Build initial hash list for these files
@@ -985,7 +986,7 @@ void analyze_process_size_list(sqlite3 * dbh)
     } while (node != NULL);
 
     LOG_TRACE {
-      printf("Contents of hash list hl_one:\n");
+      LOG(L_TRACE, "Contents of hash list hl_one:\n");
       print_hash_list(hl_one);
     }
 
@@ -1020,7 +1021,7 @@ void analyze_process_size_list(sqlite3 * dbh)
       filter_hash_list(hl_previous, 1, analyze_block_size, hl_one, skip);
 
       LOG_TRACE {
-        printf("Contents of hash list hl_one:\n");
+        LOG(L_TRACE, "Contents of hash list hl_one:\n");
         print_hash_list(hl_one);
       }
     }
@@ -1075,8 +1076,9 @@ void process_size_list(sqlite3 * dbh)
     node = pl_get_first_entry(path_list_head);
 
     LOG_PROGRESS {
-      printf("Processing %d/%d (%d files of size %ld)\n",
-             count, stats_size_list_count, path_count, (long)size_node->size);
+      LOG(L_PROGRESS,
+          "Processing %d/%d (%d files of size %ld)\n",
+          count, stats_size_list_count, path_count, (long)size_node->size);
       if (size_node->size < 0) {
         printf("Or not, since size makes no sense!\n");       // LCOV_EXCL_LINE
         exit(1);                                              // LCOV_EXCL_LINE
@@ -1126,7 +1128,7 @@ void process_size_list(sqlite3 * dbh)
     } while (node != NULL);
 
     LOG_TRACE {
-      printf("Contents of hash list hl_one:\n");
+      LOG(L_TRACE, "Contents of hash list hl_one:\n");
       print_hash_list(hl_one);
     }
 
@@ -1161,7 +1163,7 @@ void process_size_list(sqlite3 * dbh)
                        hash_block_size, hl_partial, 0);
 
       LOG_TRACE {
-        printf("Contents of hash list hl_partial:\n");
+        LOG(L_TRACE, "Contents of hash list hl_partial:\n");
         print_hash_list(hl_partial);
       }
 
@@ -1192,7 +1194,7 @@ void process_size_list(sqlite3 * dbh)
     filter_hash_list(hl_previous, 0, hash_block_size,
                      hl_full, intermediate_blocks);
     LOG_TRACE {
-      printf("Contents of hash list hl_full:\n");
+      LOG(L_TRACE, "Contents of hash list hl_full:\n");
       print_hash_list(hl_full);
     }
 
@@ -1236,7 +1238,6 @@ void process_size_list(sqlite3 * dbh)
  */
 static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
 {
-  static char * spaces = "                                        [reader] ";
   char * node;
   char * path;
   char * buffer;
@@ -1274,8 +1275,8 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
 
       LOG_TRACE {
         if (received == size_node->bytes_read) {
-          printf("%sread %ld bytes from %s\n", spaces,
-                 (long)size_node->bytes_read,path);
+          LOG(L_TRACE,
+              "read %ld bytes from %s\n", (long)size_node->bytes_read,path);
         }
       }
 
@@ -1307,26 +1308,27 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
 static void * reader_main(void * arg)
 {
   (void)arg;
-  char * spaces = "                                        [reader] ";
+  char * self = "                                        [reader] ";
   struct size_list * size_node;
   int round_one;
   int round_two;
   int loops = 0;
   off_t max_to_read;
 
-  LOG(L_THREADS, "%sthread created\n", spaces);
+  pthread_setspecific(thread_name, self);
+  LOG(L_THREADS, "Thread created\n");
 
   do {
     size_node = size_list_head;
     loops++;
     round_one = 0;
     round_two = 0;
-    LOG(L_THREADS, "%sStarting size list loop #%d\n", spaces, loops);
+    LOG(L_THREADS, "Starting size list loop #%d\n", loops);
 
     do {
       d_mutex_lock(&size_node->lock, "reader top");
 
-      LOG(L_MORE_THREADS, "%s(loop %d) size:%ld state:%s\n", spaces,
+      LOG(L_MORE_THREADS, "(loop %d) size:%ld state:%s\n",
           loops, (long)size_node->size, state_name(size_node->state));
 
       switch(size_node->state) {
@@ -1355,12 +1357,12 @@ static void * reader_main(void * arg)
 
     } while (size_node != NULL && reader_continue);
 
-    LOG(L_THREADS, "%sFinished loop %d: round_one:%d, round_two:%d\n",
-        spaces, loops, round_one, round_two);
+    LOG(L_THREADS, "Finished loop %d: round_one:%d, round_two:%d\n",
+        loops, round_one, round_two);
 
   } while (reader_continue);
 
-  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
+  LOG(L_THREADS, "DONE (%d loops)\n", loops);
 
   return(NULL);
 }
@@ -1377,8 +1379,7 @@ static void * reader_main(void * arg)
  * Return: none
  *
  */
-static void process_readlist(char * spaces,
-                             int max_bytes_to_read, int min_block_size)
+static void process_readlist(int max_bytes_to_read, int min_block_size)
 {
   struct size_list * sizelist;
   struct read_list_entry * rlentry;
@@ -1451,8 +1452,8 @@ static void process_readlist(char * spaces,
         goto PRL_NODE_DONE;
       }
 
-      LOG(L_MORE_THREADS, "%sSet (%d files of size %ld): read %s\n",
-          spaces, count, (long)size, path);
+      LOG(L_MORE_THREADS, "Set (%d files of size %ld): read %s\n",
+          count, (long)size, path);
 
       buffer = pl_entry_get_buffer(pathlist_entry);
       if (buffer != NULL) {
@@ -1484,8 +1485,8 @@ static void process_readlist(char * spaces,
         new_avg = avg_read_time + (took - avg_read_time) / read_count;
         avg_read_time = new_avg;
 
-        LOG(L_TRACE, "%s read took %ldms (count=%d avg=%d)\n",
-            spaces, took, read_count, avg_read_time);
+        LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
+            took, read_count, avg_read_time);
 
         pl_entry_set_buffer(pathlist_entry, buffer);
       }
@@ -1518,36 +1519,38 @@ static void process_readlist(char * spaces,
 static void * reader_main_hdd(void * arg)
 {
   (void)arg;
-  char * spaces;
-  spaces = "                                    [hdd-reader] ";
+  char * self = "                                    [hdd-reader] ";
+  char * self1 = "                                    [hdd-reader1] ";
+  char * self2 = "                                    [hdd-reader2] ";
 
-  LOG(L_THREADS, "%sthread created\n", spaces);
+  pthread_setspecific(thread_name, self);
+  LOG(L_THREADS, "Thread created\n");
 
   if (read_list_end == 0) {                                  // LCOV_EXCL_START
     LOG(L_INFO, "readlist is empty, nothing to read\n");
     return NULL;
   }                                                          // LCOV_EXCL_STOP
 
-  spaces = "                                    [hdd-reader1] ";
-  process_readlist(spaces, round1_max_bytes, hash_one_block_size);
+  pthread_setspecific(thread_name, self1);
+  process_readlist(round1_max_bytes, hash_one_block_size);
 
   // Having read all round 1 buffers, wait for the main thread to finish
   // processing them.
-  LOG(L_THREADS, "%sDone first loop for round 1, waiting ...\n", spaces);
+  LOG(L_THREADS, "Done first loop for round 1, waiting ...\n");
 
   d_mutex_lock(&reader_main_hdd_lock, "reader_main_hdd_lock");
   d_cond_wait(&reader_main_hdd_cond, &reader_main_hdd_lock);
   d_mutex_unlock(&reader_main_hdd_lock);
 
-  LOG(L_THREADS, "%sWaking up: round_2:%d\n", spaces, reader_main_hdd_round_2);
+  LOG(L_THREADS, "Waking up: round_2:%d\n", reader_main_hdd_round_2);
 
   // If any sets are in need of a round 2, go read those in readlist order.
   if (reader_main_hdd_round_2 > 0) {
-    spaces = "                                    [hdd-reader2] ";
-    process_readlist(spaces, R3_BUFSIZE, 0);
+    pthread_setspecific(thread_name, self2);
+    process_readlist(R3_BUFSIZE, 0);
   }
 
-  LOG(L_THREADS, "%sDONE\n", spaces);
+  LOG(L_THREADS, "DONE\n");
 
   return(NULL);
 }
@@ -1608,7 +1611,7 @@ static int build_hash_list_round(sqlite3 * dbh,
   } while (node != NULL);
 
   LOG_TRACE {
-    printf("Contents of hash list hl:\n");
+    LOG(L_TRACE, "Contents of hash list hl:\n");
     print_hash_list(hl);
   }
 
@@ -1648,7 +1651,6 @@ static int build_hash_list_round(sqlite3 * dbh,
  */
 void threaded_process_size_list_hdd(sqlite3 * dbh)
 {
-  static char * spaces = "[hdd-main] ";
   struct size_list * size_node;
   struct hash_list * hl;
   pthread_t reader_thread;
@@ -1678,7 +1680,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
   free_size_tree();
 
   LOG_THREADS {
-    printf("%sStarting...\n", spaces);
+    LOG(L_THREADS, "Starting...\n");
     usleep(10000);
   }
 
@@ -1698,7 +1700,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
     seen_done = 0;
     char phase;
 
-    LOG(L_THREADS, "%sStarting size list loop #%d\n", spaces, loops);
+    LOG(L_THREADS, "Starting size list loop #%d\n", loops);
 
     do {
       d_mutex_lock(&size_node->lock, "hdd-main top");
@@ -1718,8 +1720,8 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
       int completed = path_count == size_node->buffers_filled;
 
       LOG(L_MORE_THREADS,
-          "%sSet (%d files of size %ld; %d read) ready?=%d, state: %s\n",
-          spaces, path_count, (long)size_node->size,
+          "Set (%d files of size %ld; %d read) ready?=%d, state: %s\n",
+          path_count, (long)size_node->size,
           size_node->buffers_filled, completed,
           state_name(size_node->state));
 
@@ -1729,7 +1731,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
       } else {
         // This size set has all the buffers available by now, so do
         // round 1 or 2 on this set.
-        LOG(L_MORE_THREADS, "%s(loop %d) size:%ld state: %s\n", spaces,
+        LOG(L_MORE_THREADS, "(loop %d) size:%ld state: %s\n",
             loops, (long)size_node->size, state_name(size_node->state));
 
         switch(size_node->state) {
@@ -1800,9 +1802,9 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
 
     } while (size_node != NULL);
 
-    LOG(L_THREADS, "%sFinished size list loop #%d: "
+    LOG(L_THREADS, "Finished size list loop #%d: "
         "R1:%d->%d R2:%d->%d R3:%d->%d (avg_read_time:%d) seen_done:%d\n",
-        spaces, loops, in_round_1, out_round_1, in_round_2, out_round_2,
+        loops, in_round_1, out_round_1, in_round_2, out_round_2,
         in_round_3, out_round_3, avg_read_time, seen_done);
 
     // If there are no sets left which need round 1 processing, wake the
@@ -1822,12 +1824,12 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
     if (work_remains) { usleep((1 + avg_read_time) * 20 * 1000); }
   } while (work_remains);
 
-  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
+  LOG(L_THREADS, "DONE (%d loops)\n", loops);
 
   reader_continue = 0;
   d_join(reader_thread, NULL);
 
-  LOG(L_THREADS, "%sjoined reader thread\n", spaces);
+  LOG(L_THREADS, "Joined reader thread\n");
 
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.
@@ -1835,7 +1837,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
 
   show_processed_done(stats_size_list_count);
 
-  LOG(L_THREADS, "%sDONE\n", spaces);
+  LOG(L_THREADS, "DONE\n");
 }
 
 
@@ -1845,7 +1847,6 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
  */
 void threaded_process_size_list(sqlite3 * dbh)
 {
-  static char * spaces = "[main] ";
   struct size_list * size_node;
   struct hash_list * hl;
   pthread_t reader_thread;
@@ -1867,7 +1868,7 @@ void threaded_process_size_list(sqlite3 * dbh)
   }                                                          // LCOV_EXCL_STOP
 
   LOG_THREADS {
-    printf("%sStarting...\n", spaces);
+    LOG(L_THREADS, "Starting...\n");
     usleep(10000);
   }
 
@@ -1885,13 +1886,13 @@ void threaded_process_size_list(sqlite3 * dbh)
     loops++;
     work_remains = 0;
 
-    LOG(L_THREADS, "%sStarting size list loop #%d\n", spaces, loops);
+    LOG(L_THREADS, "Starting size list loop #%d\n", loops);
 
     do {
       did_one = 0;
       d_mutex_lock(&size_node->lock, "main top");
 
-      LOG(L_MORE_THREADS, "%s(loop %d) size:%ld state:%s\n", spaces,
+      LOG(L_MORE_THREADS, "(loop %d) size:%ld state:%s\n",
           loops, (long)size_node->size, state_name(size_node->state));
 
       switch(size_node->state) {
@@ -1953,12 +1954,12 @@ void threaded_process_size_list(sqlite3 * dbh)
 
   } while (work_remains);
 
-  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
+  LOG(L_THREADS, "DONE (%d loops)\n", loops);
 
   reader_continue = 0;
   d_join(reader_thread, NULL);
 
-  LOG(L_THREADS, "%sjoined reader thread\n", spaces);
+  LOG(L_THREADS, "Joined reader thread\n");
 
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.
@@ -1966,7 +1967,7 @@ void threaded_process_size_list(sqlite3 * dbh)
 
   show_processed_done(stats_size_list_count);
 
-  LOG(L_THREADS, "%sDONE\n", spaces);
+  LOG(L_THREADS, "DONE\n");
 }
 
 

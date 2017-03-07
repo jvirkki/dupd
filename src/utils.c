@@ -149,3 +149,22 @@ void memdump(char * text, char * ptr, int bytes)
 
   printf("\n");
 }
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+char * get_thread_name()
+{
+  if (log_level >= L_THREADS) {
+    char * name = pthread_getspecific(thread_name);
+    if (name == NULL) {
+      return "*** UNNAMED THREAD ***";
+    } else {
+      return name;
+    }
+  }
+
+  return "";
+}

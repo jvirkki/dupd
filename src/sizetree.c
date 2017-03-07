@@ -76,10 +76,11 @@ static pthread_cond_t queue_producer_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t queue_worker_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t worker_thread;
 
-#define PRINT_INFO  { if (log_level >= L_TRACE) { \
-      printf("%scurrent_worker_queue=%s, current_producer_queue=%s\n",  \
-             spaces, queue_state(current_worker_queue),                 \
-             queue_state(current_worker_queue)); } }
+#define PRINT_INFO  if (log_level >= L_TRACE) {                         \
+    LOG(L_TRACE, "current_worker_queue=%s, current_producer_queue=%s\n", \
+        queue_state(current_worker_queue),                              \
+        queue_state(current_worker_queue));                             \
+  }
 
 
 /** ***************************************************************************
@@ -214,11 +215,12 @@ static void * worker_main(void * arg)
 {
   (void)arg;
   int done = 0;
-  char * spaces = "                                        [worker] ";
+  char * self = "                                        [sizetree] ";
   struct stat_queue * worker_next;
   int want_queue = 0;
 
-  LOG(L_THREADS, "%sthread created\n", spaces);
+  pthread_setspecific(thread_name, self);
+  LOG(L_THREADS, "Thread created\n");
 
   while (!done) {
 
@@ -228,7 +230,7 @@ static void * worker_main(void * arg)
     while (want_queue == current_producer_queue ||
            last_owner[want_queue] == WORKER) {
       LOG_MORE_THREADS {
-        printf("%sWant Q%d, not available, WAIT\n", spaces, want_queue);
+        LOG(L_MORE_THREADS, "Want Q%d, not available, WAIT\n", want_queue);
         PRINT_INFO;
       }
       pthread_cond_signal(&queue_producer_cond);
@@ -246,7 +248,7 @@ static void * worker_main(void * arg)
     last_owner[current_worker_queue] = WORKER;
 
     LOG_MORE_THREADS {
-      printf("%sTook Q%d\n", spaces, current_worker_queue);
+      LOG(L_MORE_THREADS, "Took Q%d\n", current_worker_queue);
       PRINT_INFO;
     }
 
@@ -255,7 +257,7 @@ static void * worker_main(void * arg)
     // Work through the current queue to its end (or to the path marked end)
 
     LOG_MORE_THREADS {
-      printf("%sProcessing Q%d\n", spaces, current_worker_queue);
+      LOG(L_MORE_THREADS, "Processing Q%d\n", current_worker_queue);
       PRINT_INFO;
     }
 
@@ -264,7 +266,7 @@ static void * worker_main(void * arg)
     while (!done && worker_next != NULL) {
       if (worker_next->end) {
         LOG_THREADS {
-          printf("%sGot END flag: DONE\n", spaces);
+          LOG(L_THREADS, "Got END flag: DONE\n");
           PRINT_INFO;
         }
         done = 1;
@@ -278,8 +280,8 @@ static void * worker_main(void * arg)
     }
 
     LOG_MORE_THREADS {
-      printf("%sFinished queue %d, removed from it %ld so far\n", spaces,
-             current_worker_queue, queue_removed[current_worker_queue]);
+      LOG(L_MORE_THREADS, "Finished queue %d, removed from it %ld so far\n",
+          current_worker_queue, queue_removed[current_worker_queue]);
       PRINT_INFO;
     }
 
@@ -308,7 +310,7 @@ static void * worker_main(void * arg)
     }
   }
 
-  LOG(L_THREADS, "%sthread finished\n", spaces);
+  LOG(L_THREADS, "Thread finished\n");
 
   return(NULL);
 }
@@ -369,7 +371,7 @@ int add_file(sqlite3 * dbh,
 
     LOG_PROGRESS {
       if ((stats_files_count % 5000) == 0) {
-        printf("Files scanned: %" PRIu32 "\n", stats_files_count);
+        LOG(L_PROGRESS, "Files scanned: %" PRIu32 "\n", stats_files_count);
       }
     }
 
@@ -408,10 +410,8 @@ int add_queue(sqlite3 * dbh,
               dev_t device, ino_t inode, off_t size, char * path)
 {
   (void)dbh;                    /* not used */
-  static char * spaces = "[scan] ";
 
-  LOG(L_MORE_TRACE,
-      "%sadd_queue (%d): %s\n", spaces, current_producer_queue, path);
+  LOG(L_MORE_TRACE, "add_queue (%d): %s\n", current_producer_queue, path);
 
   // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;
@@ -433,7 +433,8 @@ int add_queue(sqlite3 * dbh,
 
   // If we did reach the end of this queue, need to move to the next one.
   LOG_MORE_THREADS {
-    printf("%sFinished filling Q%d\n", spaces, current_producer_queue);
+    LOG(L_MORE_THREADS,
+        "Finished filling Q%d\n", current_producer_queue);
     PRINT_INFO;
   }
 
@@ -445,7 +446,7 @@ int add_queue(sqlite3 * dbh,
 
   while (want == current_worker_queue || last_owner[want] == PRODUCER) {
     LOG_MORE_THREADS {
-      printf("%sWant Q%d, not available, WAIT\n", spaces, want);
+      LOG(L_MORE_THREADS, "Want Q%d, not available, WAIT\n", want);
       PRINT_INFO;
     }
     pthread_cond_signal(&queue_worker_cond);
@@ -461,7 +462,7 @@ int add_queue(sqlite3 * dbh,
   producer_next = &queue[current_producer_queue];
 
   LOG_MORE_THREADS {
-    printf("%sTook Q%d\n", spaces, current_producer_queue);
+    LOG(L_MORE_THREADS, "Took Q%d\n", current_producer_queue);
     PRINT_INFO;
   }
 
@@ -475,12 +476,11 @@ int add_queue(sqlite3 * dbh,
  */
 void scan_done()
 {
-  static char * spaces = "[scan] ";
-
   pthread_mutex_lock(&queue_lock);
 
   LOG_THREADS {
-    printf("scan_done: END in %s\n", queue_state(current_producer_queue));
+    LOG(L_THREADS,
+        "scan_done: END in %s\n", queue_state(current_producer_queue));
     PRINT_INFO;
   }
 

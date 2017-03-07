@@ -20,6 +20,7 @@
 #ifndef _DUPD_MAIN_H
 #define _DUPD_MAIN_H
 
+#include <pthread.h>
 #include <sys/types.h>
 
 #ifdef __APPLE__
@@ -75,7 +76,10 @@ extern int log_level;
 #define L_FILES 11
 #define L_MORE_TRACE 12
 
-#define LOG(level, ...)  if (level <= log_level) { printf(__VA_ARGS__); }
+#define LOG(level, ...)  if (level <= log_level) { \
+    printf("%s", get_thread_name());               \
+    printf(__VA_ARGS__);                           \
+  }
 
 #define LOG_BASE if (log_level >= L_BASE)
 #define LOG_MORE if (log_level >= L_MORE)
@@ -345,6 +349,13 @@ extern int hash_bufsize;
 #define REPORT_FORMAT_CSV 2
 #define REPORT_FORMAT_JSON 3
 extern int report_format;
+
+
+/** ***************************************************************************
+ * Thread name used for logging (at L_THREADS and higher)
+ *
+ */
+extern pthread_key_t thread_name;
 
 
 /** ***************************************************************************

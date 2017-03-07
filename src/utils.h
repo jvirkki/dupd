@@ -167,6 +167,17 @@ void memdump(char * text, char * ptr, int bytes);
 
 
 /** ***************************************************************************
+ * Return name of this thread, only if log_level warrants using it.
+ *
+ * Parameters: none
+ *
+ * Return: thread name or empty string
+ *
+ */
+char * get_thread_name();
+
+
+/** ***************************************************************************
  * Wrapper for pthread_cond_wait, exit on failure.
  *
  * Parameters:

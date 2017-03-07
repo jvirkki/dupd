@@ -49,6 +49,7 @@
 #include "main.h"
 #include "hash.h"
 #include "stats.h"
+#include "utils.h"
 
 #define MAX_BLOCK (1024 * 256)
 

@@ -88,6 +88,7 @@ int hash_function = HASH_FN_MD5;
 int hash_bufsize = -1;
 long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 int report_format = REPORT_FORMAT_TEXT;
+pthread_key_t thread_name;
 
 
 /** ***************************************************************************
@@ -401,6 +402,9 @@ int main(int argc, char * argv[])
 {
   long t1 = get_current_time_millis();
   int rv = 0;
+
+  pthread_key_create(&thread_name, NULL);
+  pthread_setspecific(thread_name, (char *)"[MAIN] ");
 
   rv = process_args(argc, argv);
 

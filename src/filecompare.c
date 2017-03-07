@@ -31,6 +31,7 @@
 #include "filecompare.h"
 #include "main.h"
 #include "stats.h"
+#include "utils.h"
 
 static char * buffers[4];
 static char paths[DUPD_PATH_MAX * 3];
