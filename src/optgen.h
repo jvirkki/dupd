@@ -139,7 +139,7 @@
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
 #define OPT_verbose 30
 
-// verbose_threads (-V,--verbose-threads) : increase thread verbosity (may be repeated for more)
+// verbose_threads (-V,--verbose-threads) : deprecated
 #define OPT_verbose_threads 31
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors

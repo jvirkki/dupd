@@ -59,9 +59,7 @@ static void single_statement(sqlite3 * dbh, const char * sql)
   sqlite3_stmt * statement = NULL;
   int rv;
 
-  if (verbosity >= 5) {
-    printf("SQL: [%s]\n", sql);
-  }
+  LOG(L_TRACE, "SQL: [%s]\n", sql);
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -164,17 +162,13 @@ sqlite3 * open_database(char * path, int newdb)
 
   if (newdb) {
     initialize_database(dbh);
-    if (verbosity >= 2) {
-      printf("Done initializing new database [%s]\n", path);
-    }
+    LOG(L_INFO, "Done initializing new database [%s]\n", path);
   }
 
   // Check if this db has 'files' table which will help with unique files
 
   if (no_unique) {
-    if (verbosity >= 1) {
-      printf("warning: Ignoring unique info in database!\n");
-    }
+    LOG(L_BASE, "warning: Ignoring unique info in database!\n");
 
   } else {
     sqlite3_stmt * statement = NULL;
@@ -194,7 +188,7 @@ sqlite3 * open_database(char * path, int newdb)
       table_name = (char *)sqlite3_column_text(statement, 0);
       if (!strcmp(table_name, "files")) {
         have_uniques = 1;
-        if (verbosity >= 3) { printf("Database has unique file info.\n"); }
+        LOG(L_INFO, "Database has unique file info.\n");
       }
     }
     sqlite3_finalize(statement);
@@ -225,15 +219,11 @@ sqlite3 * open_database(char * path, int newdb)
   strcpy(path_sep_string, sep);
   path_separator = (int)path_sep_string[0];
 
-  if (verbosity >= 4) {
-    printf("Set path_separator from db to %c (%s)\n",
-           path_separator, path_sep_string);
-  }
+  LOG(L_PROGRESS, "Set path_separator from db to %c (%s)\n",
+      path_separator, path_sep_string);
 
   scan_hidden = sqlite3_column_int(statement, 1);
-  if (verbosity >= 4) {
-    printf("Set scan_hidden from db to %d\n", scan_hidden);
-  }
+  LOG(L_PROGRESS, "Set scan_hidden from db to %d\n", scan_hidden);
 
   char * db_version = (char *)sqlite3_column_text(statement, 2);
   if (strcmp(db_version, DUPD_VERSION)) {                    // LCOV_EXCL_START
@@ -247,9 +237,7 @@ sqlite3 * open_database(char * path, int newdb)
   }                                                          // LCOV_EXCL_STOP
 
   long db_create_time = sqlite3_column_int64(statement, 3);
-  if (verbosity >= 4) {
-    printf("database create time %ld\n", db_create_time);
-  }
+  LOG(L_PROGRESS, "database create time %ld\n", db_create_time);
 
   long expiration = db_create_time + 1000L * db_warn_age_seconds;
   long now = get_current_time_millis();
@@ -309,15 +297,11 @@ void close_database(sqlite3 * dbh)
 
   int rv = sqlite3_close(dbh);
   if (rv == SQLITE_OK) {
-    if (verbosity >= 5) {
-      printf("closed database\n");
-    }
+    LOG(L_MORE_INFO, "closed database\n");
     return;
   }
 
-  if (verbosity >= 1) {                                      // LCOV_EXCL_START
-    printf("warning: unable to close database!\n");
-  }                                                          // LCOV_EXCL_STOP
+  LOG(L_PROGRESS, "warning: unable to close database!\n");
 }
 
 /** ***************************************************************************
@@ -455,9 +439,7 @@ void unique_to_db(sqlite3 * dbh, char * path, char * msg)
 
   pthread_mutex_unlock(&dbh_lock);
 
-  if (verbosity >= 4) {
-    printf("Unique file (%s): [%s]\n", msg, path);
-  }
+  LOG(L_INFO, "Unique file (%s): [%s]\n", msg, path);
 }
 
 
@@ -470,9 +452,7 @@ int is_known_unique(sqlite3 * dbh, char * path)
   const char * sql = "SELECT path FROM files WHERE path=?";
   int rv;
 
-  if (verbosity >= 3) {
-    printf("Checking files table for uniqueness [%s]\n", path);
-  }
+  LOG(L_TRACE, "Checking files table for uniqueness [%s]\n", path);
 
   if (stmt_is_known_unique == NULL) {
     rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_is_known_unique, NULL);
@@ -495,9 +475,7 @@ int is_known_unique(sqlite3 * dbh, char * path)
     got_path = (char *)sqlite3_column_text(stmt_is_known_unique, 0);
     if (!strcmp(got_path, path)) {
       sqlite3_reset(stmt_is_known_unique);
-      if (verbosity >= 5) {
-        printf("is present in uniques table: %s\n", path);
-      }
+      LOG(L_TRACE, "is present in uniques table: %s\n", path);
       return(1);
     }
   }
@@ -547,9 +525,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
   char * pos = NULL;
   char * token;
 
-  if (verbosity >= 5) {
-    printf("get_known_duplicates(%s)\n", path);
-  }
+  LOG(L_TRACE, "get_known_duplicates(%s)\n", path);
 
   if (path == NULL) {                                        // LCOV_EXCL_START
     printf("error: no file specified\n");
@@ -587,9 +563,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     }                                                        // LCOV_EXCL_STOP
     strcpy(path_list, p);
 
-    if (verbosity >= 5) {
-      printf("match: %s\n", path_list);
-    }
+    LOG(L_TRACE, "match: %s\n", path_list);
 
     int separators = 0;
     for (int i = 0; path_list[i] != 0; i++) {
@@ -609,10 +583,8 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     if (*dups > known_dup_path_list_size) {
       free_get_known_duplicates();
       known_dup_path_list_size = *dups + 16;
-      if (verbosity >= 4) {
-        printf("Expanding known_dup_path_list_size to %d\n",
-               known_dup_path_list_size);
-      }
+      LOG(L_RESOURCES, "Expanding known_dup_path_list_size to %d\n",
+          known_dup_path_list_size);
       init_get_known_duplicates();
     }
 
@@ -625,9 +597,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
 
       if (strcmp(path, token)) {
-        if (verbosity >= 5) {
-          printf("copying potential dup: [%s]\n", token);
-        }
+        LOG(L_TRACE, "copying potential dup: [%s]\n", token);
         strcpy(known_dup_path_list[copied++], token);
       } else {
         found_myself = 1;
@@ -635,9 +605,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 
       while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
         if (strcmp(path, token)) {
-          if (verbosity >= 5) {
-            printf("copying potential dup: [%s]\n", token);
-          }
+          LOG(L_TRACE, "copying potential dup: [%s]\n", token);
           strcpy(known_dup_path_list[copied++], token);
         } else {
           found_myself = 1;
@@ -646,15 +614,11 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     }
 
     if (!found_myself) {
-      if (verbosity >= 5) {
-        printf("false match, keep looking\n");
-      }
+      LOG(L_TRACE, "false match, keep looking\n");
       path_list[0] = 0;
       copied = 0;
     } else {
-      if (verbosity >= 5) {
-        printf("indeed a match for my potential duplicates\n");
-      }
+      LOG(L_TRACE, "indeed a match for my potential duplicates\n");
       break;
     }
 
@@ -663,9 +627,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
   // If it never got around to copying anything into path_list it
   // means there was no duplicates entry containing our path.
   if (path_list[0] == 0) {
-    if (verbosity >= 5) {
-      printf("get_known_duplicates: NONE\n");
-    }
+    LOG(L_TRACE, "get_known_duplicates: NONE\n");
     *dups = 0;
     sqlite3_reset(stmt_get_known_duplicates);
     return(NULL);
@@ -678,7 +640,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 
   sqlite3_reset(stmt_get_known_duplicates);
 
-  if (verbosity >= 5) {
+  LOG_TRACE {
     printf("get_known_duplicates: dups=%d\n", *dups);
     for (int i = 0; i < *dups; i++) {
       printf("-> %s\n", known_dup_path_list[i]);

@@ -79,7 +79,7 @@ void dump_path_list(const char * line, off_t size, char * head)
 
   char * here = first_elem;
   while (here != NULL) {
-    if (counted < 2 || verbosity >= 7) {
+    if (counted < 2 || log_level >= L_TRACE) {
       printf("   buffer: %p\n", pl_entry_get_buffer(here));
       printf("   [%s]\n", pl_entry_get_path(here));
       printf("   next: %p\n", pl_entry_get_next(here));
@@ -117,9 +117,7 @@ static struct path_block_list * alloc_path_block(int bsize)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  if (verbosity >= 4) {
-    printf("Allocated %d bytes for the next path block.\n", bsize);
-  }
+  LOG(L_RESOURCES, "Allocated %d bytes for the next path block.\n", bsize);
 
   return next;
 }
@@ -238,7 +236,7 @@ char * insert_first_path(char * path)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  if (verbosity > 6) {
+  LOG_TRACE {
     dump_path_list("AFTER insert_first_path", -1, head);
   }
 
@@ -270,7 +268,7 @@ void insert_end_path(char * path,
     struct size_list * new_szl = add_to_size_list(size, head);
     pl_set_szl_entry(head, new_szl);
 
-    if (verbosity >= 3) {
+    LOG_PROGRESS {
       struct size_list * szl = pl_get_szl_entry(head);
       if (szl != new_szl) {                                  // LCOV_EXCL_START
         printf("error: set szl to %p, but got back %p\n", new_szl, szl);
@@ -331,7 +329,7 @@ void insert_end_path(char * path,
     exit(1);
   }                                                           // LCOV_EXCL_STOP
 
-  if (verbosity >= 6) {
+  LOG_TRACE {
     dump_path_list("AFTER insert_end_path", size, head);
   }
 

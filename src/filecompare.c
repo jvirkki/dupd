@@ -60,9 +60,8 @@ static void compare_two_open_files(sqlite3 * dbh,
          (memcmp(buffers[1], buffers[2], bytes1)) ) {
       close(file1);
       close(file2);
-      if (verbosity >= 4) {
-        printf("compare_two_files: differ after reading %d blocks\n", bread);
-      }
+      LOG(L_TRACE, "compare_two_files: differ after reading %d blocks\n",
+          bread);
       if (save_uniques) {
         unique_to_db(dbh, path1, "2-compare");
         unique_to_db(dbh, path2, "2-compare");
@@ -74,9 +73,7 @@ static void compare_two_open_files(sqlite3 * dbh,
   close(file1);
   close(file2);
 
-  if (verbosity >= 4) {
-    printf("compare_two_files: duplicates after reading full files\n");
-  }
+  LOG(L_TRACE, "compare_two_files: duplicates after reading full files\n");
 
   if (write_db) {
     snprintf(paths, 2 * DUPD_PATH_MAX, "%s%c%s", path1, path_separator, path2);
@@ -86,7 +83,7 @@ static void compare_two_open_files(sqlite3 * dbh,
   stats_duplicate_sets++;
   stats_duplicate_files += 2;
 
-  if (!write_db || verbosity >= 4) {
+  if (!write_db || log_level >= L_TRACE) {
     printf("Duplicates: file size: %ld, count: [2]\n", (long)size);
     printf(" %s\n %s\n", path1, path2);
   }
@@ -99,26 +96,20 @@ static void compare_two_open_files(sqlite3 * dbh,
  */
 void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
 {
-  if (verbosity >= 4) {
-    printf("compare_two_files: [%s] vs [%s]\n", path1, path2);
-  }
+  LOG(L_TRACE, "compare_two_files: [%s] vs [%s]\n", path1, path2);
 
   int file1 = open(path1, O_RDONLY);
-  if (file1 < 0) {                                           // LCOV_EXCL_START
-    if (verbosity >= 1) {
-      printf("Error opening [%s]\n", path1);
-    }
+  if (file1 < 0) {
+    LOG(L_PROGRESS, "Error opening [%s]\n", path1);
     return;
-  }                                                          // LCOV_EXCL_STOP
+  }
 
   int file2 = open(path2, O_RDONLY);
-  if (file2 < 0) {                                           // LCOV_EXCL_START
-    if (verbosity >= 1) {
-      printf("Error opening [%s]\n", path2);
-    }
+  if (file2 < 0) {
+    LOG(L_PROGRESS, "Error opening [%s]\n", path2);
     close(file1);
     return;
-  }                                                          // LCOV_EXCL_STOP
+  }
 
   compare_two_open_files(dbh, path1, file1, path2, file2, size, 0);
 }
@@ -131,9 +122,8 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
 void compare_three_files(sqlite3 * dbh,
                          char * path1, char * path2, char * path3, off_t size)
 {
-  if (verbosity >= 4) {
-    printf("compare_three_files: [%s],[%s],[%s]\n", path1, path2, path3);
-  }
+  LOG(L_TRACE, "compare_three_files: [%s],[%s],[%s]\n",
+      path1, path2, path3);
 
   // It is possible some of these files have been discarded already by
   // skim_uniques(), in which case, ignore the first one seen and this
@@ -147,18 +137,14 @@ void compare_three_files(sqlite3 * dbh,
 
   file[1] = open(path1, O_RDONLY);
   if (file[1] < 0) {                                         // LCOV_EXCL_START
-    if (verbosity >= 1) {
-      printf("Error opening [%s]\n", path1);
-    }
+    LOG(L_PROGRESS, "Error opening [%s]\n", path1);
     compare_two_files(dbh, path2, path3, size);
     return;
   }                                                          // LCOV_EXCL_STOP
 
   file[2] = open(path2, O_RDONLY);
   if (file[2] < 0) {                                         // LCOV_EXCL_START
-    if (verbosity >= 1) {
-      printf("Error opening [%s]\n", path2);
-    }
+    LOG(L_PROGRESS, "Error opening [%s]\n", path2);
     close(file[1]);
     compare_two_files(dbh, path1, path3, size);
     return;
@@ -166,9 +152,7 @@ void compare_three_files(sqlite3 * dbh,
 
   file[3] = open(path3, O_RDONLY);
   if (file[3] < 0) {                                         // LCOV_EXCL_START
-    if (verbosity >= 1) {
-      printf("Error opening [%s]\n", path3);
-    }
+    LOG(L_PROGRESS, "Error opening [%s]\n", path3);
     close(file[1]);
     close(file[2]);
     compare_two_files(dbh, path1, path2, size);
@@ -210,9 +194,8 @@ void compare_three_files(sqlite3 * dbh,
       close(file[1]);
       close(file[2]);
       close(file[3]);
-      if (verbosity >= 4) {
-        printf("compare_three_files: All differ after %d blocks\n", bread);
-      }
+      LOG(L_TRACE, "compare_three_files: All differ after %d blocks\n",
+          bread);
       if (save_uniques) {
         unique_to_db(dbh, path1, "3-compareALL");
         unique_to_db(dbh, path2, "3-compareALL");
@@ -258,9 +241,7 @@ void compare_three_files(sqlite3 * dbh,
   close(file[2]);
   close(file[3]);
 
-  if (verbosity >= 4) {
-    printf("compare_three_files: duplicates after reading full files\n");
-  }
+  LOG(L_TRACE, "compare_three_files: duplicates after reading files\n");
 
   if (write_db) {
     snprintf(paths, 3 * DUPD_PATH_MAX, "%s%c%s%c%s",
@@ -271,7 +252,7 @@ void compare_three_files(sqlite3 * dbh,
   stats_duplicate_sets++;
   stats_duplicate_files += 3;
 
-  if (!write_db || verbosity >= 4) {
+  if (!write_db || log_level >= L_TRACE) {
     printf("Duplicates: file size: %ld, count: [3]\n", (long)size);
     printf(" %s\n %s\n %s\n", path1, path2, path3);
   }

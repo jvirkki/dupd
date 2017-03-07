@@ -23,7 +23,6 @@
 #include <sys/types.h>
 
 #ifdef __APPLE__
-#define FADVISE 0
 #endif
 
 #ifdef __linux__
@@ -35,7 +34,6 @@
 #endif
 
 #ifdef __OpenBSD__
-#define FADVISE 1
 #endif
 
 
@@ -43,27 +41,53 @@
  * Verbosity is 1 by default, increased by one for every -v command
  * line argument. Higher values produce more diagnostic noise:
  *
- *  0 = No output (-q option)
- *  1 = (Default) Brief end-user status lines only.
- *  2 = Adds some timing info and more status, still brief output.
- *  3 = Adds file activity for new/changed files
- *  4 = Adds all scan activity
- *  5 = And the kitchen sink
+ *  L_NONE = No output (-q option)
+ *  L_BASE = (Default) Animated progress (brief)
+ *  L_MORE = More animated progress data and summary stats
+ *
+ *  (Levels 3 and higher skip the animation to show lines of info.)
+ *
+ *  L_PROGRESS = Basic progress lines, non-fatal errors and show stats
+ *  L_INFO = State, defaults, other low-volume info pre- and post-run
+ *  L_MORE_INFO = Like info but more annoyingly verbose
+ *  L_RESOURCES = Allocations, resize, other low-volume memory management
+ *  L_THREADS = Producer/consumer thread activity
+ *  L_SKIPPED = Files not read or processed
+ *  L_MORE_THREADS = Noisier thread activity
+ *  L_TRACE = Lots of output on everything that is going on
+ *  L_FILES = Print every file read
+ *  L_MORE_TRACE = Data structure dumps and such, too much noise
  *
  */
-extern int verbosity;
+extern int log_level;
 
+#define L_NONE 0
+#define L_BASE 1
+#define L_MORE 2
+#define L_PROGRESS 3
+#define L_INFO 4
+#define L_MORE_INFO 5
+#define L_RESOURCES 6
+#define L_THREADS 7
+#define L_SKIPPED 8
+#define L_MORE_THREADS 9
+#define L_TRACE 10
+#define L_FILES 11
+#define L_MORE_TRACE 12
 
-/** ***************************************************************************
- * Verbosity for thread state messages, increased by one for every -V command
- * line argument. Higher values produce more diagnostic noise:
- *
- *  0 = No output (default)
- *  1 = Thread state info.
- *  2 = Additional state variables.
- *
- */
-extern int thread_verbosity;
+#define LOG(level, ...)  if (level <= log_level) { printf(__VA_ARGS__); }
+
+#define LOG_BASE if (log_level >= L_BASE)
+#define LOG_MORE if (log_level >= L_MORE)
+#define LOG_PROGRESS if (log_level >= L_PROGRESS)
+#define LOG_INFO if (log_level >= L_INFO)
+#define LOG_MORE_INFO if (log_level >= L_MORE_INFO)
+#define LOG_RESOURCES if (log_level >= L_RESOURCES)
+#define LOG_THREADS if (log_level >= L_THREADS)
+#define LOG_SKIPPED if (log_level >= L_SKIPPED)
+#define LOG_MORE_THREADS if (log_level >= L_MORE_THREADS)
+#define LOG_TRACE if (log_level >= L_TRACE)
+#define LOG_MORE_TRACE if (log_level >= L_MORE_TRACE)
 
 
 /** ***************************************************************************

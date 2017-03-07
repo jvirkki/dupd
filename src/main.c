@@ -52,8 +52,7 @@ static int start_path_count = 0;
 static int start_path_state = 0;
 static int free_db_path = 0;
 static int free_file_path = 0;
-int verbosity = 1;
-int thread_verbosity = 0;
+int log_level = 1;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
 int write_db = 1;
@@ -265,10 +264,9 @@ static int process_args(int argc, char * argv[])
 
   if (options[OPT_x_small_buffers]) { x_small_buffers = 1; }
   if (options[OPT_x_testing]) { only_testing = 1; }
-  if (options[OPT_quiet]) { verbosity = -99; }
+  if (options[OPT_quiet]) { log_level = -99; }
 
-  verbosity += opt_count(options[OPT_verbose]);
-  thread_verbosity += opt_count(options[OPT_verbose_threads]);
+  log_level += opt_count(options[OPT_verbose]);
 
   path_separator = opt_char(options[OPT_pathsep], path_separator);
 
@@ -276,9 +274,7 @@ static int process_args(int argc, char * argv[])
     start_path[0] = (char *)malloc(DUPD_PATH_MAX);
     getcwd(start_path[0], DUPD_PATH_MAX);
     start_path_count = 1;
-    if (verbosity >= 3) {
-      printf("Defaulting --path to [%s]\n", start_path[0]);
-    }
+    LOG(L_INFO, "Defaulting --path to [%s]\n", start_path[0]);
   }
 
   if (options[OPT_file] != NULL) {
@@ -393,10 +389,6 @@ static int process_args(int argc, char * argv[])
     }
   }
 
-  if (thread_verbosity > 0 && verbosity < 2) {
-    verbosity = 2;
-  }
-
   return 0;
 }
 
@@ -429,9 +421,7 @@ int main(int argc, char * argv[])
     goto DONE;
   }
 
-  if (verbosity >= 4) {
-    printf("Claimed CPU cores: %d\n", cpu_cores());
-  }
+  LOG(L_INFO, "Claimed CPU cores: %d\n", cpu_cores());
 
   switch (operation) {
 
@@ -471,9 +461,7 @@ int main(int argc, char * argv[])
 
   stats_time_total = get_current_time_millis() - t1;
 
-  if (verbosity >= 3) {
-    printf("Total time: %ld ms\n", stats_time_total);
-  }
+  LOG(L_PROGRESS, "Total time: %ld ms\n", stats_time_total);
 
   if (stats_file != NULL) {
     save_stats();

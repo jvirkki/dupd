@@ -162,10 +162,10 @@ static int is_duplicate(char * path, char * self, char * hash)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  if (verbosity >= 4) { printf("is_duplicate? [%s]\n", path); }
+  LOG(L_MORE_INFO, "is_duplicate? [%s]\n", path);
 
   if (!file_exists(path)) {
-    if (verbosity >= 3) { printf("file no longer exists: %s\n", path); }
+    LOG(L_INFO, "file no longer exists: %s\n", path);
     return(0);
   }
 
@@ -175,10 +175,10 @@ static int is_duplicate(char * path, char * self, char * hash)
   }                                                          // LCOV_EXCL_STOP
 
   if (dupd_memcmp(hash, hash2, hash_bufsize)) {
-    if (verbosity >= 4) { printf("file no longer a duplicate: %s\n", path); }
+    LOG(L_MORE_INFO, "file no longer a duplicate: %s\n", path);
     return(0);
   } else {
-    if (verbosity >= 4) { printf("Yes, still a duplicate: %s\n", path); }
+    LOG(L_MORE_INFO, "Yes, still a duplicate: %s\n", path);
   }
 
   return(1);
@@ -220,9 +220,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
   char hash[HASH_MAX_BUFSIZE];
   STRUCT_STAT info;
 
-  if (verbosity >= 5) {
-    printf("reverify_duplicates(path=%s, dups=%d)\n", path, dups);
-  }
+  LOG(L_TRACE, "reverify_duplicates(path=%s, dups=%d)\n", path, dups);
 
   if (shortcircuit) {
     printf("shortcircuit not tested\n");                     // LCOV_EXCL_START
@@ -276,9 +274,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
     }
   }
 
-  if (verbosity >= 5) {
-    printf("reverify_duplicates() -> %d\n", current_dups);
-  }
+  LOG(L_TRACE, "reverify_duplicates() -> %d\n", current_dups);
 
   return(current_dups);
 }
@@ -300,13 +296,11 @@ void operation_report()
   char * token;
   uint64_t used = 0;
 
-  switch (report_format) {
-  case REPORT_FORMAT_TEXT:
-    if (verbosity >= 1) {
-      printf("Duplicate report from database %s:\n\n", db_path);
-    }
-    break;
-  case REPORT_FORMAT_JSON:
+  if (report_format == REPORT_FORMAT_TEXT) {
+    printf("\n");
+  }
+
+  if (report_format == REPORT_FORMAT_JSON) {
     printf("[\n");
   }
 
@@ -490,7 +484,9 @@ void operation_ls()
 {
   print_uniques = 1;
   print_duplicates = 1;
-  if (verbosity >= 2) { list_all_duplicates = 1; }
+  LOG_MORE {
+    list_all_duplicates = 1;
+  }
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
@@ -508,7 +504,9 @@ void operation_ls()
 void operation_uniques()
 {
   print_uniques = 1;
-  if (verbosity >= 2) { list_all_duplicates = 1; }
+  LOG_MORE {
+    list_all_duplicates = 1;
+  }
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
@@ -526,7 +524,9 @@ void operation_uniques()
 void operation_dups()
 {
   print_duplicates = 1;
-  if (verbosity >= 2) { list_all_duplicates = 1; }
+  LOG_MORE {
+    list_all_duplicates = 1;
+  }
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
@@ -643,7 +643,7 @@ int operation_validate()
     }
 
     rv = reverify_duplicates(path, count - 1, duplicates, status, 0);
-    if (rv != count-1 || verbosity >= 2) {
+    if (rv != count-1 || log_level >= L_MORE) {
       printf("%s\n", path);
       print_status_array(count - 1, duplicates, status);
     }

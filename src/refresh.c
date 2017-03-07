@@ -51,13 +51,11 @@ void operation_refresh()
   char * token;
   char * original = NULL;
 
-  if (verbosity >= 2) {
-    printf("Refreshing database %s:\n\n", db_path);
-  }
+  LOG(L_BASE, "Refreshing database %s:\n\n", db_path);
 
   char * new_list = (char *)malloc(new_list_size + 1);
 
-  if (verbosity >= 3) {
+  LOG_PROGRESS {
     original = (char *)malloc(new_list_size + 1);
   }
 
@@ -85,9 +83,8 @@ void operation_refresh()
       if (original != NULL) {
         original = (char *)realloc(original, new_list_size);
       }
-      if (verbosity >= 5) {
-        printf("Had to increase new_list capacity to %d\n", new_list_size);
-      }
+      LOG(L_RESOURCES,
+          "Had to increase new_list capacity to %d\n", new_list_size);
     }
 
     new_entry_count = 0;
@@ -124,7 +121,7 @@ void operation_refresh()
 
     if (new_entry_count != entry_count) {
 
-      if (verbosity >= 3) {
+      LOG_PROGRESS {
         printf("FROM: %s\n", original);
         printf("  TO: %s\n\n", new_list);
       }

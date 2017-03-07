@@ -106,9 +106,7 @@ ssize_t read_file_bytes(char * path, char * output,
 {
   int file = open(path, O_RDONLY);
   if (file < 0) {                                            // LCOV_EXCL_START
-    if (verbosity >= 1) {
-      printf("Error opening [%s]\n", path);
-    }
+    LOG(L_PROGRESS, "Error opening [%s]\n", path);
     return(-1);
   }                                                          // LCOV_EXCL_STOP
 

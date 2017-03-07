@@ -169,9 +169,7 @@ void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
           (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
 
         hashlist_path_realloc++;
-        if (verbosity >= 5) {
-          printf("Had to increase path capacity to %d\n", p->capacity);
-        }
+        LOG(L_RESOURCES, "Increased path capacity to %d\n", p->capacity);
       }
 
       // Add new path to existing node
@@ -194,10 +192,8 @@ void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
     tail->next = new_node;
     p = new_node;
     hash_list_len_inc++;
-    if (verbosity >= 5) {
-      printf("Had to increase hash node list length to %d\n",
-             hl_len + DEFAULT_HASHLIST_ENTRIES);
-    }
+    LOG(L_RESOURCES, "Increased hash node list length to %d\n",
+        hl_len + DEFAULT_HASHLIST_ENTRIES);
   }
 
   // Populate new node...
@@ -305,9 +301,7 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
   char hash_out[HASH_MAX_BUFSIZE];
   int rv = hash_fn(path, hash_out, blocks, bsize, skip);
   if (rv != 0) {
-    if (verbosity >= 1) {
-      printf("SKIP [%s]: Unable to compute hash\n", path);
-    }
+    LOG(L_SKIPPED, "SKIP [%s]: Unable to compute hash\n", path);
     return;
   }
 
@@ -369,7 +363,7 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
       stats_duplicate_sets++;
       stats_duplicate_files += p->next_index;
 
-      if (!write_db || verbosity >= 4) {
+      if (!write_db || log_level >= L_TRACE) {
         printf("Duplicates: file size: %ld, count: [%d]\n",
                (long)size, p->next_index);
         for (int j=0; j < p->next_index; j++) {
@@ -387,9 +381,7 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
             path_buffer_size += DUPD_PATH_MAX * 10;
             path_buffer = (char *)realloc(path_buffer, path_buffer_size);
             path_buffer_realloc++;
-            if (verbosity >= 5) {
-              printf("Had to increase path_buffer to %d\n", path_buffer_size);
-            }
+            LOG(L_RESOURCES, "Increased path_buffer %d\n", path_buffer_size);
           }
 
           if (i + 1 < p->next_index) {
@@ -417,16 +409,14 @@ void print_hash_list(struct hash_list * src)
 {
   struct hash_list * p = src;
   while (p != NULL && p->hash_valid) {
-    if (verbosity >= 9 || (verbosity >= 6 && p->hash_valid)) {
-      printf("hash_valid: %d, has_dups: %d, next_index: %d   ",
-             p->hash_valid, p->has_dups, p->next_index);
-      memdump("hash", p->hash, hash_bufsize);
-      for (int j=0; j < p->next_index; j++) {
-        printf("  [%s]\n", *(p->pathptrs + j));
-      }
+    printf("hash_valid: %d, has_dups: %d, next_index: %d   ",
+           p->hash_valid, p->has_dups, p->next_index);
+    memdump("hash", p->hash, hash_bufsize);
+    for (int j=0; j < p->next_index; j++) {
+      printf("  [%s]\n", *(p->pathptrs + j));
     }
-    p = p->next;
   }
+  p = p->next;
 }
 
 

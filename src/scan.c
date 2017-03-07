@@ -105,16 +105,12 @@ void walk_dir(sqlite3 * dbh, const char * path,
   while (scan_list_pos >= 0) {
 
     strcpy(current, scan_list + DUPD_PATH_MAX * scan_list_pos);
-    if (verbosity >= 6) {
-      printf("\nDIR: (%d)[%s]\n", scan_list_pos, current);
-    }
+    LOG(L_FILES, "\nDIR: (%d)[%s]\n", scan_list_pos, current);
     scan_list_pos--;
 
     DIR * dir = opendir(current);
     if (dir == NULL) {                                       // LCOV_EXCL_START
-      if (verbosity >= 3) {
-        perror(current);
-      }
+      LOG_PROGRESS { perror(current); }
       continue;
     }                                                        // LCOV_EXCL_STOP
 
@@ -134,10 +130,8 @@ void walk_dir(sqlite3 * dbh, const char * path,
       // character as a separator in the sqlite duplicates table.
 
       if (strchr(entry->d_name, path_separator)) {
-        if (verbosity >= 1) {
-          printf("SKIP (due to %c) [%s/%s]\n",
-                 path_separator, current, entry->d_name);
-        }
+        LOG(L_PROGRESS, "SKIP (due to %c) [%s/%s]\n",
+            path_separator, current, entry->d_name);
         continue;
       }
 
@@ -190,15 +184,11 @@ void walk_dir(sqlite3 * dbh, const char * path,
           scan_list_capacity *= 2;
           scan_list =
             (char *)realloc(scan_list, DUPD_PATH_MAX * scan_list_capacity);
-          if (verbosity >= 5) {
-            printf("Had to increase scan_list_capacity to %d\n",
-                   scan_list_capacity);
-          }
+          LOG(L_RESOURCES, "Had to increase scan_list_capacity to %d\n",
+              scan_list_capacity);
         }
         strcpy(scan_list + DUPD_PATH_MAX * scan_list_pos, newpath);
-        if (verbosity >= 8) {
-          printf("queued dir at %d: %s\n", scan_list_pos, newpath);
-        }
+        LOG(L_TRACE, "queued dir at %d: %s\n", scan_list_pos, newpath);
         break;
 
       case D_FILE:
@@ -207,19 +197,15 @@ void walk_dir(sqlite3 * dbh, const char * path,
         break;
 
       case D_OTHER:
-        if (verbosity >= 4) {
-          printf("SKIP (not file) [%s]\n", newpath);
-        }
+        LOG(L_SKIPPED, "SKIP (not file) [%s]\n", newpath);
         stats_files_ignored++;
         break;
 
       case D_ERROR:
-        if (verbosity >= 1) {                                // LCOV_EXCL_START
-          printf("SKIP (error) [%s]\n", newpath);
-        }
+        LOG(L_PROGRESS, "SKIP (error) [%s]\n", newpath);
         stats_files_error++;
         break;
-      }                                                      // LCOV_EXCL_STOP
+      }
     }
     closedir(dir);
   }
@@ -271,10 +257,8 @@ void scan()
     scan_done();
   }
 
-  if (verbosity >= 1) {
-    printf("Files scanned: %" PRIu32 " (%ldms)\n",
-           stats_files_count, stats_time_scan);
-  }
+  LOG(L_PROGRESS, "Files scanned: %" PRIu32 " (%ldms)\n",
+      stats_files_count, stats_time_scan);
 
   if (stats_files_count == 0) {
     if (write_db) {
@@ -284,7 +268,7 @@ void scan()
     return;
   }
 
-  if (verbosity >= 2) {
+  LOG_PROGRESS {
     printf("Average file size: %ld\n", stats_avg_file_size);
     printf("Special files ignored: %d\n", stats_files_ignored);
     printf("Files with stat errors: %d\n", stats_files_error);
@@ -301,16 +285,14 @@ void scan()
   }                                                          // LCOV_EXCL_STOP
 
   if (save_uniques) {
-    if (verbosity >= 3) {
-      printf("Saving files with unique sizes from size tree...\n");
-    }
+    LOG(L_PROGRESS, "Saving files with unique sizes from size tree...\n");
     find_unique_sizes(dbh);
   }
 
   if (hdd_mode) {
     t1 = get_current_time_millis();
     sort_read_list();
-    if (verbosity >= 2) {
+    LOG_PROGRESS {
       long sort_time = get_current_time_millis() - t1;
       printf("Time to sort read list: %ldms\n", sort_time);
     }
@@ -336,20 +318,15 @@ void scan()
 
   stats_time_process = get_current_time_millis() - t1;
 
-  if (verbosity >= 1) {
-    printf("Duplicate processing completed in %ldms\n", stats_time_process);
-  }
-
-  if (verbosity >= 2) {
-    printf("Largest duplicate set %d\n", stats_most_dups);
-  }
+  LOG(L_PROGRESS, "Duplicate processing completed in %ldms\n", stats_time_process);
+  LOG(L_PROGRESS, "Largest duplicate set %d\n", stats_most_dups);
 
   if (write_db) {
     commit_transaction(dbh);
     close_database(dbh);
   }
 
-  if (verbosity >= 3) {
+  LOG_RESOURCES {
     report_path_block_usage();
   }
 

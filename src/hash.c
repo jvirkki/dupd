@@ -230,16 +230,12 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
     block_size = MAX_BLOCK;
   }
 
-  if (verbosity >= 8) {
-    printf("hash_fn: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
-           block_size, blocks, skip, path);
-  }
+  LOG(L_TRACE, "hash_fn: blocks(%d)=%" PRIu64 " skip=%" PRIu64 " path=%s\n",
+      block_size, blocks, skip, path);
 
   int file = open(path, O_RDONLY);
   if (file < 0) {
-    if (verbosity >= 1) {
-      printf("HASH: Error opening [%s]\n", path);
-    }
+    LOG(L_PROGRESS, "HASH: Error opening [%s]\n", path);
     return(-1);
   }
 

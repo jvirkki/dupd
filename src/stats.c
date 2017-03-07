@@ -91,7 +91,7 @@ void report_size_list()
  */
 void report_stats()
 {
-  if (verbosity >= 2) {
+  LOG_MORE {
     printf("\n");
     printf("Number of size sets to analyze: %d\n", stats_size_list_count);
     printf("Size sets with two files, hash list skipped: %d times\n",
@@ -166,7 +166,7 @@ void report_stats()
 
   }
 
-  if (verbosity >= 1) {
+  LOG_BASE {
     printf("Total duplicates: %d\n", stats_duplicate_files);
     if (save_uniques) {
       printf("Total unique files: %d\n", stats_uniques_saved);

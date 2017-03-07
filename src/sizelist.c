@@ -122,9 +122,8 @@ static char * state_name(int state)
  */
 static inline void show_processed_done(int total)
 {
-  if (verbosity == 1) {
-    printf("Done processing %d sets                             \n", total);
-  }
+  LOG(L_PROGRESS,
+      "Done processing %d sets                             \n", total);
 }
 
 
@@ -135,30 +134,12 @@ static inline void show_processed_done(int total)
 static inline void show_processed(int total, int files, long size,
                                   int loop, char phase)
 {
-  int out;
-
   d_mutex_lock(&show_processed_lock, "show_processed");
 
   show_processed_count++;
 
-  switch (verbosity) {
-
-  case 1:
-    out = printf("Processed %d/%d (%d files of size %ld)        ",
-                 show_processed_count, total, files, size);
-    printf("\033[%dD", out);
-    break;
-
-  case 2:
-    printf("Processed %d/%d (%d files of size %ld)\n",
-           show_processed_count, total, files, size);
-    break;
-
-  default:
-    printf("Processed %d/%d [%c] (%d files of size %ld) (loop %d)\n",
-           show_processed_count, total, phase, files, size, loop);
-    break;
-  }
+  LOG(L_PROGRESS, "Processed %d/%d [%c] (%d files of size %ld) (loop %d)\n",
+      show_processed_count, total, phase, files, size, loop);
 
   if (show_processed_count > total) {                        // LCOV_EXCL_START
     printf("\nThat's not right...\n");
@@ -191,10 +172,8 @@ static void unlink_size_list_entry(char * spaces,
     d_mutex_unlock(&entry->next->lock);
   }
 
-  if (thread_verbosity >= 2) {
-    printf("%sRemoving size list entry of size %ld\n",
-	   spaces, (long)entry->size);
-  }
+  LOG(L_MORE_THREADS, "%sRemoving size list entry of size %ld\n",
+      spaces, (long)entry->size);
 
   entry->state = SLS_DELETED;
   entry->next = NULL;
@@ -303,9 +282,7 @@ static void * round3_hasher(void * arg)
   char * path;
   int set_count;
 
-  if (thread_verbosity >= 1) {
-    printf("%sthread created\n", spaces);
-  }
+  LOG(L_THREADS, "%sthread created\n", spaces);
 
   do {
     size_node = size_list_head;
@@ -338,7 +315,7 @@ static void * round3_hasher(void * arg)
       status = NULL;
       off_t size = size_node->size;
 
-      if (thread_verbosity >= 2) {
+      LOG_MORE_THREADS {
         int count = pl_get_path_count(size_node->path_list);
         printf("%sSET %d (%d files of size %ld) (loop %d) state: %s\n",
                spaces, set_count++, count, (long)size, loops,
@@ -363,7 +340,7 @@ static void * round3_hasher(void * arg)
           status = (struct round3_info *)pl_entry_get_buffer(entry);
           path = pl_entry_get_path(entry);
 
-          if (thread_verbosity >= 2) {
+          LOG_MORE_THREADS {
             if (status == NULL) {
               printf("%s   entry state: NULL [%s]\n", spaces, path);
             } else {
@@ -446,9 +423,9 @@ static void * round3_hasher(void * arg)
             }                                                // LCOV_EXCL_STOP
           }
 
-          if (entry_changed && thread_verbosity >= 2) {
-            printf("%s          => : %s [%s]\n",
-                   spaces, state_name(status->state), path);
+          if (entry_changed) {
+            LOG(L_MORE_THREADS, "%s          => : %s [%s]\n",
+                spaces, state_name(status->state), path);
           }
 
           entry = pl_entry_get_next(entry);
@@ -475,7 +452,7 @@ static void * round3_hasher(void * arg)
             entry = pl_entry_get_next(entry);
           } while (entry != NULL);
 
-          if (verbosity >= 6) {
+          LOG_TRACE {
             printf("Contents of hash list hl_full:\n");
             print_hash_list(hl_full);
           }
@@ -487,7 +464,7 @@ static void * round3_hasher(void * arg)
           // If no potential dups after this round, we're done!
           if (HASH_LIST_NO_DUPS(hl_full)) {
 
-            if (verbosity >= 4) {
+            LOG_TRACE {
               printf("No potential dups left, done!\n");
               printf("Discarded in round 3 the potentials: ");
               entry = pl_get_first_entry(size_node->path_list);
@@ -506,15 +483,13 @@ static void * round3_hasher(void * arg)
 
           } else {
             // Still something left, go publish them to db
-            if (verbosity >= 4) {
-              printf("Finally some dups confirmed, here they are:\n");
-            }
+            LOG(L_MORE_INFO, "Finally some dups confirmed, here they are:\n");
             stats_set_dups_done_full_round++;
             publish_duplicate_hash_list(dbh, hl_full, size_node->size);
             size_node->state = SLS_DONE;
           }
 
-          if (verbosity >= 1) {
+          LOG_PROGRESS {
             uint32_t path_count = pl_get_path_count(size_node->path_list);
             show_processed(stats_size_list_count, path_count,
                            size_node->size, loops, '3');
@@ -544,13 +519,10 @@ static void * round3_hasher(void * arg)
 
     } while (size_node != NULL);
 
-    if (thread_verbosity >= 1) {
-      printf("%sFinished size list loop #%d: init: %d, partial: %d, "
-             "final: %d, sets completed: %d\n",
-             spaces, loops, loop_buf_init, loop_partial_hash,
-             loop_hash_completed, loop_set_processed);
-
-    }
+    LOG(L_THREADS, "%sFinished size list loop #%d: init: %d, partial: %d, "
+        "final: %d, sets completed: %d\n",
+        spaces, loops, loop_buf_init, loop_partial_hash,
+        loop_hash_completed, loop_set_processed);
 
     if (only_testing) {
       slow_down(10, 100);
@@ -562,9 +534,7 @@ static void * round3_hasher(void * arg)
         loop_hash_completed == 0 && loop_set_processed == 0) {
       d_mutex_lock(&r3_loop_lock, "r3-hasher loop end no work");
       d_cond_signal(&r3_loop_cond);
-      if (thread_verbosity >= 1) {
-        printf("%sWaiting for something to do...\n", spaces);
-      }
+      LOG(L_THREADS, "%sWaiting for something to do...\n", spaces);
       d_cond_wait(&r3_loop_cond, &r3_loop_lock);
       d_mutex_unlock(&r3_loop_lock);
     } else {
@@ -580,9 +550,7 @@ static void * round3_hasher(void * arg)
   d_cond_signal(&r3_loop_cond);
   d_mutex_unlock(&r3_loop_lock);
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE (%d loops)\n", spaces, loops);
-  }
+  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
 
   return NULL;
 }
@@ -612,9 +580,9 @@ static inline ssize_t round3_reader(char * entry, struct round3_info * status)
     }                                                        // LCOV_EXCL_STOP
 
     // We will be reading the entire file in round3
-    if (FADVISE) {
-      posix_fadvise(status->fd, 0, 0, POSIX_FADV_WILLNEED);
-    }
+#ifdef FADVISE
+    posix_fadvise(status->fd, 0, 0, POSIX_FADV_WILLNEED);
+#endif
 
     open_files++;
   }
@@ -682,9 +650,8 @@ static void process_round_3(sqlite3 * dbh)
     size_node->next = next_node;
     size_node = size_node->next;
   }
-  if (verbosity >= 3) {
-    printf("Purged %d size list entries in DONE state\n", skipped);
-  }
+
+  LOG(L_INFO, "Purged %d size list entries in DONE state\n", skipped);
 
   // Start my companion hasher thread
   if (pthread_create(&hasher_thread, NULL, round3_hasher, dbh)) {
@@ -714,7 +681,7 @@ static void process_round_3(sqlite3 * dbh)
       d_mutex_lock(&size_node->lock, "r3-reader top");
       path_count = pl_get_path_count(size_node->path_list);
 
-      if (thread_verbosity >= 2) {
+      LOG_MORE_THREADS {
         off_t size = size_node->size;
         printf("%sSET %d (%d files of size %ld) (loop %d) state: %s\n",
                spaces, set_count++, path_count, (long)size, loops,
@@ -766,7 +733,7 @@ static void process_round_3(sqlite3 * dbh)
           changed = 0;
           skipped = 0;
 
-          if (thread_verbosity >= 3) {
+          LOG_TRACE {
             path = pl_entry_get_path(node);
             if (status == NULL) {
               printf("%s   entry state: NULL [%s]\n", spaces, path);
@@ -782,10 +749,10 @@ static void process_round_3(sqlite3 * dbh)
             case SLS_R3_READ_MORE:
               if (status->read_from == 0 && open_files > R3_MAX_OPEN_FILES) {
                 skipped = 1;
-                if (thread_verbosity >= 3) {
-                  printf("%s     (delay open, too many open files %d/%d)\n",
-                         spaces, open_files, R3_MAX_OPEN_FILES);
-                }
+                LOG(L_TRACE,
+                    "%s     (delay open, too many open files %d/%d)\n",
+                    spaces, open_files, R3_MAX_OPEN_FILES);
+
               } else {
                 round3_reader(node, status);
                 status->state = SLS_R3_HASH_ME;
@@ -818,9 +785,9 @@ static void process_round_3(sqlite3 * dbh)
             }                                                // LCOV_EXCL_STOP
           }
 
-          if (thread_verbosity >= 2 && changed) {
-            printf("%s          => : %s [%s]\n",
-                   spaces, state_name(status->state), path);
+          if (changed) {
+            LOG(L_THREADS, "%s          => : %s [%s]\n",
+                spaces, state_name(status->state), path);
           }
 
           if (skipped) {
@@ -845,7 +812,7 @@ static void process_round_3(sqlite3 * dbh)
       }                                                      // LCOV_EXCL_STOP
 
       if (did_one) {
-        if (verbosity >= 1) {
+        LOG_PROGRESS {
           uint32_t path_count = pl_get_path_count(size_node->path_list);
           show_processed(stats_size_list_count, path_count,
                          size_node->size, loops, '3');
@@ -866,10 +833,8 @@ static void process_round_3(sqlite3 * dbh)
 
     } while (size_node != NULL);
 
-    if (thread_verbosity >= 1) {
-      printf("%sFinished size list loop #%d: R2:%d R3:%d Rp:%d Rf:%d\n",
-             spaces, loops, read_two, read_three, read_partial, read_final);
-    }
+    LOG(L_THREADS, "%sFinished size list loop #%d: R2:%d R3:%d Rp:%d Rf:%d\n",
+        spaces, loops, read_two, read_three, read_partial, read_final);
 
     if (only_testing) {
       slow_down(10, 100);
@@ -884,9 +849,7 @@ static void process_round_3(sqlite3 * dbh)
       if (!r3_hasher_done) {
         d_mutex_lock(&r3_loop_lock, "r3-reader loop end no work");
         d_cond_signal(&r3_loop_cond);
-        if (thread_verbosity >= 1) {
-          printf("%sWaiting for something to do...\n", spaces);
-        }
+        LOG(L_THREADS, "%sWaiting for something to do...\n", spaces);
         d_cond_wait(&r3_loop_cond, &r3_loop_lock);
         d_mutex_unlock(&r3_loop_lock);
       }
@@ -896,10 +859,7 @@ static void process_round_3(sqlite3 * dbh)
 
 
   if (!r3_hasher_done) {
-    if (thread_verbosity >= 2) {
-      printf("%swaiting for hasher thread\n", spaces);
-    }
-
+    LOG(L_THREADS, "%swaiting for hasher thread\n", spaces);
     d_mutex_lock(&r3_loop_lock, "r3-reader all done");
     d_cond_signal(&r3_loop_cond);
     d_mutex_unlock(&r3_loop_lock);
@@ -907,9 +867,7 @@ static void process_round_3(sqlite3 * dbh)
 
   d_join(hasher_thread, NULL);
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE (%d loops)\n", spaces, loops);
-  }
+  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
 }
 
 
@@ -1008,12 +966,12 @@ void analyze_process_size_list(sqlite3 * dbh)
     path_list_head = size_node->path_list;
     node = pl_get_first_entry(path_list_head);
 
-    if (verbosity >= 2) {
+    LOG_PROGRESS {
       uint32_t path_count = pl_get_path_count(path_list_head);
       printf("Processing %d/%d "
              "(%d files of size %ld) (%ld blocks of size %d)\n",
              count, stats_size_list_count, path_count, (long)size_node->size,
-	     total_blocks, analyze_block_size);
+             total_blocks, analyze_block_size);
     }
 
     // Build initial hash list for these files
@@ -1026,8 +984,7 @@ void analyze_process_size_list(sqlite3 * dbh)
       node = pl_entry_get_next(node);
     } while (node != NULL);
 
-    if (verbosity >= 4) { printf("Done building first hash list.\n"); }
-    if (verbosity >= 6) {
+    LOG_TRACE {
       printf("Contents of hash list hl_one:\n");
       print_hash_list(hl_one);
     }
@@ -1040,14 +997,14 @@ void analyze_process_size_list(sqlite3 * dbh)
 
       // If no potential dups after this round, we're done!
       if (HASH_LIST_NO_DUPS(hl_one)) {
-        if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+        LOG(L_TRACE, "No potential dups left, done!\n");
         stats_set_no_dups_round_one++;
         goto ANALYZER_CONTINUE;
       }
 
       // If we've processed all blocks already, we're done!
       if (total_blocks == 0) {
-        if (verbosity >= 4) { printf("Some dups confirmed, here they are:\n");}
+        LOG(L_TRACE, "Some dups confirmed, here they are:\n");
         publish_duplicate_hash_list(dbh, hl_one, size_node->size);
         stats_set_dup_done_round_one++;
         goto ANALYZER_CONTINUE;
@@ -1059,12 +1016,10 @@ void analyze_process_size_list(sqlite3 * dbh)
       skip++;
       total_blocks--;
 
-      if (verbosity >= 4) {
-        printf("Next round of filtering: skip = %ld\n", (long)skip);
-      }
+      LOG(L_MORE_INFO, "Next round of filtering: skip = %ld\n", (long)skip);
       filter_hash_list(hl_previous, 1, analyze_block_size, hl_one, skip);
 
-      if (verbosity >= 6) {
+      LOG_TRACE {
         printf("Contents of hash list hl_one:\n");
         print_hash_list(hl_one);
       }
@@ -1085,10 +1040,8 @@ void analyze_process_size_list(sqlite3 * dbh)
       stats_analyzer_buckets[bucket]++;
     }                                                        // LCOV_EXCL_STOP
 
-    if (verbosity >=3) {
-      printf(" Completed after %ld blocks read (%zd remaining)\n",
-             (long)skip, total_blocks);
-    }
+    LOG(L_PROGRESS, " Completed after %ld blocks read (%zd remaining)\n",
+        (long)skip, total_blocks);
 
     size_node = size_node->next;
   }
@@ -1121,8 +1074,7 @@ void process_size_list(sqlite3 * dbh)
 
     node = pl_get_first_entry(path_list_head);
 
-    if (verbosity >= 2) {
-      if (verbosity >= 4) { printf("\n"); }
+    LOG_PROGRESS {
       printf("Processing %d/%d (%d files of size %ld)\n",
              count, stats_size_list_count, path_count, (long)size_node->size);
       if (size_node->size < 0) {
@@ -1157,9 +1109,7 @@ void process_size_list(sqlite3 * dbh)
     if (size_node->size <= (hash_one_block_size * hash_one_max_blocks)) {
       stats_full_hash_first++;
       round_one_hash_blocks = 0;
-      if (verbosity >= 4) {
-        printf("Computing full hash up front, file size is small enough.\n");
-      }
+      LOG(L_INFO, "Computing full hash up front, file is small enough.\n");
     } else {
       stats_one_block_hash_first++;
       round_one_hash_blocks = 1;
@@ -1175,8 +1125,7 @@ void process_size_list(sqlite3 * dbh)
       node = pl_entry_get_next(node);
     } while (node != NULL);
 
-    if (verbosity >= 4) { printf("Done building first hash list.\n"); }
-    if (verbosity >= 6) {
+    LOG_TRACE {
       printf("Contents of hash list hl_one:\n");
       print_hash_list(hl_one);
     }
@@ -1187,7 +1136,7 @@ void process_size_list(sqlite3 * dbh)
 
     // If no potential dups after this round, we're done!
     if (HASH_LIST_NO_DUPS(hl_one)) {
-      if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+      LOG(L_TRACE, "No potential dups left, done!\n");
       stats_set_no_dups_round_one++;
       goto CONTINUE;
     }
@@ -1195,7 +1144,7 @@ void process_size_list(sqlite3 * dbh)
     // If by now we already have a full hash, publish and we're done!
     if (round_one_hash_blocks == 0) {
       stats_set_dup_done_round_one++;
-      if (verbosity >= 4) { printf("Some dups confirmed, here they are:\n"); }
+      LOG(L_TRACE, "Some dups confirmed, here they are:\n");
       publish_duplicate_hash_list(dbh, hl_one, size_node->size);
       goto CONTINUE;
     }
@@ -1204,16 +1153,14 @@ void process_size_list(sqlite3 * dbh)
 
     // Do filtering pass with intermediate number of blocks, if configured
     if (intermediate_blocks > 1) {
-      if (verbosity >= 4) {
-        printf("Don't know yet. Filtering to second hash list\n");
-      }
+      LOG(L_INFO, "Don't know yet. Filtering to second hash list\n")
       stats_set_round_two++;
       struct hash_list * hl_partial = get_hash_list(HASH_LIST_PARTIAL);
       hl_previous = hl_partial;
       filter_hash_list(hl_one, intermediate_blocks,
                        hash_block_size, hl_partial, 0);
 
-      if (verbosity >= 6) {
+      LOG_TRACE {
         printf("Contents of hash list hl_partial:\n");
         print_hash_list(hl_partial);
       }
@@ -1224,7 +1171,7 @@ void process_size_list(sqlite3 * dbh)
 
       // If no potential dups after this round, we're done!
       if (HASH_LIST_NO_DUPS(hl_partial)) {
-        if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+        LOG(L_TRACE, "No potential dups left, done!\n");
         stats_set_no_dups_round_two++;
         goto CONTINUE;
       }
@@ -1232,23 +1179,19 @@ void process_size_list(sqlite3 * dbh)
       // If this size < hashed so far, we're done so publish to db
       if (size_node->size < hash_block_size * intermediate_blocks) {
         stats_set_dup_done_round_two++;
-        if (verbosity >= 4) {
-          printf("Some dups confirmed, here they are:\n");
-        }
+        LOG(L_TRACE, "Some dups confirmed, here they are:\n");
         publish_duplicate_hash_list(dbh, hl_partial, size_node->size);
         goto CONTINUE;
       }
     }
 
     // for anything left, do full file hash
-    if (verbosity >= 4) {
-      printf("Don't know yet. Filtering to full hash list\n");
-    }
+    LOG(L_INFO, "Don't know yet. Filtering to full hash list\n");
     stats_set_full_round++;
     struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
     filter_hash_list(hl_previous, 0, hash_block_size,
                      hl_full, intermediate_blocks);
-    if (verbosity >= 6) {
+    LOG_TRACE {
       printf("Contents of hash list hl_full:\n");
       print_hash_list(hl_full);
     }
@@ -1259,15 +1202,13 @@ void process_size_list(sqlite3 * dbh)
 
     // If no potential dups after this round, we're done!
     if (HASH_LIST_NO_DUPS(hl_full)) {
-      if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+      LOG(L_TRACE, "No potential dups left, done!\n");
       stats_set_no_dups_full_round++;
       goto CONTINUE;
     }
 
     // Still something left, go publish them to db
-    if (verbosity >= 4) {
-      printf("Finally some dups confirmed, here they are:\n");
-    }
+    LOG(L_INFO, "Finally some dups confirmed, here they are:\n");
     stats_set_dups_done_full_round++;
     publish_duplicate_hash_list(dbh, hl_full, size_node->size);
 
@@ -1321,10 +1262,8 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
       received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
 
       if (received != size_node->bytes_read) {
-        if (verbosity > 0) {
-          printf("error: read %ld bytes from [%s] but wanted %ld\n",
-                 (long)received, path, (long)size_node->bytes_read);
-        }
+        LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
+            (long)received, path, (long)size_node->bytes_read);
         path[0] = 0;
         pl_decrease_path_count(size_node->path_list, 1);
         free(buffer);
@@ -1333,9 +1272,11 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
         pl_entry_set_buffer(node, buffer);
       }
 
-      if (thread_verbosity >= 3 && received == size_node->bytes_read) {
-        printf("%sread %ld bytes from %s\n", spaces,
-	       (long)size_node->bytes_read,path);
+      LOG_TRACE {
+        if (received == size_node->bytes_read) {
+          printf("%sread %ld bytes from %s\n", spaces,
+                 (long)size_node->bytes_read,path);
+        }
       }
 
     } else {
@@ -1373,26 +1314,20 @@ static void * reader_main(void * arg)
   int loops = 0;
   off_t max_to_read;
 
-  if (thread_verbosity >= 1) {
-    printf("%sthread created\n", spaces);
-  }
+  LOG(L_THREADS, "%sthread created\n", spaces);
 
   do {
     size_node = size_list_head;
     loops++;
     round_one = 0;
     round_two = 0;
-    if (thread_verbosity >= 1) {
-      printf("%sStarting size list loop #%d\n", spaces, loops);
-    }
+    LOG(L_THREADS, "%sStarting size list loop #%d\n", spaces, loops);
 
     do {
       d_mutex_lock(&size_node->lock, "reader top");
 
-      if (thread_verbosity >= 2) {
-        printf("%s(loop %d) size:%ld state:%s\n", spaces,
-	       loops, (long)size_node->size, state_name(size_node->state));
-      }
+      LOG(L_MORE_THREADS, "%s(loop %d) size:%ld state:%s\n", spaces,
+          loops, (long)size_node->size, state_name(size_node->state));
 
       switch(size_node->state) {
 
@@ -1420,27 +1355,12 @@ static void * reader_main(void * arg)
 
     } while (size_node != NULL && reader_continue);
 
-    if (thread_verbosity >= 1) {
-      printf("%sFinished loop %d: round_one:%d, round_two:%d\n",
-             spaces, loops, round_one, round_two);
-    }
-
-    /*
-    if (round_one == 0 && round_two == 0) {
-      d_mutex_lock(&r12_loop_lock);
-      if (thread_verbosity >= 1) {
-        printf("%sWaiting for something to do...\n", spaces);
-      }
-      d_cond_wait(&r12_loop_cond, &r12_loop_lock);
-      d_mutex_unlock(&r12_loop_lock);
-    }
-    */
+    LOG(L_THREADS, "%sFinished loop %d: round_one:%d, round_two:%d\n",
+        spaces, loops, round_one, round_two);
 
   } while (reader_continue);
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE (%d loops)\n", spaces, loops);
-  }
+  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
 
   return(NULL);
 }
@@ -1487,7 +1407,7 @@ static void process_readlist(char * spaces,
       exit(1);
     }                                                        // LCOV_EXCL_STOP
 
-    if (verbosity >= 1) {
+    LOG_BASE {
       if (pathlist_head != sizelist->path_list) {            // LCOV_EXCL_START
         printf("error: inconsistent sizelist in pathlist head!\n");
         printf("pathlist head (%p) -> sizelist %p\n", pathlist_head, sizelist);
@@ -1531,10 +1451,8 @@ static void process_readlist(char * spaces,
         goto PRL_NODE_DONE;
       }
 
-      if (thread_verbosity >= 2) {
-        printf("%sSet (%d files of size %ld): read %s\n",
-               spaces, count, (long)size, path);
-      }
+      LOG(L_MORE_THREADS, "%sSet (%d files of size %ld): read %s\n",
+          spaces, count, (long)size, path);
 
       buffer = pl_entry_get_buffer(pathlist_entry);
       if (buffer != NULL) {
@@ -1548,10 +1466,8 @@ static void process_readlist(char * spaces,
 
       if (received != max_to_read) {
         // File may be unreadable or changed size, either way, ignore it.
-        if (verbosity >= 1) {
-          printf("error: read %ld bytes from [%s] but wanted %ld\n",
-                 (long)received, path, (long)max_to_read);
-        }
+        LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
+            (long)received, path, (long)max_to_read);
         path[0] = 0;
         pl_decrease_path_count(pathlist_head, 1);
         free(buffer);
@@ -1568,10 +1484,8 @@ static void process_readlist(char * spaces,
         new_avg = avg_read_time + (took - avg_read_time) / read_count;
         avg_read_time = new_avg;
 
-        if (thread_verbosity >= 3) {
-          printf("%s read took %ldms (count=%d avg=%d)\n",
-                 spaces, took, read_count, avg_read_time);
-        }
+        LOG(L_TRACE, "%s read took %ldms (count=%d avg=%d)\n",
+            spaces, took, read_count, avg_read_time);
 
         pl_entry_set_buffer(pathlist_entry, buffer);
       }
@@ -1607,14 +1521,10 @@ static void * reader_main_hdd(void * arg)
   char * spaces;
   spaces = "                                    [hdd-reader] ";
 
-  if (thread_verbosity >= 1) {
-    printf("%sthread created\n", spaces);
-  }
+  LOG(L_THREADS, "%sthread created\n", spaces);
 
   if (read_list_end == 0) {                                  // LCOV_EXCL_START
-    if (verbosity >= 4) {
-      printf("readlist is empty, nothing to read\n");
-    }
+    LOG(L_INFO, "readlist is empty, nothing to read\n");
     return NULL;
   }                                                          // LCOV_EXCL_STOP
 
@@ -1623,17 +1533,13 @@ static void * reader_main_hdd(void * arg)
 
   // Having read all round 1 buffers, wait for the main thread to finish
   // processing them.
-  if (thread_verbosity >= 1) {
-    printf("%sDone first loop for round 1, waiting for instructions...\n",
-           spaces);
-  }
+  LOG(L_THREADS, "%sDone first loop for round 1, waiting ...\n", spaces);
+
   d_mutex_lock(&reader_main_hdd_lock, "reader_main_hdd_lock");
   d_cond_wait(&reader_main_hdd_cond, &reader_main_hdd_lock);
   d_mutex_unlock(&reader_main_hdd_lock);
 
-  if (thread_verbosity >= 1) {
-    printf("%sWaking up: round_2:%d\n", spaces, reader_main_hdd_round_2);
-  }
+  LOG(L_THREADS, "%sWaking up: round_2:%d\n", spaces, reader_main_hdd_round_2);
 
   // If any sets are in need of a round 2, go read those in readlist order.
   if (reader_main_hdd_round_2 > 0) {
@@ -1641,9 +1547,7 @@ static void * reader_main_hdd(void * arg)
     process_readlist(spaces, R3_BUFSIZE, 0);
   }
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE\n", spaces);
-  }
+  LOG(L_THREADS, "%sDONE\n", spaces);
 
   return(NULL);
 }
@@ -1703,8 +1607,7 @@ static int build_hash_list_round(sqlite3 * dbh,
     node = pl_entry_get_next(node);
   } while (node != NULL);
 
-  if (verbosity >= 4) { printf("Done building first hash list.\n"); }
-  if (verbosity >= 6) {
+  LOG_TRACE {
     printf("Contents of hash list hl:\n");
     print_hash_list(hl);
   }
@@ -1717,7 +1620,7 @@ static int build_hash_list_round(sqlite3 * dbh,
 
   // If no potential dups after this round, we're done!
   if (HASH_LIST_NO_DUPS(hl)) {
-    if (verbosity >= 4) { printf("No potential dups left, done!\n"); }
+    LOG(L_TRACE, "No potential dups left, done!\n");
     (*counter_no_dups_this_round)++;
     size_node->state = SLS_DONE;
     completed = 1;
@@ -1726,7 +1629,7 @@ static int build_hash_list_round(sqlite3 * dbh,
     // If by now we already have a full hash, publish and we're done!
     if (size_node->fully_read) {
       (*counter_dupd_done_this_round)++;
-      if (verbosity >= 4) { printf("Some dups confirmed, here they are:\n"); }
+      LOG(L_TRACE, "Some dups confirmed, here they are:\n");
       publish_duplicate_hash_list(dbh, hl, size_node->size);
       size_node->state = SLS_DONE;
       completed = 1;
@@ -1774,7 +1677,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
   // but it is a convenient time to do it here.
   free_size_tree();
 
-  if (thread_verbosity >= 1) {
+  LOG_THREADS {
     printf("%sStarting...\n", spaces);
     usleep(10000);
   }
@@ -1795,9 +1698,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
     seen_done = 0;
     char phase;
 
-    if (thread_verbosity >= 1) {
-      printf("%sStarting size list loop #%d\n", spaces, loops);
-    }
+    LOG(L_THREADS, "%sStarting size list loop #%d\n", spaces, loops);
 
     do {
       d_mutex_lock(&size_node->lock, "hdd-main top");
@@ -1816,12 +1717,11 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
       uint32_t path_count = pl_get_path_count(size_node->path_list);
       int completed = path_count == size_node->buffers_filled;
 
-      if (thread_verbosity >= 2) {
-        printf("%sSet (%d files of size %ld; %d read) ready?=%d, state: %s\n",
-               spaces, path_count, (long)size_node->size,
-	       size_node->buffers_filled, completed,
-	       state_name(size_node->state));
-      }
+      LOG(L_MORE_THREADS,
+          "%sSet (%d files of size %ld; %d read) ready?=%d, state: %s\n",
+          spaces, path_count, (long)size_node->size,
+          size_node->buffers_filled, completed,
+          state_name(size_node->state));
 
       if (!completed) {
         work_remains = 1;
@@ -1829,10 +1729,8 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
       } else {
         // This size set has all the buffers available by now, so do
         // round 1 or 2 on this set.
-        if (thread_verbosity >= 2) {
-          printf("%s(loop %d) size:%ld state: %s\n", spaces,
-		 loops, (long)size_node->size, state_name(size_node->state));
-        }
+        LOG(L_MORE_THREADS, "%s(loop %d) size:%ld state: %s\n", spaces,
+            loops, (long)size_node->size, state_name(size_node->state));
 
         switch(size_node->state) {
 
@@ -1876,7 +1774,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
           }
 
         } else {
-          if (verbosity >= 1) {
+          LOG_PROGRESS {
             show_processed(stats_size_list_count,
                            path_count, size_node->size, loops, phase);
           }
@@ -1902,12 +1800,10 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
 
     } while (size_node != NULL);
 
-    if (thread_verbosity >= 1) {
-      printf("%sFinished size list loop #%d: "
-             "R1:%d->%d R2:%d->%d R3:%d->%d (avg_read_time:%d) seen_done:%d\n",
-             spaces, loops, in_round_1, out_round_1, in_round_2, out_round_2,
-             in_round_3, out_round_3, avg_read_time, seen_done);
-    }
+    LOG(L_THREADS, "%sFinished size list loop #%d: "
+        "R1:%d->%d R2:%d->%d R3:%d->%d (avg_read_time:%d) seen_done:%d\n",
+        spaces, loops, in_round_1, out_round_1, in_round_2, out_round_2,
+        in_round_3, out_round_3, avg_read_time, seen_done);
 
     // If there are no sets left which need round 1 processing, wake the
     // reader thread up. If there are sets wanting round 2 processing,
@@ -1926,16 +1822,12 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
     if (work_remains) { usleep((1 + avg_read_time) * 20 * 1000); }
   } while (work_remains);
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE (%d loops)\n", spaces, loops);
-  }
+  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
 
   reader_continue = 0;
   d_join(reader_thread, NULL);
 
-  if (thread_verbosity >= 1) {
-    printf("%sjoined reader thread\n", spaces);
-  }
+  LOG(L_THREADS, "%sjoined reader thread\n", spaces);
 
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.
@@ -1943,9 +1835,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
 
   show_processed_done(stats_size_list_count);
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE\n", spaces);
-  }
+  LOG(L_THREADS, "%sDONE\n", spaces);
 }
 
 
@@ -1976,7 +1866,7 @@ void threaded_process_size_list(sqlite3 * dbh)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  if (thread_verbosity >= 1) {
+  LOG_THREADS {
     printf("%sStarting...\n", spaces);
     usleep(10000);
   }
@@ -1995,18 +1885,14 @@ void threaded_process_size_list(sqlite3 * dbh)
     loops++;
     work_remains = 0;
 
-    if (thread_verbosity >= 1) {
-      printf("%sStarting size list loop #%d\n", spaces, loops);
-    }
+    LOG(L_THREADS, "%sStarting size list loop #%d\n", spaces, loops);
 
     do {
       did_one = 0;
       d_mutex_lock(&size_node->lock, "main top");
 
-      if (thread_verbosity >= 2) {
-        printf("%s(loop %d) size:%ld state:%s\n", spaces,
-	       loops, (long)size_node->size, state_name(size_node->state));
-      }
+      LOG(L_MORE_THREADS, "%s(loop %d) size:%ld state:%s\n", spaces,
+          loops, (long)size_node->size, state_name(size_node->state));
 
       switch(size_node->state) {
 
@@ -2053,7 +1939,7 @@ void threaded_process_size_list(sqlite3 * dbh)
       }
 
       if (did_one) {
-        if (verbosity >= 1) {
+        LOG_PROGRESS {
           path_count = pl_get_path_count(size_node->path_list);
           show_processed(stats_size_list_count, path_count,
                          size_node->size, round, '1');
@@ -2067,16 +1953,12 @@ void threaded_process_size_list(sqlite3 * dbh)
 
   } while (work_remains);
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE (%d loops)\n", spaces, loops);
-  }
+  LOG(L_THREADS, "%sDONE (%d loops)\n", spaces, loops);
 
   reader_continue = 0;
   d_join(reader_thread, NULL);
 
-  if (thread_verbosity >= 1) {
-    printf("%sjoined reader thread\n", spaces);
-  }
+  LOG(L_THREADS, "%sjoined reader thread\n", spaces);
 
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.
@@ -2084,9 +1966,7 @@ void threaded_process_size_list(sqlite3 * dbh)
 
   show_processed_done(stats_size_list_count);
 
-  if (thread_verbosity >= 1) {
-    printf("%sDONE\n", spaces);
-  }
+  LOG(L_THREADS, "%sDONE\n", spaces);
 }
 
 

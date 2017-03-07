@@ -76,7 +76,7 @@ static pthread_cond_t queue_producer_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t queue_worker_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t worker_thread;
 
-#define PRINT_INFO  { if (thread_verbosity >= 3) { \
+#define PRINT_INFO  { if (log_level >= L_TRACE) { \
       printf("%scurrent_worker_queue=%s, current_producer_queue=%s\n",  \
              spaces, queue_state(current_worker_queue),                 \
              queue_state(current_worker_queue)); } }
@@ -218,9 +218,7 @@ static void * worker_main(void * arg)
   struct stat_queue * worker_next;
   int want_queue = 0;
 
-  if (thread_verbosity >= 1) {
-    printf("%sthread created\n", spaces);
-  }
+  LOG(L_THREADS, "%sthread created\n", spaces);
 
   while (!done) {
 
@@ -229,7 +227,7 @@ static void * worker_main(void * arg)
 
     while (want_queue == current_producer_queue ||
            last_owner[want_queue] == WORKER) {
-      if (thread_verbosity >= 2) {
+      LOG_MORE_THREADS {
         printf("%sWant Q%d, not available, WAIT\n", spaces, want_queue);
         PRINT_INFO;
       }
@@ -247,7 +245,7 @@ static void * worker_main(void * arg)
 
     last_owner[current_worker_queue] = WORKER;
 
-    if (thread_verbosity >= 2) {
+    LOG_MORE_THREADS {
       printf("%sTook Q%d\n", spaces, current_worker_queue);
       PRINT_INFO;
     }
@@ -256,7 +254,7 @@ static void * worker_main(void * arg)
 
     // Work through the current queue to its end (or to the path marked end)
 
-    if (thread_verbosity >= 2) {
+    LOG_MORE_THREADS {
       printf("%sProcessing Q%d\n", spaces, current_worker_queue);
       PRINT_INFO;
     }
@@ -265,7 +263,7 @@ static void * worker_main(void * arg)
 
     while (!done && worker_next != NULL) {
       if (worker_next->end) {
-        if (thread_verbosity >= 1) {
+        LOG_THREADS {
           printf("%sGot END flag: DONE\n", spaces);
           PRINT_INFO;
         }
@@ -279,7 +277,7 @@ static void * worker_main(void * arg)
       }
     }
 
-    if (thread_verbosity >= 2) {
+    LOG_MORE_THREADS {
       printf("%sFinished queue %d, removed from it %ld so far\n", spaces,
              current_worker_queue, queue_removed[current_worker_queue]);
       PRINT_INFO;
@@ -310,9 +308,7 @@ static void * worker_main(void * arg)
     }
   }
 
-  if (thread_verbosity >= 1) {
-    printf("%sthread finished\n", spaces);
-  }
+  LOG(L_THREADS, "%sthread finished\n", spaces);
 
   return(NULL);
 }
@@ -340,9 +336,7 @@ int add_file(sqlite3 * dbh,
   (void)dbh;                    /* not used */
   static STRUCT_STAT new_stat_info;
 
-  if (verbosity >= 8) {
-    printf("FILE: [%s]\n", path);
-  }
+  LOG(L_FILES, "FILE: [%s]\n", path);
 
   // If size is SCAN_SIZE_UNKNOWN, it means the producer thread did not
   // stat() the file during scan, so we'll need to do it now.
@@ -351,12 +345,10 @@ int add_file(sqlite3 * dbh,
 
     int rv = get_file_info(path, &new_stat_info);
     if (rv != 0) {
-      if (verbosity >= 1) {                                 // LCOV_EXCL_START
-        printf("SKIP (error) [%s]\n", path);
-      }
+      LOG(L_PROGRESS, "SKIP (error) [%s]\n", path);
       stats_files_error++;
       return(-2);
-    }                                                       // LCOV_EXCL_STOP
+    }
 
     size = new_stat_info.st_size;
     inode = new_stat_info.st_ino;
@@ -375,15 +367,14 @@ int add_file(sqlite3 * dbh,
     stats_avg_file_size = stats_avg_file_size +
       ((size - stats_avg_file_size)/stats_files_count);
 
-    if (verbosity >= 2) {
+    LOG_PROGRESS {
       if ((stats_files_count % 5000) == 0) {
         printf("Files scanned: %" PRIu32 "\n", stats_files_count);
       }
     }
+
   } else {
-    if (verbosity >= 4) {
-      printf("SKIP (too small: %lld): [%s]\n", (long long)size, path);
-    }
+    LOG(L_TRACE, "SKIP (too small: %lld): [%s]\n", (long long)size, path);
     if (size < 0) {                                          // LCOV_EXCL_START
       printf("Bad size! %lld: [%s]\n", (long long)size, path);
       exit(1);
@@ -393,9 +384,7 @@ int add_file(sqlite3 * dbh,
 
   if (hardlink_is_unique) {
     if (bloom_add(&inode_filter, &inode, sizeof(ino_t))) {
-      if (verbosity >= 4) {
-        printf("SKIP (inode seen before: %d): [%s]\n", (int)inode, path);
-      }
+      LOG(L_SKIPPED, "SKIP (inode seen before: %d): [%s]\n", (int)inode, path);
       return(-2);
     }
   }
@@ -421,9 +410,8 @@ int add_queue(sqlite3 * dbh,
   (void)dbh;                    /* not used */
   static char * spaces = "[scan] ";
 
-  if (verbosity >= 6) {
-    printf("%sadd_queue (%d): %s\n", spaces, current_producer_queue, path);
-  }
+  LOG(L_MORE_TRACE,
+      "%sadd_queue (%d): %s\n", spaces, current_producer_queue, path);
 
   // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;
@@ -444,7 +432,7 @@ int add_queue(sqlite3 * dbh,
   }
 
   // If we did reach the end of this queue, need to move to the next one.
-  if (thread_verbosity >= 2) {
+  LOG_MORE_THREADS {
     printf("%sFinished filling Q%d\n", spaces, current_producer_queue);
     PRINT_INFO;
   }
@@ -456,7 +444,7 @@ int add_queue(sqlite3 * dbh,
   current_producer_queue = WANT_QUEUE;
 
   while (want == current_worker_queue || last_owner[want] == PRODUCER) {
-    if (thread_verbosity >= 2) {
+    LOG_MORE_THREADS {
       printf("%sWant Q%d, not available, WAIT\n", spaces, want);
       PRINT_INFO;
     }
@@ -472,7 +460,7 @@ int add_queue(sqlite3 * dbh,
 
   producer_next = &queue[current_producer_queue];
 
-  if (thread_verbosity >= 2) {
+  LOG_MORE_THREADS {
     printf("%sTook Q%d\n", spaces, current_producer_queue);
     PRINT_INFO;
   }
@@ -491,7 +479,7 @@ void scan_done()
 
   pthread_mutex_lock(&queue_lock);
 
-  if (thread_verbosity >= 1) {
+  LOG_THREADS {
     printf("scan_done: END in %s\n", queue_state(current_producer_queue));
     PRINT_INFO;
   }
@@ -502,9 +490,7 @@ void scan_done()
   pthread_cond_signal(&queue_worker_cond);
   pthread_mutex_unlock(&queue_lock);
 
-  if (thread_verbosity >= 1) {
-    printf("Waiting for sizetree worker thread to finish...\n");
-  }
+  LOG(L_THREADS, "Waiting for sizetree worker thread to finish...\n");
 
   d_join(worker_thread, NULL);
 
@@ -512,17 +498,14 @@ void scan_done()
   uint32_t removed = 0;
   uint32_t added = 0;
   for (int i = 0; i < QUEUE_COUNT; i++) {
-    if (thread_verbosity >= 2) {
-      printf("Q%d: added %ld, removed %ld\n",
-             i, queue_added[i], queue_removed[i]);
-    }
+    LOG(L_MORE_THREADS, "Q%d: added %ld, removed %ld\n",
+        i, queue_added[i], queue_removed[i]);
     removed += queue_removed[i];
     added += queue_added[i];
   }
 
-  if (thread_verbosity >= 2) {
-    printf("Total added %" PRIu32 ", removed %" PRIu32 "\n", added, removed);
-  }
+  LOG(L_MORE_THREADS,
+      "Total added %" PRIu32 ", removed %" PRIu32 "\n", added, removed);
 
                                                              // LCOV_EXCL_START
   if (added != removed) {
@@ -564,7 +547,7 @@ void init_sizetree()
 
   if (hardlink_is_unique) {
     bloom_init(&inode_filter, file_count, 0.000001);
-    if (verbosity >= 5) {
+    LOG_MORE_INFO {
       bloom_print(&inode_filter);
     }
   }
