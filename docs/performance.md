@@ -84,6 +84,11 @@ As a rule of thumb on a HDD I recommend:
    * If this is slower, always use `--hdd` mode for that data set
    * If it is faster, use SSD mode during subsequent scans in a work session
 
+Notice that dupd now displays the read throughput (in K/s) during the
+scan progress output. A good way to decide the best options to use for
+your scan is to keep an eye on the read throughput and pick the mode
+which maximizes it.
+
 As with all things performance, YMMV. See what works best on your
 system given the size of your data set, the RAM available and the
 other activities going on in that machine.
