@@ -53,6 +53,7 @@ int stats_set_no_dups_round_two = 0;
 int stats_set_round_one = 0;
 int stats_set_round_two = 0;
 int stats_size_list_count = 0;
+int stats_size_list_done = 0;
 int stats_three_file_compare = 0;
 int stats_two_file_compare = 0;
 int stats_uniques_saved = 0;
@@ -61,7 +62,7 @@ uint32_t stats_files_count = 0;
 int stats_files_ignored = 0;
 int stats_files_error = 0;
 long stats_avg_file_size = 0;
-long stats_time_scan = 0;
+long stats_time_scan = -1;
 long stats_time_process = 0;
 long stats_time_total = 0;
 int path_buffer_realloc = 0;
@@ -167,7 +168,8 @@ void report_stats()
   }
 
   LOG_BASE {
-    printf("Total duplicates: %d\n", stats_duplicate_files);
+    printf("Total duplicates: %d files in %d sets\n",
+           stats_duplicate_files, stats_duplicate_sets);
     if (save_uniques) {
       printf("Total unique files: %d\n", stats_uniques_saved);
     }

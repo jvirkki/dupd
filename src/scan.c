@@ -47,6 +47,76 @@
 static char * scan_list = NULL;
 static int scan_list_capacity = 0;
 static int scan_list_pos = -1;
+static int scan_completed = 0;
+static long read_phase_started;
+
+#define SHOW_LINE printf(line); fflush(stdout);
+
+
+/** ***************************************************************************
+ * Print out scan progress stats while scan is ongoing.
+ *
+ */
+static void * scan_status(void * arg)
+{
+  (void)arg;
+  char line[100] = "Files scanned:";
+  int c = strlen(line);
+  long delta;
+  long kread;
+  long ksec;
+  const char * files =
+    "Files: %8u                      %6u errors                            ";
+  const char * filesd =
+    "Files: %8u                      %6u errors                %9u ms\n";
+  const char * sets =
+    "Sets : %8u/%8u %10uK %6ds (%7ldK/s)                     ";
+  const char * setsd =
+    "Sets : %8u/%8u %10uK %6ds (%7ldK/s)         %9u ms\n";
+
+  printf(line);
+
+  // Loop showing count of files being scanned until that phase is done
+  while (stats_time_scan == -1) {
+    printf("\033[%dD", c);
+    c = snprintf(line, 100, files,
+                 (unsigned int)stats_files_count,
+                 (unsigned int)stats_files_error);
+    SHOW_LINE;
+    usleep(1000 * 250);
+  }
+
+  // Show final count along with time this phase took
+  printf("\033[%dD", c);
+  c = snprintf(line, 100, filesd,
+               (unsigned int)stats_files_count,
+               (unsigned int)stats_files_error,
+               (unsigned int)stats_time_scan);
+  SHOW_LINE;
+
+  // Loop showing how many size sets processed so far until all are done
+  while (!scan_completed) {
+    printf("\033[%dD", c);
+    delta = (get_current_time_millis() - read_phase_started) / 1000;
+    kread = stats_total_bytes_read / 1024;
+    ksec = delta == 0 ? 0 : kread / delta;
+    c = snprintf(line, 100, sets, stats_size_list_done,
+                 stats_size_list_count, kread, delta, ksec);
+    SHOW_LINE;
+    usleep(1000 * 250);
+  }
+
+  // Show final count along with time this phase took
+  printf("\033[%dD", c);
+  delta = stats_time_process / 1000;
+  kread = stats_total_bytes_read / 1024;
+  ksec = delta == 0 ? 0 : kread / delta;
+  c = snprintf(line, 100, setsd, stats_size_list_done, stats_size_list_count,
+               kread, delta, ksec, stats_time_process);
+  SHOW_LINE;
+
+  return NULL;
+}
 
 
 /** ***************************************************************************
@@ -235,6 +305,17 @@ void scan()
     begin_transaction(dbh);
   }
 
+  pthread_t status_thread;
+  int started_status_thread = 0;
+  if (log_level > L_NONE && log_level < L_PROGRESS) {
+    if (pthread_create(&status_thread, NULL, scan_status, NULL)) {
+                                                             // LCOV_EXCL_START
+      printf("error: unable to create scan status thread!\n");
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
+    started_status_thread = 1;
+  }
+
   // Scan phase - stat all files and build size tree, size list and path list
 
   long t1 = get_current_time_millis();
@@ -300,7 +381,7 @@ void scan()
 
   // Processing phase - walk through size list whittling down the potentials
 
-  t1 = get_current_time_millis();
+  read_phase_started = get_current_time_millis();
 
   if (x_analyze) {
     analyze_process_size_list(dbh);
@@ -316,9 +397,9 @@ void scan()
     }
   }
 
-  stats_time_process = get_current_time_millis() - t1;
+  stats_time_process = get_current_time_millis() - read_phase_started;;
 
-  LOG(L_PROGRESS, "Duplicate processing completed in %ldms\n", stats_time_process);
+  LOG(L_PROGRESS, "Duplicate processing took %ldms\n", stats_time_process);
   LOG(L_PROGRESS, "Largest duplicate set %d\n", stats_most_dups);
 
   if (write_db) {
@@ -328,6 +409,11 @@ void scan()
 
   LOG_RESOURCES {
     report_path_block_usage();
+  }
+
+  scan_completed = 1;
+  if (started_status_thread) {
+    d_join(status_thread, NULL);
   }
 
   report_stats();

@@ -50,7 +50,6 @@ static int avg_read_time = 0;
 static int read_count = 0;
 static int open_files = 0;
 static int reader_main_hdd_round_2 = 0;
-static int show_processed_count = 0;
 static int round3_info_buffers_used = 0;
 
 static pthread_mutex_t reader_main_hdd_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -136,12 +135,12 @@ static inline void show_processed(int total, int files, long size,
 {
   d_mutex_lock(&show_processed_lock, "show_processed");
 
-  show_processed_count++;
+  stats_size_list_done++;
 
   LOG(L_PROGRESS, "Processed %d/%d [%c] (%d files of size %ld) (loop %d)\n",
-      show_processed_count, total, phase, files, size, loop);
+      stats_size_list_done, total, phase, files, size, loop);
 
-  if (show_processed_count > total) {                        // LCOV_EXCL_START
+  if (stats_size_list_done > total) {                        // LCOV_EXCL_START
     printf("\nThat's not right...\n");
     exit(1);
   }                                                          // LCOV_EXCL_STOP
@@ -266,6 +265,7 @@ static void * round3_hasher(void * arg)
   struct size_list * size_node;
   struct size_list * size_node_next;
   struct round3_info * status;
+  uint32_t path_count = 0;
   int every_hash_computed;
   int loops = 0;
   int done;
@@ -491,10 +491,11 @@ static void * round3_hasher(void * arg)
           }
 
           LOG_PROGRESS {
-            uint32_t path_count = pl_get_path_count(size_node->path_list);
-            show_processed(stats_size_list_count, path_count,
-                           size_node->size, loops, '3');
+            path_count = pl_get_path_count(size_node->path_list);
           }
+
+          show_processed(stats_size_list_count, path_count,
+                         size_node->size, loops, '3');
 
         } // every_hash_computed
 
@@ -814,10 +815,10 @@ static void process_round_3(sqlite3 * dbh)
 
       if (did_one) {
         LOG_PROGRESS {
-          uint32_t path_count = pl_get_path_count(size_node->path_list);
-          show_processed(stats_size_list_count, path_count,
-                         size_node->size, loops, '3');
+          path_count = pl_get_path_count(size_node->path_list);
         }
+        show_processed(stats_size_list_count, path_count,
+                       size_node->size, loops, '3');
       }
 
       next_node_next = size_node->next;
@@ -1776,10 +1777,8 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
           }
 
         } else {
-          LOG_PROGRESS {
-            show_processed(stats_size_list_count,
-                           path_count, size_node->size, loops, phase);
-          }
+          show_processed(stats_size_list_count,
+                         path_count, size_node->size, loops, phase);
         }
 
       }
@@ -1942,9 +1941,9 @@ void threaded_process_size_list(sqlite3 * dbh)
       if (did_one) {
         LOG_PROGRESS {
           path_count = pl_get_path_count(size_node->path_list);
-          show_processed(stats_size_list_count, path_count,
-                         size_node->size, round, '1');
         }
+        show_processed(stats_size_list_count, path_count,
+                       size_node->size, round, '1');
       }
 
       d_mutex_unlock(&size_node->lock);

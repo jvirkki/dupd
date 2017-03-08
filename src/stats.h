@@ -49,6 +49,7 @@ extern int stats_set_round_one;
 extern int stats_set_round_two;
 extern int stats_single_block_count;
 extern int stats_size_list_count;
+extern int stats_size_list_done;
 extern int stats_three_file_compare;
 extern int stats_two_file_compare;
 extern int stats_uniques_saved;
