@@ -29,6 +29,7 @@
 
 #include "main.h"
 #include "stats.h"
+#include "utils.h"
 
 uint64_t stats_total_bytes = 0;
 uint64_t stats_total_bytes_read = 0;
@@ -65,6 +66,7 @@ long stats_avg_file_size = 0;
 long stats_time_scan = -1;
 long stats_time_process = 0;
 long stats_time_total = 0;
+long stats_main_start = 0;
 int path_buffer_realloc = 0;
 int hashlist_path_realloc = 0;
 int hash_list_len_inc = 0;
@@ -143,7 +145,6 @@ void report_stats()
            (int)((100 * stats_comparison_bytes_read) / stats_total_bytes));
 
     printf("\n");
-    printf("Number of sets with duplicates: %d\n", stats_duplicate_sets);
 
     if (x_analyze) {
       printf("\n");
@@ -168,8 +169,10 @@ void report_stats()
   }
 
   LOG_BASE {
-    printf("Total duplicates: %d files in %d sets\n",
-           stats_duplicate_files, stats_duplicate_sets);
+    char timebuf[20];
+    time_string(timebuf, 20, get_current_time_millis() - stats_main_start);
+    printf("Total duplicates: %d files in %d sets in %s\n",
+           stats_duplicate_files, stats_duplicate_sets, timebuf);
     if (save_uniques) {
       printf("Total unique files: %d\n", stats_uniques_saved);
     }

@@ -48,6 +48,7 @@ static char * scan_list = NULL;
 static int scan_list_capacity = 0;
 static int scan_list_pos = -1;
 static int scan_completed = 0;
+static long scan_phase_started;
 static long read_phase_started;
 
 #define SHOW_LINE printf(line); fflush(stdout);
@@ -60,48 +61,50 @@ static long read_phase_started;
 static void * scan_status(void * arg)
 {
   (void)arg;
-  char line[100] = "Files scanned:";
+  char line[100];
+  char timebuf[20];
   int c = strlen(line);
   long delta;
   long kread;
   long ksec;
   const char * files =
-    "Files: %8u                      %6u errors                            ";
-  const char * filesd =
-    "Files: %8u                      %6u errors                %9u ms\n";
+    "Files: %8u                      %6u errors                 %12s";
   const char * sets =
-    "Sets : %8u/%8u %10uK %6ds (%7ldK/s)                     ";
-  const char * setsd =
-    "Sets : %8u/%8u %10uK %6ds (%7ldK/s)         %9u ms\n";
-
-  printf(line);
+    "Sets : %8u/%8u %10uK (%7ldK/s)                  %12s";
 
   // Loop showing count of files being scanned until that phase is done
   while (stats_time_scan == -1) {
     printf("\033[%dD", c);
+    delta = get_current_time_millis() - scan_phase_started;
+    time_string(timebuf, 20, delta);
     c = snprintf(line, 100, files,
                  (unsigned int)stats_files_count,
-                 (unsigned int)stats_files_error);
+                 (unsigned int)stats_files_error,
+                 timebuf);
     SHOW_LINE;
     usleep(1000 * 250);
   }
 
   // Show final count along with time this phase took
   printf("\033[%dD", c);
-  c = snprintf(line, 100, filesd,
+  time_string(timebuf, 20, stats_time_scan);
+  c = snprintf(line, 100, files,
                (unsigned int)stats_files_count,
                (unsigned int)stats_files_error,
-               (unsigned int)stats_time_scan);
+               timebuf);
   SHOW_LINE;
+  printf("\n");
 
   // Loop showing how many size sets processed so far until all are done
   while (!scan_completed) {
     printf("\033[%dD", c);
-    delta = (get_current_time_millis() - read_phase_started) / 1000;
+    delta = get_current_time_millis() - read_phase_started;
+    time_string(timebuf, 20, delta);
+    delta = delta / 1000;
     kread = stats_total_bytes_read / 1024;
     ksec = delta == 0 ? 0 : kread / delta;
     c = snprintf(line, 100, sets, stats_size_list_done,
-                 stats_size_list_count, kread, delta, ksec);
+                 stats_size_list_count, kread, ksec, timebuf);
     SHOW_LINE;
     usleep(1000 * 250);
   }
@@ -111,9 +114,11 @@ static void * scan_status(void * arg)
   delta = stats_time_process / 1000;
   kread = stats_total_bytes_read / 1024;
   ksec = delta == 0 ? 0 : kread / delta;
-  c = snprintf(line, 100, setsd, stats_size_list_done, stats_size_list_count,
-               kread, delta, ksec, stats_time_process);
+  time_string(timebuf, 20, stats_time_process);
+  c = snprintf(line, 100, sets, stats_size_list_done, stats_size_list_count,
+               kread, ksec, timebuf);
   SHOW_LINE;
+  printf("\n"); fflush(stdout);
 
   return NULL;
 }
@@ -318,7 +323,7 @@ void scan()
 
   // Scan phase - stat all files and build size tree, size list and path list
 
-  long t1 = get_current_time_millis();
+  scan_phase_started = get_current_time_millis();
   for (int i=0; start_path[i] != NULL; i++) {
     int rv = get_file_info(start_path[i], &stat_info);
     if (rv != 0) {
@@ -331,8 +336,8 @@ void scan()
       }
     }
   }
-  long t2 = get_current_time_millis();
-  stats_time_scan = t2 - t1;
+
+  stats_time_scan = get_current_time_millis() - scan_phase_started;
 
   if (threaded_sizetree) {
     scan_done();
@@ -371,7 +376,7 @@ void scan()
   }
 
   if (hdd_mode) {
-    t1 = get_current_time_millis();
+    long t1 = get_current_time_millis();
     sort_read_list();
     LOG_PROGRESS {
       long sort_time = get_current_time_millis() - t1;

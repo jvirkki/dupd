@@ -400,7 +400,7 @@ static int process_args(int argc, char * argv[])
  */
 int main(int argc, char * argv[])
 {
-  long t1 = get_current_time_millis();
+  stats_main_start = get_current_time_millis();
   int rv = 0;
 
   pthread_key_create(&thread_name, NULL);
@@ -463,7 +463,7 @@ int main(int argc, char * argv[])
   free_start_paths();
   free_read_list();
 
-  stats_time_total = get_current_time_millis() - t1;
+  stats_time_total = get_current_time_millis() - stats_main_start;
 
   LOG(L_PROGRESS, "Total time: %ld ms\n", stats_time_total);
 

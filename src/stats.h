@@ -61,6 +61,7 @@ extern long stats_avg_file_size;
 extern long stats_time_scan;
 extern long stats_time_process;
 extern long stats_time_total;
+extern long stats_main_start;
 extern int path_buffer_realloc;
 extern int hashlist_path_realloc;
 extern int hash_list_len_inc;

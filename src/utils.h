@@ -89,6 +89,20 @@ long get_current_time_millis();
 
 
 /** ***************************************************************************
+ * Print time interval to buffer.
+ *
+ * Parameters:
+ *    out - Output buffer.
+ *    len - Size of out buffer.
+ *    ms  - Time in milliseconds.
+ *
+ * Return: none
+ *
+ */
+void time_string(char * out, int len, long ms);
+
+
+/** ***************************************************************************
  * For testing, slow down a bit, maybe.
  *
  * Parameters:

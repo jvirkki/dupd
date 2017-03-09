@@ -85,6 +85,25 @@ long get_current_time_millis()
  * Public function, see header file.
  *
  */
+void time_string(char * out, int len, long ms)
+{
+  if (len < 13) {                                            // LCOV_EXCL_START
+    printf("error: time_string buffer too small\n");
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
+  if (ms > 10000) {
+    snprintf(out, len, "%9ld s", ms / 1000);
+  } else {
+    snprintf(out, len, "%8ld ms", ms);
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 long slow_down(int prob, int max_delay_ms)
 {
   if (rand() % prob == 0) {
