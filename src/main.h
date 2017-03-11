@@ -61,6 +61,7 @@
  *
  */
 extern int log_level;
+extern pthread_mutex_t logger_lock;
 
 #define L_NONE 0
 #define L_BASE 1
@@ -76,9 +77,12 @@ extern int log_level;
 #define L_FILES 11
 #define L_MORE_TRACE 12
 
-#define LOG(level, ...)  if (level <= log_level) { \
-    printf("%s", get_thread_name());               \
-    printf(__VA_ARGS__);                           \
+#define LOG(level, ...)  if (level <= log_level) {   \
+    pthread_mutex_lock(&logger_lock);                \
+    printf("%s", get_thread_name());                 \
+    printf(__VA_ARGS__);                             \
+    fflush(stdout);                                  \
+    pthread_mutex_unlock(&logger_lock);              \
   }
 
 #define LOG_BASE if (log_level >= L_BASE)

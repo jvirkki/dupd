@@ -89,6 +89,7 @@ int hash_bufsize = -1;
 long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 int report_format = REPORT_FORMAT_TEXT;
 pthread_key_t thread_name;
+pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /** ***************************************************************************
