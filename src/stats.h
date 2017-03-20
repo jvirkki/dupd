@@ -23,6 +23,19 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+#define ROUNDS 3
+#define ROUND1 0
+#define ROUND2 1
+#define ROUND3 2
+
+extern int stats_sets_processed[ROUNDS];
+extern int stats_sets_dup_done[ROUNDS];
+extern int stats_sets_dup_not[ROUNDS];
+extern int stats_sets_full_read[ROUNDS];
+extern int stats_sets_part_read[ROUNDS];
+extern long stats_round_start[ROUNDS];
+extern int stats_round_duration[ROUNDS];
+
 extern uint64_t stats_total_bytes;
 extern uint64_t stats_total_bytes_read;
 extern uint64_t stats_total_bytes_hashed;

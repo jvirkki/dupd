@@ -31,6 +31,14 @@
 #include "stats.h"
 #include "utils.h"
 
+int stats_sets_processed[ROUNDS] = { 0,0,0 };
+int stats_sets_dup_done[ROUNDS] = { 0,0,0 };
+int stats_sets_dup_not[ROUNDS] = { 0,0,0 };
+int stats_sets_full_read[ROUNDS] = { 0,0,0 };
+int stats_sets_part_read[ROUNDS] = { 0,0,0 };
+long stats_round_start[ROUNDS] = { -1,-1,-1 };
+int stats_round_duration[ROUNDS] = { -1,-1,-1 };
+
 uint64_t stats_total_bytes = 0;
 uint64_t stats_total_bytes_read = 0;
 uint64_t stats_total_bytes_hashed = 0;
@@ -44,15 +52,8 @@ int stats_full_hash_first = 0;
 int stats_full_hash_second = 0;
 int stats_partial_hash_second = 0;
 int stats_one_block_hash_first = 0;
-int stats_set_dups_done_full_round = 0;
-int stats_set_dup_done_round_one = 0;
-int stats_set_dup_done_round_two = 0;
-int stats_set_full_round = 0;
-int stats_set_no_dups_full_round = 0;
-int stats_set_no_dups_round_one = 0;
-int stats_set_no_dups_round_two = 0;
-int stats_set_round_one = 0;
-int stats_set_round_two = 0;
+
+
 int stats_size_list_count = 0;
 int stats_size_list_done = 0;
 int stats_three_file_compare = 0;
@@ -103,34 +104,34 @@ void report_stats()
            stats_three_file_compare);
 
     printf("\n");
-    printf("Round one: hash list processed for %d size sets\n",
-           stats_set_round_one);
+    printf("Round one: hash list processed for %d size sets (%dms)\n",
+           stats_sets_processed[ROUND1], stats_round_duration[ROUND1]);
     printf("  Block size %d (%d max blocks)\n",
            hash_one_block_size, hash_one_max_blocks);
     printf("  Sets fully hashed in round one: %d\n", stats_full_hash_first);
     printf("  Sets with single block first round: %d\n",
            stats_one_block_hash_first);
     printf("  Sets with dups ruled out in first round: %d\n",
-           stats_set_no_dups_round_one);
+           stats_sets_dup_not[ROUND1]);
     printf("  Sets with dups confirmed in first round: %d\n",
-           stats_set_dup_done_round_one);
+           stats_sets_dup_done[ROUND1]);
 
-    printf("Round two: hash list processed for %d size sets\n",
-           stats_set_round_two);
+    printf("Round two: hash list processed for %d size sets (%dms)\n",
+           stats_sets_processed[ROUND2], stats_round_duration[ROUND2]);
     printf("  Block size %d (%d max blocks)\n",
            hash_block_size, intermediate_blocks);
     printf("  Sets with dups ruled out in second round: %d\n",
-           stats_set_no_dups_round_two);
+           stats_sets_dup_not[ROUND2]);
     printf("  Sets with dups confirmed in second round: %d\n",
-           stats_set_dup_done_round_two);
+           stats_sets_dup_done[ROUND2]);
 
-    printf("Round three: hash list processed for %d size sets\n",
-           stats_set_full_round);
+    printf("Round three: hash list processed for %d size sets (%dms)\n",
+           stats_sets_processed[ROUND3], stats_round_duration[ROUND3]);
     printf("  Block size %d\n", hash_block_size);
     printf("  Sets with dups ruled out in full round: %d\n",
-           stats_set_no_dups_full_round);
+           stats_sets_dup_not[ROUND3]);
     printf("  Sets with dups confirmed in full round: %d\n",
-           stats_set_dups_done_full_round);
+           stats_sets_dup_done[ROUND3]);
 
     printf("\n");
     printf("Total bytes of all files: %" PRIu64 "\n", stats_total_bytes);
@@ -182,11 +183,12 @@ void report_stats()
   }
 
   // Some sanity checking
-  int totals_from_rounds = stats_set_no_dups_round_one +
-    stats_set_dup_done_round_one + stats_set_no_dups_round_two +
-    stats_set_dup_done_round_two +stats_set_no_dups_full_round +
-    stats_set_dups_done_full_round + stats_two_file_compare +
-    stats_three_file_compare;;
+  int totals_from_rounds =
+    stats_sets_dup_not[ROUND1] + stats_sets_dup_done[ROUND1] +
+    stats_sets_dup_not[ROUND2] + stats_sets_dup_done[ROUND2] +
+    stats_sets_dup_not[ROUND3] + stats_sets_dup_done[ROUND3] +
+    stats_two_file_compare + stats_three_file_compare;
+
   if (totals_from_rounds != stats_size_list_count) {         // LCOV_EXCL_START
     printf("\nwarning: total size sets %d != sets confirmed %d\n",
            stats_size_list_count, totals_from_rounds);
@@ -214,18 +216,18 @@ void save_stats()
   fprintf(fp, "stats_partial_hash_second %d\n", stats_partial_hash_second);
   fprintf(fp, "stats_one_block_hash_first %d\n", stats_one_block_hash_first);
   fprintf(fp, "stats_set_dups_done_full_round %d\n",
-          stats_set_dups_done_full_round);
+          stats_sets_dup_done[ROUND3]);
   fprintf(fp, "stats_set_dups_done_round_one %d\n",
-          stats_set_dup_done_round_one);
+          stats_sets_dup_done[ROUND1]);
   fprintf(fp, "stats_set_dups_done_round_two %d\n",
-          stats_set_dup_done_round_two);
-  fprintf(fp, "stats_set_full_round %d\n", stats_set_full_round);
+          stats_sets_dup_done[ROUND2]);
+  fprintf(fp, "stats_set_full_round %d\n", stats_sets_processed[ROUND3]);
   fprintf(fp, "stats_set_no_dups_full_round %d\n",
-          stats_set_no_dups_full_round);
-  fprintf(fp, "stats_set_no_dups_round_one %d\n", stats_set_no_dups_round_one);
-  fprintf(fp, "stats_set_no_dups_round_two %d\n", stats_set_no_dups_round_two);
-  fprintf(fp, "stats_set_round_one %d\n", stats_set_round_one);
-  fprintf(fp, "stats_set_round_two %d\n", stats_set_round_two);
+          stats_sets_dup_not[ROUND3]);
+  fprintf(fp, "stats_set_no_dups_round_one %d\n", stats_sets_dup_not[ROUND1]);
+  fprintf(fp, "stats_set_no_dups_round_two %d\n", stats_sets_dup_not[ROUND2]);
+  fprintf(fp, "stats_set_round_one %d\n", stats_sets_processed[ROUND1]);
+  fprintf(fp, "stats_set_round_two %d\n", stats_sets_processed[ROUND2]);
   fprintf(fp, "stats_size_list_count %d\n", stats_size_list_count);
   fprintf(fp, "stats_three_file_compare %d\n", stats_three_file_compare);
   fprintf(fp, "stats_two_file_compare %d\n", stats_two_file_compare);

@@ -71,6 +71,8 @@ static void * scan_status(void * arg)
     "Files: %8u                      %6u errors                 %12s";
   const char * sets =
     "Sets : %8u/%8u %10uK (%7ldK/s)                  %12s";
+  const char * sets_done =
+    "Sets : %8u/%8u  (%8u confirmed, %8u rejected)  %12s\n";
 
   // Loop showing count of files being scanned until that phase is done
   while (stats_time_scan == -1) {
@@ -95,30 +97,33 @@ static void * scan_status(void * arg)
   SHOW_LINE;
   printf("\n");
 
-  // Loop showing how many size sets processed so far until all are done
-  while (!scan_completed) {
-    printf("\033[%dD", c);
-    delta = get_current_time_millis() - read_phase_started;
-    time_string(timebuf, 20, delta);
-    delta = delta / 1000;
-    kread = stats_total_bytes_read / 1024;
-    ksec = delta == 0 ? 0 : kread / delta;
-    c = snprintf(line, 100, sets, stats_size_list_done,
-                 stats_size_list_count, kread, ksec, timebuf);
-    SHOW_LINE;
-    usleep(1000 * 250);
-  }
+  int round = 0;
 
-  // Show final count along with time this phase took
-  printf("\033[%dD", c);
-  delta = stats_time_process / 1000;
-  kread = stats_total_bytes_read / 1024;
-  ksec = delta == 0 ? 0 : kread / delta;
-  time_string(timebuf, 20, stats_time_process);
-  c = snprintf(line, 100, sets, stats_size_list_done, stats_size_list_count,
-               kread, ksec, timebuf);
-  SHOW_LINE;
-  printf("\n"); fflush(stdout);
+  do {
+    do {
+      printf("\033[%dD", c);
+      delta = get_current_time_millis() - read_phase_started;
+      time_string(timebuf, 20, delta);
+      delta = delta / 1000;
+      kread = stats_total_bytes_read / 1024;
+      ksec = delta == 0 ? 0 : kread / delta;
+      c = snprintf(line, 100, sets, stats_size_list_done,
+                   stats_size_list_count, kread, ksec, timebuf);
+      SHOW_LINE;
+      usleep(1000 * 250);
+
+    } while (!scan_completed && stats_round_duration[round] < 0);
+
+    printf("\033[%dD", c);
+    time_string(timebuf, 20, stats_round_duration[round]);
+
+    c = snprintf(line, 100, sets_done,
+                 stats_sets_dup_done[round] + stats_sets_dup_not[round],
+                 stats_size_list_count, stats_sets_dup_done[round],
+                 stats_sets_dup_not[round], timebuf);
+    SHOW_LINE;
+
+  } while (!scan_completed && ++round < 3);
 
   return NULL;
 }
