@@ -156,6 +156,11 @@ void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
   struct hash_list * tail = hl;
   int hl_len = 0;
 
+  LOG_MORE_TRACE {
+    LOG(L_MORE_TRACE, "Adding path %s to hash list which contains:\n", path);
+    print_hash_list(hl);
+  }
+
   // Find the node which contains the paths for this hash, if it exists.
 
   while (p != NULL && p->hash_valid) {
@@ -409,14 +414,14 @@ void print_hash_list(struct hash_list * src)
 {
   struct hash_list * p = src;
   while (p != NULL && p->hash_valid) {
-    printf("hash_valid: %d, has_dups: %d, next_index: %d   ",
-           p->hash_valid, p->has_dups, p->next_index);
+    LOG(L_TRACE, "hash_valid: %d, has_dups: %d, next_index: %d   ",
+        p->hash_valid, p->has_dups, p->next_index);
     memdump("hash", p->hash, hash_bufsize);
     for (int j=0; j < p->next_index; j++) {
-      printf("  [%s]\n", *(p->pathptrs + j));
+      LOG(L_TRACE, "  [%s]\n", *(p->pathptrs + j));
     }
+    p = p->next;
   }
-  p = p->next;
 }
 
 
