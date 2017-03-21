@@ -38,6 +38,7 @@ int stats_sets_full_read[ROUNDS] = { 0,0,0 };
 int stats_sets_part_read[ROUNDS] = { 0,0,0 };
 long stats_round_start[ROUNDS] = { -1,-1,-1 };
 int stats_round_duration[ROUNDS] = { -1,-1,-1 };
+int stats_duplicate_groups[ROUNDS] = { 0,0,0 };
 
 uint64_t stats_total_bytes = 0;
 uint64_t stats_total_bytes_read = 0;
@@ -47,7 +48,7 @@ uint32_t stats_max_pathlist = 0;
 long stats_max_pathlist_size = 0;
 int stats_most_dups = 0;
 int stats_duplicate_files = 0;
-int stats_duplicate_sets = 0;
+
 int stats_full_hash_first = 0;
 int stats_full_hash_second = 0;
 int stats_partial_hash_second = 0;
@@ -115,6 +116,8 @@ void report_stats()
            stats_sets_dup_not[ROUND1]);
     printf("  Sets with dups confirmed in first round: %d\n",
            stats_sets_dup_done[ROUND1]);
+    printf("  Groups of dups confirmed in first round: %d\n",
+           stats_duplicate_groups[ROUND1]);
 
     printf("Round two: hash list processed for %d size sets (%dms)\n",
            stats_sets_processed[ROUND2], stats_round_duration[ROUND2]);
@@ -124,6 +127,8 @@ void report_stats()
            stats_sets_dup_not[ROUND2]);
     printf("  Sets with dups confirmed in second round: %d\n",
            stats_sets_dup_done[ROUND2]);
+    printf("  Groups of dups confirmed in second round: %d\n",
+           stats_duplicate_groups[ROUND2]);
 
     printf("Round three: hash list processed for %d size sets (%dms)\n",
            stats_sets_processed[ROUND3], stats_round_duration[ROUND3]);
@@ -132,6 +137,8 @@ void report_stats()
            stats_sets_dup_not[ROUND3]);
     printf("  Sets with dups confirmed in full round: %d\n",
            stats_sets_dup_done[ROUND3]);
+    printf("  Groups of dups confirmed in full round: %d\n",
+           stats_duplicate_groups[ROUND3]);
 
     printf("\n");
     printf("Total bytes of all files: %" PRIu64 "\n", stats_total_bytes);
@@ -172,8 +179,10 @@ void report_stats()
   LOG_BASE {
     char timebuf[20];
     time_string(timebuf, 20, get_current_time_millis() - stats_main_start);
-    printf("Total duplicates: %d files in %d sets in %s\n",
-           stats_duplicate_files, stats_duplicate_sets, timebuf);
+    int total_groups = stats_duplicate_groups[ROUND1] +
+      stats_duplicate_groups[ROUND2] + stats_duplicate_groups[ROUND3];
+    printf("Total duplicates: %d files in %d groups in %s\n",
+           stats_duplicate_files, total_groups, timebuf);
     if (save_uniques) {
       printf("Total unique files: %d\n", stats_uniques_saved);
     }
@@ -210,7 +219,12 @@ void save_stats()
   fprintf(fp, "stats_comparison_bytes_read %" PRIu64 "\n",
           stats_comparison_bytes_read);
   fprintf(fp, "stats_duplicate_files %d\n", stats_duplicate_files);
-  fprintf(fp, "stats_duplicate_sets %d\n", stats_duplicate_sets);
+  int total_groups = stats_duplicate_groups[ROUND1] +
+    stats_duplicate_groups[ROUND2] + stats_duplicate_groups[ROUND3];
+  fprintf(fp, "stats_duplicate_groups %d\n", total_groups);
+  fprintf(fp, "stats_duplicate_groups_1 %d\n", stats_duplicate_groups[ROUND1]);
+  fprintf(fp, "stats_duplicate_groups_2 %d\n", stats_duplicate_groups[ROUND2]);
+  fprintf(fp, "stats_duplicate_groups_3 %d\n", stats_duplicate_groups[ROUND3]);
   fprintf(fp, "stats_full_hash_first %d\n", stats_full_hash_first);
   fprintf(fp, "stats_full_hash_second %d\n", stats_full_hash_second);
   fprintf(fp, "stats_partial_hash_second %d\n", stats_partial_hash_second);

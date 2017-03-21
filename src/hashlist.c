@@ -358,14 +358,14 @@ void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
  *
  */
 void publish_duplicate_hash_list(sqlite3 * dbh,
-                                 struct hash_list * hl, off_t size)
+                                 struct hash_list * hl, off_t size, int round)
 {
   struct hash_list * p = hl;
   while (p != NULL && p->hash_valid) {
 
     if (p->next_index > 1) {
 
-      stats_duplicate_sets++;
+      stats_duplicate_groups[round]++;
       stats_duplicate_files += p->next_index;
 
       if (!write_db || log_level >= L_TRACE) {

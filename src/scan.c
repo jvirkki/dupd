@@ -50,8 +50,33 @@ static int scan_list_pos = -1;
 static int scan_completed = 0;
 static long scan_phase_started;
 static long read_phase_started;
+pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t status_cond = PTHREAD_COND_INITIALIZER;
 
 #define SHOW_LINE printf(line); fflush(stdout);
+
+
+/** ***************************************************************************
+ * Sleep a bit while updating status.
+ *
+ */
+static void status_wait()
+{
+  struct timespec timeout;
+  struct timeval now;
+
+  gettimeofday(&now, NULL);
+
+  timeout.tv_sec = now.tv_sec;
+  timeout.tv_nsec = (now.tv_usec + 1000UL * 250) * 1000UL;
+  if (timeout.tv_nsec > 1000000000L) {
+    timeout.tv_nsec -= 1000000000L;
+    timeout.tv_sec++;
+  }
+  pthread_mutex_lock(&status_lock);
+  pthread_cond_timedwait(&status_cond, &status_lock, &timeout);
+  pthread_mutex_unlock(&status_lock);
+}
 
 
 /** ***************************************************************************
@@ -63,7 +88,7 @@ static void * scan_status(void * arg)
   (void)arg;
   char line[100];
   char timebuf[20];
-  int c = strlen(line);
+  int c = 0;
   long delta;
   long kread;
   long ksec;
@@ -72,7 +97,7 @@ static void * scan_status(void * arg)
   const char * sets =
     "Sets : %8u/%8u %10uK (%7ldK/s)                  %12s";
   const char * sets_done =
-    "Sets : %8u/%8u  (%8u confirmed, %8u rejected)  %12s\n";
+    "Sets : %8u/%8u  (%8u groups of duplicates confirmed)%12s\n";
 
   // Loop showing count of files being scanned until that phase is done
   while (stats_time_scan == -1) {
@@ -84,7 +109,7 @@ static void * scan_status(void * arg)
                  (unsigned int)stats_files_error,
                  timebuf);
     SHOW_LINE;
-    usleep(1000 * 250);
+    status_wait();
   }
 
   // Show final count along with time this phase took
@@ -110,20 +135,20 @@ static void * scan_status(void * arg)
       c = snprintf(line, 100, sets, stats_size_list_done,
                    stats_size_list_count, kread, ksec, timebuf);
       SHOW_LINE;
-      usleep(1000 * 250);
+      status_wait();
 
-    } while (!scan_completed && stats_round_duration[round] < 0);
+    } while (stats_round_duration[round] < 0);
 
     printf("\033[%dD", c);
     time_string(timebuf, 20, stats_round_duration[round]);
 
     c = snprintf(line, 100, sets_done,
-                 stats_sets_dup_done[round] + stats_sets_dup_not[round],
-                 stats_size_list_count, stats_sets_dup_done[round],
-                 stats_sets_dup_not[round], timebuf);
+                 stats_sets_processed[round],
+                 stats_size_list_count, stats_duplicate_groups[round],
+                 timebuf);
     SHOW_LINE;
 
-  } while (!scan_completed && ++round < 3);
+  } while (++round < 3);
 
   return NULL;
 }
@@ -342,7 +367,10 @@ void scan()
     }
   }
 
+  d_mutex_lock(&status_lock, "scan end");
   stats_time_scan = get_current_time_millis() - scan_phase_started;
+  pthread_cond_signal(&status_cond);
+  d_mutex_unlock(&status_lock);
 
   if (threaded_sizetree) {
     scan_done();
@@ -356,6 +384,9 @@ void scan()
       commit_transaction(dbh);
       close_database(dbh);
     }
+    stats_round_duration[ROUND1] = 0;
+    stats_round_duration[ROUND2] = 0;
+    stats_round_duration[ROUND3] = 0;
     return;
   }
 
@@ -408,6 +439,10 @@ void scan()
   }
 
   stats_time_process = get_current_time_millis() - read_phase_started;;
+
+  if (stats_round_duration[ROUND1] < 0) { stats_round_duration[ROUND1] = 0; }
+  if (stats_round_duration[ROUND2] < 0) { stats_round_duration[ROUND2] = 0; }
+  if (stats_round_duration[ROUND3] < 0) { stats_round_duration[ROUND3] = 0; }
 
   LOG(L_PROGRESS, "Duplicate processing took %ldms\n", stats_time_process);
   LOG(L_PROGRESS, "Largest duplicate set %d\n", stats_most_dups);

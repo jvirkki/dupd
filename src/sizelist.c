@@ -35,6 +35,7 @@
 #include "main.h"
 #include "paths.h"
 #include "readlist.h"
+#include "scan.h"
 #include "sizelist.h"
 #include "sizetree.h"
 #include "stats.h"
@@ -482,7 +483,7 @@ static void * round3_hasher(void * arg)
             // Still something left, go publish them to db
             LOG(L_TRACE, "Finally some dups confirmed, here they are:\n");
             stats_sets_dup_done[ROUND3]++;
-            publish_duplicate_hash_list(dbh, hl_full, size_node->size);
+            publish_duplicate_hash_list(dbh, hl_full, size_node->size, ROUND3);
             size_node->state = SLS_DONE;
           }
 
@@ -699,7 +700,7 @@ static void process_round_3(sqlite3 * dbh)
           char * node2 = pl_entry_get_valid_node(pl_entry_get_next(node1));
           char * path2 = pl_entry_get_path(node2);
 
-          compare_two_files(dbh, path1, path2, size_node->size);
+          compare_two_files(dbh, path1, path2, size_node->size, ROUND3);
           stats_two_file_compare++;
           size_node->state = SLS_DONE;
           did_one = 1;
@@ -717,7 +718,7 @@ static void process_round_3(sqlite3 * dbh)
           char * node3 = pl_entry_get_valid_node(pl_entry_get_next(node2));
           char * path3 = pl_entry_get_path(node3);
 
-          compare_three_files(dbh, path1, path2, path3, size_node->size);
+          compare_three_files(dbh, path1, path2, path3,size_node->size,ROUND3);
           stats_three_file_compare++;
           size_node->state = SLS_DONE;
           did_one = 1;
@@ -871,10 +872,11 @@ static void process_round_3(sqlite3 * dbh)
 
   d_join(hasher_thread, NULL);
 
-  d_mutex_lock(&r3_loop_lock, "r3-reader end");
+  d_mutex_lock(&status_lock, "r3-reader end");
   stats_round_duration[ROUND3] =
     get_current_time_millis() - stats_round_start[ROUND3];
-  d_mutex_unlock(&r3_loop_lock);
+  pthread_cond_signal(&status_cond);
+  d_mutex_unlock(&status_lock);
 
   LOG(L_THREADS, "DONE (%d loops)\n", loops);
 }
@@ -1014,7 +1016,7 @@ void analyze_process_size_list(sqlite3 * dbh)
       // If we've processed all blocks already, we're done!
       if (total_blocks == 0) {
         LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-        publish_duplicate_hash_list(dbh, hl_one, size_node->size);
+        publish_duplicate_hash_list(dbh, hl_one, size_node->size, ROUND1);
         stats_sets_dup_done[ROUND1]++;
         goto ANALYZER_CONTINUE;
       }
@@ -1098,7 +1100,7 @@ void process_size_list(sqlite3 * dbh)
       char * path1 = pl_entry_get_path(node);
       char * path2 = pl_entry_get_path(pl_entry_get_next(node));
 
-      compare_two_files(dbh, path1, path2, size_node->size);
+      compare_two_files(dbh, path1, path2, size_node->size, ROUND1);
       stats_two_file_compare++;
       goto CONTINUE;
     }
@@ -1110,7 +1112,7 @@ void process_size_list(sqlite3 * dbh)
       char * path2 = pl_entry_get_path(node2);
       char * path3 = pl_entry_get_path(pl_entry_get_next(node2));
 
-      compare_three_files(dbh, path1, path2, path3, size_node->size);
+      compare_three_files(dbh, path1, path2, path3, size_node->size, ROUND1);
       stats_three_file_compare++;
       goto CONTINUE;
     }
@@ -1155,7 +1157,7 @@ void process_size_list(sqlite3 * dbh)
     if (round_one_hash_blocks == 0) {
       stats_sets_dup_done[ROUND1]++;
       LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-      publish_duplicate_hash_list(dbh, hl_one, size_node->size);
+      publish_duplicate_hash_list(dbh, hl_one, size_node->size, ROUND1);
       goto CONTINUE;
     }
 
@@ -1190,7 +1192,7 @@ void process_size_list(sqlite3 * dbh)
       if (size_node->size < hash_block_size * intermediate_blocks) {
         stats_sets_dup_done[ROUND2]++;
         LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-        publish_duplicate_hash_list(dbh, hl_partial, size_node->size);
+        publish_duplicate_hash_list(dbh, hl_partial, size_node->size, ROUND2);
         goto CONTINUE;
       }
     }
@@ -1220,7 +1222,7 @@ void process_size_list(sqlite3 * dbh)
     // Still something left, go publish them to db
     LOG(L_TRACE, "Finally some dups confirmed, here they are:\n");
     stats_sets_dup_done[ROUND3]++;
-    publish_duplicate_hash_list(dbh, hl_full, size_node->size);
+    publish_duplicate_hash_list(dbh, hl_full, size_node->size, ROUND3);
 
     CONTINUE:
     size_node = size_node->next;
@@ -1540,13 +1542,8 @@ static void * reader_main_hdd(void * arg)
   }                                                          // LCOV_EXCL_STOP
 
   pthread_setspecific(thread_name, self1);
-  stats_round_start[ROUND1] = get_current_time_millis();
-  process_readlist(round1_max_bytes, hash_one_block_size);
 
-  d_mutex_lock(&reader_main_hdd_lock, "reader_main_hdd_lock r1 end");
-  stats_round_duration[ROUND1] =
-    get_current_time_millis() - stats_round_start[ROUND1];
-  d_mutex_unlock(&reader_main_hdd_lock);
+  process_readlist(round1_max_bytes, hash_one_block_size);
 
   // Having read all round 1 buffers, wait for the main thread to finish
   // processing them.
@@ -1557,18 +1554,12 @@ static void * reader_main_hdd(void * arg)
   d_mutex_unlock(&reader_main_hdd_lock);
 
   LOG(L_THREADS, "Waking up: round_2:%d\n", reader_main_hdd_round_2);
-  stats_round_start[ROUND2] = get_current_time_millis();
 
   // If any sets are in need of a round 2, go read those in readlist order.
   if (reader_main_hdd_round_2 > 0) {
     pthread_setspecific(thread_name, self2);
     process_readlist(R3_BUFSIZE, 0);
   }
-
-  d_mutex_lock(&reader_main_hdd_lock, "reader_main_hdd_lock r2 end");
-  stats_round_duration[ROUND2] =
-    get_current_time_millis() - stats_round_start[ROUND2];
-  d_mutex_unlock(&reader_main_hdd_lock);
 
   LOG(L_THREADS, "DONE\n");
 
@@ -1649,7 +1640,7 @@ static int build_hash_list_round(sqlite3 * dbh,
     if (size_node->fully_read) {
       stats_sets_dup_done[round]++;
       LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-      publish_duplicate_hash_list(dbh, hl, size_node->size);
+      publish_duplicate_hash_list(dbh, hl, size_node->size, round);
       size_node->state = SLS_DONE;
       completed = 1;
     }
@@ -1681,6 +1672,8 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
   if (size_list_head == NULL) {
     return;
   }
+
+  stats_round_start[ROUND1] = get_current_time_millis();
 
   // Start my companion thread which will read bytes from disk for me
   if (pthread_create(&reader_thread, NULL, reader_main_hdd, NULL)) {
@@ -1817,6 +1810,16 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
     // reader thread up. If there are sets wanting round 2 processing,
     // the reader thread will do so, otherwise it'll just end.
     if (out_round_1 == 0) {
+
+      if (stats_round_duration[ROUND1] < 0) {
+        d_mutex_lock(&status_lock, "r1 end");
+        stats_round_duration[ROUND1] =
+          get_current_time_millis() - stats_round_start[ROUND1];
+        stats_round_start[ROUND2] = get_current_time_millis();
+        pthread_cond_signal(&status_cond);
+        d_mutex_unlock(&status_lock);
+      }
+
       if (out_round_2 > 0) { reader_main_hdd_round_2 = out_round_2; }
       d_mutex_lock(&reader_main_hdd_lock, "hdd-main waking reader");
       d_cond_signal(&reader_main_hdd_cond);
@@ -1836,6 +1839,12 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
   d_join(reader_thread, NULL);
 
   LOG(L_THREADS, "Joined reader thread\n");
+
+  d_mutex_lock(&status_lock, "r2 end");
+  stats_round_duration[ROUND2] =
+    get_current_time_millis() - stats_round_start[ROUND2];
+  pthread_cond_signal(&status_cond);
+  d_mutex_unlock(&status_lock);
 
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.
@@ -1961,9 +1970,12 @@ void threaded_process_size_list(sqlite3 * dbh)
 
   LOG(L_THREADS, "Joined reader thread\n");
 
+  d_mutex_lock(&status_lock, "r1 end");
   stats_round_duration[ROUND1] =
     get_current_time_millis() - stats_round_start[ROUND1];
   stats_round_duration[ROUND2] = 0;
+  pthread_cond_signal(&status_cond);
+  d_mutex_unlock(&status_lock);
 
   // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
   // These will need to be processed in this thread directly.

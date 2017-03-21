@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -31,11 +31,13 @@
  *    path1 - Path of first file.
  *    path2 - Path of second file.
  *    size  - Size of the files.
+ *    round - Round in which these duplicates are being published.
  *
  * Return: none.
  *
  */
-void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size);
+void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size,
+                       int round);
 
 
 /** ***************************************************************************
@@ -47,12 +49,14 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size);
  *    path2 - Path of second file.
  *    path3 - Path of third file.
  *    size  - Size of the files.
+ *    round - Round in which these duplicates are being published.
  *
  * Return: none.
  *
  */
 void compare_three_files(sqlite3 * dbh,
-                         char * path1, char * path2, char * path3, off_t size);
+                         char * path1, char * path2, char * path3, off_t size,
+                         int round);
 
 
 /** ***************************************************************************

@@ -35,6 +35,7 @@ extern int stats_sets_full_read[ROUNDS];
 extern int stats_sets_part_read[ROUNDS];
 extern long stats_round_start[ROUNDS];
 extern int stats_round_duration[ROUNDS];
+extern int stats_duplicate_groups[ROUNDS];
 
 extern uint64_t stats_total_bytes;
 extern uint64_t stats_total_bytes_read;
@@ -45,7 +46,6 @@ extern long stats_max_pathlist_size;
 extern int stats_most_dups;
 extern int stats_all_blocks_count;
 extern int stats_duplicate_files;
-extern int stats_duplicate_sets;
 extern int stats_full_hash_first;
 extern int stats_full_hash_second;
 extern int stats_mid_blocks_count;

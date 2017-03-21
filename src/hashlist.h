@@ -173,15 +173,16 @@ void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
  * If write_db is false, only print the files to stdout.
  *
  * Parameters:
- *     dbh  - Database handle.
- *     hl   - Source hash list.
- *     size - The size of these files.
+ *     dbh   - Database handle.
+ *     hl    - Source hash list.
+ *     size  - The size of these files.
+ *     round - Round in which these duplicates are being published.
  *
  * Return: none.
  *
  */
 void publish_duplicate_hash_list(sqlite3 * dbh,
-                                 struct hash_list * hl, off_t size);
+                                 struct hash_list * hl, off_t size, int round);
 
 
 /** ***************************************************************************

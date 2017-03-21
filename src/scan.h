@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -23,6 +23,9 @@
 #define SCAN_SIZE_UNKNOWN -42
 #define SCAN_INODE_UNKNOWN 0
 #define SCAN_DEV_UNKNOWN -1
+
+extern pthread_mutex_t status_lock;
+extern pthread_cond_t status_cond;
 
 
 /** ***************************************************************************

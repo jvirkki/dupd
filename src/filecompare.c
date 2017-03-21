@@ -44,7 +44,7 @@ static char paths[DUPD_PATH_MAX * 3];
 static void compare_two_open_files(sqlite3 * dbh,
                                    char * path1, int file1,
                                    char * path2, int file2,
-                                   off_t size, int sofar)
+                                   off_t size, int sofar, int round)
 {
   int bread = sofar;
   ssize_t bytes1;
@@ -81,7 +81,7 @@ static void compare_two_open_files(sqlite3 * dbh,
     duplicate_to_db(dbh, 2, size, paths);
   }
 
-  stats_duplicate_sets++;
+  stats_duplicate_groups[round]++;
   stats_duplicate_files += 2;
 
   if (!write_db || log_level >= L_TRACE) {
@@ -95,7 +95,8 @@ static void compare_two_open_files(sqlite3 * dbh,
  * Public function, see header file.
  *
  */
-void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
+void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size,
+                       int round)
 {
   LOG(L_TRACE, "compare_two_files: [%s] vs [%s]\n", path1, path2);
 
@@ -112,7 +113,7 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
     return;
   }
 
-  compare_two_open_files(dbh, path1, file1, path2, file2, size, 0);
+  compare_two_open_files(dbh, path1, file1, path2, file2, size, 0, round);
 }
 
 
@@ -121,7 +122,8 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size)
  *
  */
 void compare_three_files(sqlite3 * dbh,
-                         char * path1, char * path2, char * path3, off_t size)
+                         char * path1, char * path2, char * path3, off_t size,
+                         int round)
 {
   LOG(L_TRACE, "compare_three_files: [%s],[%s],[%s]\n",
       path1, path2, path3);
@@ -129,9 +131,18 @@ void compare_three_files(sqlite3 * dbh,
   // It is possible some of these files have been discarded already by
   // skim_uniques(), in which case, ignore the first one seen and this
   // becomes a compare_two.
-  if (path1[0] == 0) { compare_two_files(dbh, path2, path3, size); return; }
-  if (path2[0] == 0) { compare_two_files(dbh, path1, path3, size); return; }
-  if (path3[0] == 0) { compare_two_files(dbh, path1, path2, size); return; }
+  if (path1[0] == 0) {
+    compare_two_files(dbh, path2, path3, size, round);
+    return;
+  }
+  if (path2[0] == 0) {
+    compare_two_files(dbh, path1, path3, size, round);
+    return;
+  }
+  if (path3[0] == 0) {
+    compare_two_files(dbh, path1, path2, size, round);
+    return;
+  }
 
   int bread = 0;
   int file[4];
@@ -139,7 +150,7 @@ void compare_three_files(sqlite3 * dbh,
   file[1] = open(path1, O_RDONLY);
   if (file[1] < 0) {                                         // LCOV_EXCL_START
     LOG(L_PROGRESS, "Error opening [%s]\n", path1);
-    compare_two_files(dbh, path2, path3, size);
+    compare_two_files(dbh, path2, path3, size, round);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -147,7 +158,7 @@ void compare_three_files(sqlite3 * dbh,
   if (file[2] < 0) {                                         // LCOV_EXCL_START
     LOG(L_PROGRESS, "Error opening [%s]\n", path2);
     close(file[1]);
-    compare_two_files(dbh, path1, path3, size);
+    compare_two_files(dbh, path1, path3, size, round);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -156,7 +167,7 @@ void compare_three_files(sqlite3 * dbh,
     LOG(L_PROGRESS, "Error opening [%s]\n", path3);
     close(file[1]);
     close(file[2]);
-    compare_two_files(dbh, path1, path2, size);
+    compare_two_files(dbh, path1, path2, size, round);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -210,7 +221,8 @@ void compare_three_files(sqlite3 * dbh,
       if (save_uniques) {
         unique_to_db(dbh, path1, "3-compare1");
       }
-      compare_two_open_files(dbh, path2, file[2], path3, file[3], size, bread);
+      compare_two_open_files(dbh, path2, file[2], path3, file[3],
+                             size, bread, round);
       return;
     }
 
@@ -219,7 +231,8 @@ void compare_three_files(sqlite3 * dbh,
       if (save_uniques) {
         unique_to_db(dbh, path2, "3-compare2");
       }
-      compare_two_open_files(dbh, path1, file[1], path3, file[3], size, bread);
+      compare_two_open_files(dbh, path1, file[1], path3, file[3],
+                             size, bread, round);
       return;
     }
 
@@ -228,7 +241,8 @@ void compare_three_files(sqlite3 * dbh,
       if (save_uniques) {
         unique_to_db(dbh, path3, "3-compare3");
       }
-      compare_two_open_files(dbh, path1, file[1], path2, file[2], size, bread);
+      compare_two_open_files(dbh, path1, file[1], path2, file[2],
+                             size, bread, round);
       return;
     }
                                                              // LCOV_EXCL_START
@@ -250,7 +264,7 @@ void compare_three_files(sqlite3 * dbh,
     duplicate_to_db(dbh, 3, size, paths);
   }
 
-  stats_duplicate_sets++;
+  stats_duplicate_groups[round]++;
   stats_duplicate_files += 3;
 
   if (!write_db || log_level >= L_TRACE) {
