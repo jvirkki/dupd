@@ -1607,6 +1607,9 @@ static int build_hash_list_round(sqlite3 * dbh,
   if (size_node->fully_read) { stats_sets_full_read[round]++; }
   else { stats_sets_part_read[round]++; }
 
+  LOG(L_TRACE, "Building hash list for size %ld (round %d)\n",
+      size_node->size, round+1);
+
   // Build hash list for these files
   do {
     path = pl_entry_get_path(node);
