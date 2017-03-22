@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+source common
+
+rm -f stx
+
+DESC="scan(files) testing count stats"
+$DUPD_CMD scan --path `pwd`/files -q --stats-file stx
+checkrv $?
+
+rm -f nreport report
+grep stats_duplicate_files stx > nreport
+grep 'stats_duplicate_groups ' stx >> nreport
+
+check_nreport output.80
+
+tdone
