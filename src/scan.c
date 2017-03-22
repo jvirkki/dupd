@@ -97,7 +97,7 @@ static void * scan_status(void * arg)
   const char * sets =
     "Sets : %8u/%8u %10uK (%7ldK/s)                  %12s";
   const char * sets_done =
-    "Sets : %8u/%8u  (%8u groups of duplicates confirmed)%12s\n";
+    "Round %d: %8u groups of duplicates confirmed                   %12s\n";
 
   // Loop showing count of files being scanned until that phase is done
   while (stats_time_scan == -1) {
@@ -142,10 +142,8 @@ static void * scan_status(void * arg)
     printf("\033[%dD", c);
     time_string(timebuf, 20, stats_round_duration[round]);
 
-    c = snprintf(line, 100, sets_done,
-                 stats_sets_processed[round],
-                 stats_size_list_count, stats_duplicate_groups[round],
-                 timebuf);
+    c = snprintf(line, 100, sets_done, round + 1,
+                 stats_duplicate_groups[round], timebuf);
     SHOW_LINE;
 
   } while (++round < 3);
