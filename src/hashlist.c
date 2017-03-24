@@ -40,6 +40,7 @@
 
 static char * path_buffer = NULL;
 static int path_buffer_size = 0;
+static pthread_mutex_t publish_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /** ***************************************************************************
@@ -74,75 +75,6 @@ static struct hash_list * new_hash_list_node()
   hl->next_index = 0;
   hl->next = NULL;
   return hl;
-}
-
-
-/** ***************************************************************************
- * Create a new hash list, empty but initialized. The new list will
- * have the number of nodes defined by the current defines.
- *
- * Parameters: none
- *
- * Return: An allocated hash list, empty of data.
- *
- */
-static struct hash_list * init_hash_list()
-{
-  struct hash_list * head = new_hash_list_node();
-  struct hash_list * p = head;
-  int entries = x_small_buffers ? 1 : DEFAULT_HASHLIST_ENTRIES;
-  for (int n = 1; n < entries; n++) {
-    struct hash_list * next_node = new_hash_list_node();
-    p->next = next_node;
-    p = next_node;
-  }
-  return head;
-}
-
-
-/** ***************************************************************************
- * Free all entries in this hash list.
- *
- * Parameters:
- *    hl - Pointer to the head of the list to free.
- *
- * Return: none
- *
- */
-static void free_hash_list(struct hash_list * hl)
-{
-  struct hash_list * p = hl;
-  struct hash_list * me = hl;
-  while (p != NULL) {
-    p = p->next;
-    free(me->pathptrs);
-    free(me);
-    me = p;
-  }
-}
-
-
-/** ***************************************************************************
- * Reset a hash list node so it is empty of data but keeps all its
- * allocated space. This allows reusing the same hash list for new
- * data so we don't have to allocate a new one.
- *
- * Parameters:
- *    hl - Pointer to the head of the list to reset.
- *
- * Return: none
- *
- */
-static void reset_hash_list(struct hash_list * hl)
-{
-  if (hl == NULL) {
-    return;
-  }
-
-  hl->has_dups = 0;
-  hl->hash_valid = 0;
-  hl->hash[0] = 0;
-  hl->next_index = 0;
 }
 
 
@@ -215,6 +147,58 @@ void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
   }
 
   return;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+struct hash_list * init_hash_list()
+{
+  struct hash_list * head = new_hash_list_node();
+  struct hash_list * p = head;
+  int entries = x_small_buffers ? 1 : DEFAULT_HASHLIST_ENTRIES;
+  for (int n = 1; n < entries; n++) {
+    struct hash_list * next_node = new_hash_list_node();
+    p->next = next_node;
+    p = next_node;
+  }
+  return head;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void reset_hash_list(struct hash_list * hl)
+{
+  if (hl == NULL) {
+    return;
+  }
+
+  hl->has_dups = 0;
+  hl->hash_valid = 0;
+  hl->hash[0] = 0;
+  hl->next_index = 0;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void free_hash_list(struct hash_list * hl)
+{
+  struct hash_list * p = hl;
+  struct hash_list * me = hl;
+  while (p != NULL) {
+    p = p->next;
+    free(me->pathptrs);
+    free(me);
+    me = p;
+  }
 }
 
 
@@ -361,6 +345,9 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
                                  struct hash_list * hl, off_t size, int round)
 {
   struct hash_list * p = hl;
+
+  pthread_mutex_lock(&publish_lock);
+
   while (p != NULL && p->hash_valid) {
 
     if (p->next_index > 1) {
@@ -403,6 +390,7 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
     }
     p = p->next;
   }
+  pthread_mutex_unlock(&publish_lock);
 }
 
 

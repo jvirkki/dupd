@@ -50,7 +50,7 @@ struct hash_list {
 
 
 /** ***************************************************************************
- * Initialize the hash lists needed by dupd. After initialization, the
+ * Initialize the default hash lists needed by dupd. After initialization, the
  * lists can be retrieved with get_hash_list().
  *
  * Parameters: none
@@ -62,7 +62,7 @@ void init_hash_lists();
 
 
 /** ***************************************************************************
- * Free storage for all hash lists.
+ * Free storage for all default hash lists.
  *
  * Parameters: none
  *
@@ -70,6 +70,47 @@ void init_hash_lists();
  *
  */
 void free_hash_lists();
+
+
+/** ***************************************************************************
+ * Free all entries in this hash list.
+ *
+ * Parameters:
+ *    hl - Pointer to the head of the list to free.
+ *
+ * Return: none
+ *
+ */
+void free_hash_list(struct hash_list * hl);
+
+
+/** ***************************************************************************
+ * Create a new hash list, empty but initialized. The new list will
+ * have the number of nodes defined by the current defines.
+ *
+ * Caller is responsible for calling free_hash_list() on the returned
+ * hash list, as these are not freed by free_hash_lists().
+ *
+ * Parameters: none
+ *
+ * Return: An allocated hash list, empty of data.
+ *
+ */
+struct hash_list * init_hash_list();
+
+
+/** ***************************************************************************
+ * Reset a hash list node so it is empty of data but keeps all its
+ * allocated space. This allows reusing the same hash list for new
+ * data so we don't have to allocate a new one.
+ *
+ * Parameters:
+ *    hl - Pointer to the head of the list to reset.
+ *
+ * Return: none
+ *
+ */
+void reset_hash_list(struct hash_list * hl);
 
 
 /** ***************************************************************************
