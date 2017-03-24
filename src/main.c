@@ -91,6 +91,22 @@ int report_format = REPORT_FORMAT_TEXT;
 pthread_key_t thread_name;
 pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 
+extern char * log_level_name[] = {
+  "NONE",
+  "BASE",
+  "MORE",
+  "PROGRESS",
+  "INFO",
+  "MORE_INFO",
+  "RESOURCES",
+  "THREADS",
+  "SKIPPED",
+  "MORE_THREADS",
+  "TRACE ",
+  "FILES ",
+  "MORE_TRACE ",
+};
+
 
 /** ***************************************************************************
  * Show banner.
@@ -408,6 +424,8 @@ int main(int argc, char * argv[])
   pthread_setspecific(thread_name, (char *)"[MAIN] ");
 
   rv = process_args(argc, argv);
+
+  LOG(L_PROGRESS, "Log level: %s\n", log_level_name[log_level]);
 
   // If process_args returns non-zero it means we need to exit right away
   // with an exit code one less than the returned value. Need to exit via

@@ -61,6 +61,7 @@
  *
  */
 extern int log_level;
+extern char * log_level_name[];
 extern pthread_mutex_t logger_lock;
 
 #define L_NONE 0
