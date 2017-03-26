@@ -270,6 +270,27 @@ static inline void d_mutex_unlock(pthread_mutex_t * mutex)
 
 
 /** ***************************************************************************
+ * Wrapper for pthread_create, exit on failure.
+ *
+ * Parameters:
+ *    thread
+ *    start_routine
+ *
+ * Return: none
+ *
+ */
+static inline void d_create(pthread_t * thread,
+                            void *(*start_routine) (void *), void * arg)
+{
+  int rv = pthread_create(thread, NULL, start_routine, arg);
+  if (rv != 0) {                                             // LCOV_EXCL_START
+    printf("error: pthread_create == %d\n", rv);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+}
+
+
+/** ***************************************************************************
  * Wrapper for pthread_join, exit on failure.
  *
  * Parameters:
