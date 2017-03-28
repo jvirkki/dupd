@@ -417,7 +417,7 @@ int add_queue(sqlite3 * dbh,
   producer_next->size = size;
   producer_next->inode = inode;
   producer_next->device = device;
-  strcpy(producer_next->path, path);
+  strlcpy(producer_next->path, path, DUPD_PATH_MAX);
   producer_next = producer_next->next;
   queue_added[current_producer_queue]++;
 

@@ -632,12 +632,19 @@ int operation_validate()
     path_list = (char *)sqlite3_column_text(statement, 1);
 
     if ((token = strtok_r(path_list, path_sep_string, &pos)) != NULL) {
-      strcpy(path, token);
+      if (strlen(token) >= DUPD_PATH_MAX) {                  // LCOV_EXCL_START
+        printf("error: path longer than possible (%d >= %d)\n",
+               (int)strlen(token), DUPD_PATH_MAX);
+        printf("path: [%s]\n", token);
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+      strlcpy(path, token, DUPD_PATH_MAX);
       i = 0;
 
       while ((token = strtok_r(NULL, path_sep_string, &pos)) != NULL) {
-        duplicates[i] = (char *)malloc(strlen(token) + 1);
-        strcpy(duplicates[i], token);
+        int len = strlen(token) + 1;
+        duplicates[i] = (char *)malloc(len);
+        strlcpy(duplicates[i], token, len);
         i++;
       }
     }
