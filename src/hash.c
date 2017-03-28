@@ -241,7 +241,12 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
   }
 
   if (skip > 0) {
-    lseek(file, skip * bsize, SEEK_SET);
+    uint64_t seek = skip * bsize;
+    uint64_t pos = (uint64_t)lseek(file, seek, SEEK_SET);
+    if (pos != seek) {                                       // LCOV_EXCL_START
+      printf("error: Error seeking %ld != %ld [%s]\n", pos, seek, path);
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
   }
 
   switch(hash_function) {

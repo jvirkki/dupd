@@ -131,7 +131,11 @@ ssize_t read_file_bytes(char * path, char * output,
   }                                                          // LCOV_EXCL_STOP
 
   if (skip > 0) {
-    lseek(file, skip, SEEK_SET);
+    uint64_t pos = lseek(file, skip, SEEK_SET);
+    if (pos != skip) {                                       // LCOV_EXCL_START
+      LOG(L_PROGRESS, "Error seeking [%s]\n", path);
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
   }
 
   ssize_t got = read(file, output, bytes);
