@@ -20,6 +20,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -186,4 +187,20 @@ char * get_thread_name()
   }
 
   return "";
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+size_t linux_strlcpy(char *dst, const char *src, size_t dstsize)
+{
+  size_t n = strlen(src);
+  if (n >= dstsize) {                                        // LCOV_EXCL_START
+    printf("error: strlcpy: src too big: %d >= %d\n", (int)n, (int)dstsize);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+  strncpy(dst, src, dstsize);
+  return n;
 }

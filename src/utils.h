@@ -30,6 +30,7 @@
 #ifdef linux
 #define STRUCT_STAT struct stat
 #define LSTAT lstat
+#define strlcpy linux_strlcpy
 #endif
 
 #ifdef __OpenBSD__
@@ -189,6 +190,20 @@ void memdump(char * text, char * ptr, int bytes);
  *
  */
 char * get_thread_name();
+
+
+/** ***************************************************************************
+ * strlcpy for Linux which doesn't have it.
+ *
+ * Parameters:
+ *    dst     - Destination string.
+ *    src     - Source string.
+ *    dstsize - Size of dst buffer.
+ *
+ * Return: bytes copied (length of src)
+ *
+ */
+size_t linux_strlcpy(char *dst, const char *src, size_t dstsize);
 
 
 /** ***************************************************************************
