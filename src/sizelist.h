@@ -120,4 +120,21 @@ void threaded_process_size_list_hdd(sqlite3 * dbh);
 void threaded_process_size_list(sqlite3 * dbh);
 
 
+/** ***************************************************************************
+ * Process the size list. The core of the duplicate detection is done
+ * from here.
+ *
+ * This function (and its worker threads) read data as needed and filter
+ * the size list produced during scanning down to known duplicate groups.
+ *
+ * Duplicates are published to the sqlite database, unless write_db is false.
+ *
+ * Parameters:
+ *    dbh - Database pointer.
+ *
+ * Return: none
+ *
+ */
+void new_process_size_list(sqlite3 * dbh);
+
 #endif

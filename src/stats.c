@@ -39,6 +39,7 @@ int stats_sets_part_read[ROUNDS] = { 0,0,0 };
 long stats_round_start[ROUNDS] = { -1,-1,-1 };
 int stats_round_duration[ROUNDS] = { -1,-1,-1 };
 int stats_duplicate_groups[ROUNDS] = { 0,0,0 };
+int stats_reader_loops[ROUNDS] = { 0,0,0 };
 
 uint64_t stats_total_bytes = 0;
 uint64_t stats_total_bytes_read = 0;
@@ -53,7 +54,6 @@ int stats_full_hash_first = 0;
 int stats_full_hash_second = 0;
 int stats_partial_hash_second = 0;
 int stats_one_block_hash_first = 0;
-
 
 int stats_size_list_count = 0;
 int stats_size_list_done = 0;
@@ -109,6 +109,7 @@ void report_stats()
            stats_sets_processed[ROUND1], stats_round_duration[ROUND1]);
     printf("  Block size %d (%d max blocks)\n",
            hash_one_block_size, hash_one_max_blocks);
+    printf("  Reader loops: %d\n", stats_reader_loops[ROUND1]);
     printf("  Sets fully hashed in round one: %d\n", stats_full_hash_first);
     printf("  Sets with single block first round: %d\n",
            stats_one_block_hash_first);
@@ -123,6 +124,7 @@ void report_stats()
            stats_sets_processed[ROUND2], stats_round_duration[ROUND2]);
     printf("  Block size %d (%d max blocks)\n",
            hash_block_size, intermediate_blocks);
+    printf("  Reader loops: %d\n", stats_reader_loops[ROUND2]);
     printf("  Sets with dups ruled out in second round: %d\n",
            stats_sets_dup_not[ROUND2]);
     printf("  Sets with dups confirmed in second round: %d\n",
@@ -133,6 +135,7 @@ void report_stats()
     printf("Round three: hash list processed for %d size sets (%dms)\n",
            stats_sets_processed[ROUND3], stats_round_duration[ROUND3]);
     printf("  Block size %d\n", hash_block_size);
+    printf("  Reader loops: %d\n", stats_reader_loops[ROUND3]);
     printf("  Sets with dups ruled out in full round: %d\n",
            stats_sets_dup_not[ROUND3]);
     printf("  Sets with dups confirmed in full round: %d\n",
@@ -199,8 +202,9 @@ void report_stats()
     stats_two_file_compare + stats_three_file_compare;
 
   if (totals_from_rounds != stats_size_list_count) {         // LCOV_EXCL_START
-    printf("\nwarning: total size sets %d != sets confirmed %d\n",
+    printf("\nerror: total size sets %d != sets confirmed %d\n",
            stats_size_list_count, totals_from_rounds);
+    exit(1);
   }                                                          // LCOV_EXCL_STOP
 }
 

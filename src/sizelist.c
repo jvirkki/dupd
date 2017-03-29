@@ -56,9 +56,17 @@ static int round3_info_buffers_used = 0;
 static pthread_mutex_t reader_main_hdd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t reader_main_hdd_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t show_processed_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t r3_loop_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t r3_loop_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t deleted_list_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static pthread_mutex_t round12_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t round12_cond = PTHREAD_COND_INITIALIZER;
+
+static int r12_hasher_done = 0;
 static int r3_hasher_done = 0;
+static int sl_reader_done = 0;
 
 // Size list states.
 #define SLS_NEED_BYTES_ROUND_1 88
@@ -88,6 +96,11 @@ struct round3_info {
   char hash_result[HASH_MAX_BUFSIZE];
   int bufsize;
   char * buffer;
+};
+
+struct r12hasher_arg {
+  sqlite3 * dbh;
+  int n;
 };
 
 
@@ -154,38 +167,69 @@ static inline void show_processed(int total, int files, long size,
  * Remove 'entry' from the size list by pointing previous->next to entry->next.
  * 'entry' is then placed onto the deleted_size_list to be freed later.
  *
- * The caller MUST hold lock on 'entry', if this is called during a
- * multi-threaded stage. The lock is RELEASED here.
+ * The caller MUST hold lock on 'entry'. The lock is RELEASED here.
  *
  */
 static void unlink_size_list_entry(struct size_list * entry,
                                    struct size_list * previous)
 {
-  d_mutex_lock(&previous->lock, "unlink entry, lock previous");
-
+  // For simplicity, don't delete very last size list entry.
   if (entry->next == NULL) {
-    previous->next = NULL;
-  } else {
-    d_mutex_lock(&entry->next->lock, "unlink entry, lock next");
-    previous->next = entry->next;
-    d_mutex_unlock(&entry->next->lock);
+    d_mutex_unlock(&entry->lock);
+    return;
   }
 
-  LOG(L_MORE_THREADS, "Removing size list entry of size %ld\n",
-      (long)entry->size);
+  d_mutex_lock(&entry->next->lock, "unlink entry, lock next");
+
+  if (pthread_mutex_trylock(&previous->lock)) {
+    LOG(L_THREADS, "While removing entry size %ld, unable to lock previous, "
+        "giving up\n", entry->size);
+    d_mutex_unlock(&entry->next->lock);
+    d_mutex_unlock(&entry->lock);
+    return;
+  }
+
+  // Now have lock on previous, entry, next
+
+  if (entry->next->state == SLS_DELETED) {
+    LOG(L_THREADS, "While removing entry (size %ld), next node (size %ld) "
+        "is SLS_DELETED, giving up\n", entry->size, entry->next->size);
+    d_mutex_unlock(&previous->lock);
+    d_mutex_unlock(&entry->next->lock);
+    d_mutex_unlock(&entry->lock);
+    return;
+  }
+
+  if (previous->next != entry) {
+    LOG(L_THREADS, "While removing entry (size %ld), previous (size %ld) "
+        "does not point to me, giving up\n", entry->size, previous->size);
+    d_mutex_unlock(&previous->lock);
+    d_mutex_unlock(&entry->next->lock);
+    d_mutex_unlock(&entry->lock);
+    return;
+  }
+
+  LOG(L_MORE_THREADS, "Removed size list entry of size %ld. "
+      "Entry size=%ld now has next entry size=%ld\n",
+      (long)entry->size, (long)previous->size, (long)entry->next->size);
+
+  previous->next = entry->next;
+
+  d_mutex_unlock(&previous->lock);
+  d_mutex_unlock(&entry->next->lock);
 
   entry->state = SLS_DELETED;
   entry->next = NULL;
   entry->dnext = NULL;
 
   d_mutex_unlock(&entry->lock);
-  d_mutex_unlock(&previous->lock);
 
   // The reason entry is added to a deleted list instead of just freed here
   // is that the other thread might be waiting on entry->lock right about now
   // so we can't just destroy the mutex here. Instead, let it be and point
   // entry->next to null so it doesn't continue walking that way.
 
+  d_mutex_lock(&deleted_list_lock, "deleted list");
   if (deleted_list_tail == NULL) {
     deleted_list_head = entry;
     deleted_list_tail = entry;
@@ -193,6 +237,7 @@ static void unlink_size_list_entry(struct size_list * entry,
     deleted_list_tail->dnext = entry;
     deleted_list_tail = entry;
   }
+  d_mutex_unlock(&deleted_list_lock);
 }
 
 
@@ -247,6 +292,324 @@ static inline void release_round3_info_buffer(struct round3_info * info)
 static inline void free_round3_info(struct round3_info * info)
 {
   free(info);
+}
+
+
+/** ***************************************************************************
+ * Helper function to process files from a size node to a hash list.
+ * Used for rounds 1 and 2 during hash list processing.
+ * The data buffers are freed as each one is consumed.
+ *
+ * Parameters:
+ *    dbh       - db handle for saving duplicates/uniques
+ *    size_node - Process this size node (and associated path list.
+ *    hl        - Save paths to this hash list.
+ *    round     - Current round (for updating stats arrays).
+ *
+ * Return: 1 if this path list was completed (either confirmed duplicates
+ *         or ruled out possibility of being duplicates).
+ *
+ */
+static int build_hash_list_round(sqlite3 * dbh,
+                                 struct size_list * size_node,
+                                 struct hash_list * hl,
+                                 int round)
+{
+  char * node;
+  char * path;
+  char * buffer;
+  int completed = 0;
+
+  node = pl_get_first_entry(size_node->path_list);
+
+  // For small files, they may have been fully read already
+  d_mutex_lock(&stats_lock, "build hash list stats");
+  if (size_node->fully_read) { stats_sets_full_read[round]++; }
+  else { stats_sets_part_read[round]++; }
+  d_mutex_unlock(&stats_lock);
+
+  LOG(L_TRACE, "Building hash list for size %ld (round %d)\n",
+      size_node->size, round+1);
+
+  // Build hash list for these files
+  do {
+    path = pl_entry_get_path(node);
+
+    // The path may be null if this particular path within this pathlist
+    // has been discarded as a potential duplicate already. If so, skip.
+    if (path[0] != 0) {
+      buffer = pl_entry_get_buffer(node);
+      add_hash_list_from_mem(hl, path, buffer, size_node->bytes_read);
+      free(buffer);
+      pl_entry_set_buffer(node, NULL);
+    }
+
+    node = pl_entry_get_next(node);
+  } while (node != NULL);
+
+  LOG_TRACE {
+    LOG(L_TRACE, "Contents of hash list hl:\n");
+    print_hash_list(hl);
+  }
+
+  // Remove the uniques seen (also save in db if save_uniques)
+  int skimmed = skim_uniques(dbh, hl, save_uniques);
+  if (skimmed) {
+    pl_decrease_path_count(size_node->path_list, skimmed);
+  }
+
+  // If no potential dups after this round, we're done!
+  if (HASH_LIST_NO_DUPS(hl)) {
+    LOG(L_TRACE, "No potential dups left, done!\n");
+    size_node->state = SLS_DONE;
+    completed = 1;
+    d_mutex_lock(&stats_lock, "build hash list stats");
+    stats_sets_dup_not[round]++;
+    d_mutex_unlock(&stats_lock);
+
+  } else {
+    // If by now we already have a full hash, publish and we're done!
+    if (size_node->fully_read) {
+      LOG(L_TRACE, "Some dups confirmed, here they are:\n");
+      publish_duplicate_hash_list(dbh, hl, size_node->size, round);
+      size_node->state = SLS_DONE;
+      completed = 1;
+      d_mutex_lock(&stats_lock, "build hash list stats");
+      stats_sets_dup_done[round]++;
+      d_mutex_unlock(&stats_lock);
+    }
+  }
+
+  size_node->buffers_filled = 0;
+
+  return completed;
+}
+
+
+/** ***************************************************************************
+ * Hashes incoming file data during rounds 1 & 2.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+static void * round12_hasher(void * arg)
+{
+  struct r12hasher_arg * args = (struct r12hasher_arg *)arg;
+  sqlite3 * dbh = args->dbh;
+  int thread_count = args->n;
+  char self[80];
+  struct size_list * size_node;
+  struct size_list * size_node_next;
+  struct size_list * previous_size_node = NULL;
+  char round;
+  uint32_t path_count = 0;
+  int loops,need_to_wait, set_completed, set, free_myself, saw_ghost;
+  int in_round_1, in_round_2, in_round_3, in_done;
+  int out_round_1, out_round_2, out_round_3, out_done;
+  int self_done = 0;
+
+  snprintf(self, 80,  "      [R12-hasher-%d] ", thread_count);
+  pthread_setspecific(thread_name, self);
+  LOG(L_THREADS, "Thread created\n");
+
+  struct hash_list * local_hash_list = init_hash_list();
+  loops = 0;
+
+  do {
+    loops++;
+    size_node = size_list_head;
+    previous_size_node = NULL;
+    set = 0;
+    in_round_1 = 0;
+    in_round_2 = 0;
+    in_round_3 = 0;
+    in_done = 0;
+    out_round_1 = 0;
+    out_round_2 = 0;
+    out_round_3 = 0;
+    out_done = 0;
+
+    LOG(L_THREADS, "Starting size list loop #%d\n", loops);
+
+    if (size_list_head->state == SLS_DELETED) {
+      printf("error: size_list_head->state cannot be SLS_DELETED\n");
+      exit(1);
+    }
+
+    do {
+      set_completed = 0;
+      need_to_wait = 0;
+      free_myself = 0;
+      saw_ghost = 0;
+
+      if (thread_count == 1) {
+        d_mutex_lock(&size_node->lock, "R12-hasher-1 top");
+      } else {
+        if (pthread_mutex_trylock(&size_node->lock)) {
+          LOG(L_TRACE, "trylock failed on size node %ld, skipping\n",
+              size_node->size);
+          previous_size_node = size_node;
+          size_node = size_node->next;
+          set++;
+          continue;
+        }
+      }
+
+      LOG_THREADS {
+        set++;
+        LOG(L_MORE_THREADS, "SET %d (loop %d) size:%ld state:%s\n", set,
+            loops, (long)size_node->size, state_name(size_node->state));
+      }
+
+      if (size_node->state == SLS_DELETED) {
+        // If we're unlucky to have grabbed a deleted node, the only way
+        // out is to restart at the top of the size list.
+        d_mutex_unlock(&size_node->lock);
+        LOG(L_THREADS, "Hit SLS_DELETED entry, restart size list\n");
+        previous_size_node = NULL;
+        size_node = NULL;
+        saw_ghost = 1;
+        continue;
+      }
+
+      switch(size_node->state) {
+      case SLS_NEED_BYTES_ROUND_1: case SLS_READY_1: in_round_1++; break;
+      case SLS_NEED_BYTES_ROUND_2: case SLS_READY_2: in_round_2++; break;
+      case SLS_NEEDS_ROUND_3:                        in_round_3++; break;
+      case SLS_DONE:                                 in_done++;    break;
+      default:                                               // LCOV_EXCL_START
+        printf("error: round12_hasher: bad state in %d\n", size_node->state);
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+
+      switch(size_node->state) {
+
+      case SLS_NEED_BYTES_ROUND_1:
+      case SLS_NEED_BYTES_ROUND_2:
+        // In SSD mode, reader thread is walking the size list in same order
+        // so if we hit a NEED_BYTES set it means we're ahead of the reader.
+        // There is no point in continuing running ahead of it, so wait.
+        if (!hdd_mode) {
+          need_to_wait = 1;
+        }
+        if (sl_reader_done) {
+          // Sanity check... if we need more bytes but reader quit, not good!
+          printf("error: need bytes but sl_reader_done!!\nWas in:\n");
+          printf("SET %d (loop %d) size:%ld state:%s\n", set,
+                 loops, (long)size_node->size, state_name(size_node->state));
+          exit(1);
+        }
+        break;
+
+      case SLS_READY_1:
+        reset_hash_list(local_hash_list);
+        stats_sets_processed[ROUND1]++;
+        set_completed = build_hash_list_round(dbh, size_node,
+                                              local_hash_list, ROUND1);
+        round = '1';
+
+        if (!set_completed) {
+          // Need to set correct next state
+
+          if (hdd_mode) {
+            // In HDD mode, after round1 we'll do a round2 if file not huge
+            // (using R3_BUFSIZE as cutoff). Otherwise, skip to round3.
+            if (size_node->size <= R3_BUFSIZE) {
+              size_node->state = SLS_NEED_BYTES_ROUND_2;
+            } else {
+              size_node->state = SLS_NEEDS_ROUND_3;
+            }
+
+          } else {
+            // In SSD mode, after round1 we'll do a round3 only if configured.
+            if (intermediate_blocks > 1) {
+              size_node->state = SLS_NEED_BYTES_ROUND_2;
+            } else {
+              size_node->state = SLS_NEEDS_ROUND_3;
+            }
+          }
+        }
+        break;
+
+      case SLS_READY_2:
+        reset_hash_list(local_hash_list);
+        stats_sets_processed[ROUND2]++;
+        set_completed = build_hash_list_round(dbh, size_node,
+                                              local_hash_list, ROUND2);
+        round = '2';
+
+        if (!set_completed) {
+          // Need to set correct next state. Easy here, always round3.
+          size_node->state = SLS_NEEDS_ROUND_3;
+        }
+        break;
+
+      case SLS_DONE:
+        if (previous_size_node != NULL) {
+          free_myself = 1;
+        }
+        break;
+
+      } // switch(state)
+
+      if (set_completed) {
+        LOG_PROGRESS {
+          path_count = pl_get_path_count(size_node->path_list);
+        }
+        show_processed(stats_size_list_count, path_count,
+                       size_node->size, loops, round);
+        self_done++;
+      }
+
+      switch(size_node->state) {
+      case SLS_NEED_BYTES_ROUND_1: case SLS_READY_1: out_round_1++; break;
+      case SLS_NEED_BYTES_ROUND_2: case SLS_READY_2: out_round_2++; break;
+      case SLS_NEEDS_ROUND_3:                        out_round_3++; break;
+      case SLS_DONE:                                 out_done++;    break;
+      default:                                               // LCOV_EXCL_START
+        printf("error: round12_hasher: bad state out %d\n", size_node->state);
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+
+      size_node_next = size_node->next;
+
+      if (free_myself) {
+        // This will free mutex on size_node as well
+        unlink_size_list_entry(size_node, previous_size_node);
+        previous_size_node = NULL;
+      } else {
+        previous_size_node = size_node;
+        d_mutex_unlock(&size_node->lock);
+      }
+
+      size_node = size_node_next;
+
+      if (need_to_wait) {
+        LOG(L_THREADS, "Running ahead of reader at set %d, waiting..\n", set);
+        usleep(50000);
+      }
+
+    } while (size_node != NULL);
+
+    LOG(L_THREADS, "Finished size list loop #%d: "
+        "R1:%d->%d R2:%d->%d R3:%d->%d DONE:%d->%d (ghosted=%d)\n",
+        loops, in_round_1, out_round_1, in_round_2, out_round_2,
+        in_round_3, out_round_3, in_done, out_done, saw_ghost);
+
+    if (out_round_2 > 0) {
+      d_mutex_lock(&round12_lock, "round12_hasher end loop");
+      d_cond_signal(&round12_cond);
+      d_mutex_unlock(&round12_lock);
+    }
+
+  } while (out_round_1 > 0 || out_round_2 > 0 || saw_ghost);
+
+  LOG(L_THREADS, "DONE (%d loops) (sets done %d)\n", loops, self_done);
+
+  free_hash_list(local_hash_list);
+  return NULL;
 }
 
 
@@ -809,7 +1172,8 @@ static void process_round_3(sqlite3 * dbh)
         break;
 
       default:                                               // LCOV_EXCL_START
-        printf("In final pass, bad sizelist state %d\n", size_node->state);
+        printf("In final pass, bad sizelist state %d (%s)\n",
+               size_node->state, state_name(size_node->state));
         exit(1);
       }                                                      // LCOV_EXCL_STOP
 
@@ -878,6 +1242,7 @@ static void process_round_3(sqlite3 * dbh)
   pthread_cond_signal(&status_cond);
   d_mutex_unlock(&status_lock);
 
+  stats_reader_loops[ROUND3] = loops;
   LOG(L_THREADS, "DONE (%d loops)\n", loops);
 }
 
@@ -1054,177 +1419,6 @@ void analyze_process_size_list(sqlite3 * dbh)
     LOG(L_PROGRESS, " Completed after %ld blocks read (%zd remaining)\n",
         (long)skip, total_blocks);
 
-    size_node = size_node->next;
-  }
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-void process_size_list(sqlite3 * dbh)
-{
-  if (size_list_head == NULL) {
-    return;
-  }
-
-  char * line;
-  char * node;
-  char * path_list_head;
-  int count = 0;
-  int round_one_hash_blocks = 1;
-
-  struct size_list * size_node = size_list_head;
-
-  while (size_node != NULL) {
-    count++;
-    path_list_head = size_node->path_list;
-
-    uint32_t path_count = pl_get_path_count(path_list_head);
-
-    node = pl_get_first_entry(path_list_head);
-
-    LOG_PROGRESS {
-      LOG(L_PROGRESS,
-          "Processing %d/%d (%d files of size %ld)\n",
-          count, stats_size_list_count, path_count, (long)size_node->size);
-      if (size_node->size < 0) {
-        printf("Or not, since size makes no sense!\n");       // LCOV_EXCL_LINE
-        exit(1);                                              // LCOV_EXCL_LINE
-      }
-    }
-
-    // If we only have two files of this size, compare them directly
-    if (opt_compare_two && path_count == 2) {
-      char * path1 = pl_entry_get_path(node);
-      char * path2 = pl_entry_get_path(pl_entry_get_next(node));
-
-      compare_two_files(dbh, path1, path2, size_node->size, ROUND1);
-      stats_two_file_compare++;
-      goto CONTINUE;
-    }
-
-    // If we only have three files of this size, compare them directly
-    if (opt_compare_three && path_count == 3) {
-      char * path1 = pl_entry_get_path(node);
-      char * node2 = pl_entry_get_next(node);
-      char * path2 = pl_entry_get_path(node2);
-      char * path3 = pl_entry_get_path(pl_entry_get_next(node2));
-
-      compare_three_files(dbh, path1, path2, path3, size_node->size, ROUND1);
-      stats_three_file_compare++;
-      goto CONTINUE;
-    }
-
-    // If we have files of smallish size, do a full hash up front
-    if (size_node->size <= (hash_one_block_size * hash_one_max_blocks)) {
-      stats_full_hash_first++;
-      round_one_hash_blocks = 0;
-      LOG(L_INFO, "Computing full hash up front, file is small enough.\n");
-    } else {
-      stats_one_block_hash_first++;
-      round_one_hash_blocks = 1;
-    }
-
-    // Build initial hash list for these files
-    stats_sets_processed[ROUND1]++;
-    struct hash_list * hl_one = get_hash_list(HASH_LIST_ONE);
-    do {
-      line = pl_entry_get_path(node);
-      add_hash_list(hl_one, line, round_one_hash_blocks,
-                    hash_one_block_size, 0);
-      node = pl_entry_get_next(node);
-    } while (node != NULL);
-
-    LOG_TRACE {
-      LOG(L_TRACE, "Contents of hash list hl_one:\n");
-      print_hash_list(hl_one);
-    }
-
-    if (save_uniques) {
-      skim_uniques(dbh, hl_one, save_uniques);
-    }
-
-    // If no potential dups after this round, we're done!
-    if (HASH_LIST_NO_DUPS(hl_one)) {
-      LOG(L_TRACE, "No potential dups left, done!\n");
-      stats_sets_dup_not[ROUND1]++;
-      goto CONTINUE;
-    }
-
-    // If by now we already have a full hash, publish and we're done!
-    if (round_one_hash_blocks == 0) {
-      stats_sets_dup_done[ROUND1]++;
-      LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-      publish_duplicate_hash_list(dbh, hl_one, size_node->size, ROUND1);
-      goto CONTINUE;
-    }
-
-    struct hash_list * hl_previous = hl_one;
-
-    // Do filtering pass with intermediate number of blocks, if configured
-    if (intermediate_blocks > 1) {
-      LOG(L_INFO, "Don't know yet. Filtering to second hash list\n");
-      stats_sets_processed[ROUND2]++;
-      struct hash_list * hl_partial = get_hash_list(HASH_LIST_PARTIAL);
-      hl_previous = hl_partial;
-      filter_hash_list(hl_one, intermediate_blocks,
-                       hash_block_size, hl_partial, 0);
-
-      LOG_TRACE {
-        LOG(L_TRACE, "Contents of hash list hl_partial:\n");
-        print_hash_list(hl_partial);
-      }
-
-      if (save_uniques) {
-        skim_uniques(dbh, hl_partial, save_uniques);
-      }
-
-      // If no potential dups after this round, we're done!
-      if (HASH_LIST_NO_DUPS(hl_partial)) {
-        LOG(L_TRACE, "No potential dups left, done!\n");
-        stats_sets_dup_not[ROUND2]++;
-        goto CONTINUE;
-      }
-
-      // If this size < hashed so far, we're done so publish to db
-      if (size_node->size < hash_block_size * intermediate_blocks) {
-        stats_sets_dup_done[ROUND2]++;
-        LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-        publish_duplicate_hash_list(dbh, hl_partial, size_node->size, ROUND2);
-        goto CONTINUE;
-      }
-    }
-
-    // for anything left, do full file hash
-    LOG(L_INFO, "Don't know yet. Filtering to full hash list\n");
-    stats_sets_processed[ROUND3]++;
-    struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
-    filter_hash_list(hl_previous, 0, hash_block_size,
-                     hl_full, intermediate_blocks);
-    LOG_TRACE {
-      LOG(L_TRACE, "Contents of hash list hl_full:\n");
-      print_hash_list(hl_full);
-    }
-
-    if (save_uniques) {
-      skim_uniques(dbh, hl_full, save_uniques);
-    }
-
-    // If no potential dups after this round, we're done!
-    if (HASH_LIST_NO_DUPS(hl_full)) {
-      LOG(L_TRACE, "No potential dups left, done!\n");
-      stats_sets_dup_not[ROUND3]++;
-      goto CONTINUE;
-    }
-
-    // Still something left, go publish them to db
-    LOG(L_TRACE, "Finally some dups confirmed, here they are:\n");
-    stats_sets_dup_done[ROUND3]++;
-    publish_duplicate_hash_list(dbh, hl_full, size_node->size, ROUND3);
-
-    CONTINUE:
     size_node = size_node->next;
   }
 }
@@ -1568,91 +1762,6 @@ static void * reader_main_hdd(void * arg)
 
 
 /** ***************************************************************************
- * Helper function to process files from a size node to a hash list.
- * Used for rounds 1 and 2 during hash list processing.
- * The data buffers are freed as each one is consumed.
- *
- * Parameters:
- *    dbh       - db handle for saving duplicates/uniques
- *    size_node - Process this size node (and associated path list.
- *    hl        - Save paths to this hash list.
- *    round     - Current round (for updating stats arrays).
- *
- * Return: 1 if this path list was completed (either confirmed duplicates
- *         or ruled out possibility of being duplicates).
- *
- */
-static int build_hash_list_round(sqlite3 * dbh,
-                                 struct size_list * size_node,
-                                 struct hash_list * hl,
-                                 int round)
-{
-  char * node;
-  char * path;
-  char * buffer;
-  int completed = 0;
-
-  node = pl_get_first_entry(size_node->path_list);
-
-  // For small files, they may have been fully read already
-  if (size_node->fully_read) { stats_sets_full_read[round]++; }
-  else { stats_sets_part_read[round]++; }
-
-  LOG(L_TRACE, "Building hash list for size %ld (round %d)\n",
-      size_node->size, round+1);
-
-  // Build hash list for these files
-  do {
-    path = pl_entry_get_path(node);
-
-    // The path may be null if this particular path within this pathlist
-    // has been discarded as a potential duplicate already. If so, skip.
-    if (path[0] != 0) {
-      buffer = pl_entry_get_buffer(node);
-      add_hash_list_from_mem(hl, path, buffer, size_node->bytes_read);
-      free(buffer);
-      pl_entry_set_buffer(node, NULL);
-    }
-
-    node = pl_entry_get_next(node);
-  } while (node != NULL);
-
-  LOG_TRACE {
-    LOG(L_TRACE, "Contents of hash list hl:\n");
-    print_hash_list(hl);
-  }
-
-  // Remove the uniques seen (also save in db if save_uniques)
-  int skimmed = skim_uniques(dbh, hl, save_uniques);
-  if (skimmed) {
-    pl_decrease_path_count(size_node->path_list, skimmed);
-  }
-
-  // If no potential dups after this round, we're done!
-  if (HASH_LIST_NO_DUPS(hl)) {
-    LOG(L_TRACE, "No potential dups left, done!\n");
-    stats_sets_dup_not[round]++;
-    size_node->state = SLS_DONE;
-    completed = 1;
-
-  } else {
-    // If by now we already have a full hash, publish and we're done!
-    if (size_node->fully_read) {
-      stats_sets_dup_done[round]++;
-      LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-      publish_duplicate_hash_list(dbh, hl, size_node->size, round);
-      size_node->state = SLS_DONE;
-      completed = 1;
-    }
-  }
-
-  size_node->buffers_filled = 0;
-
-  return completed;
-}
-
-
-/** ***************************************************************************
  * Public function, see header file.
  *
  */
@@ -1988,6 +2097,408 @@ void threaded_process_size_list(sqlite3 * dbh)
 
 
 /** ***************************************************************************
+ * Reader thread main function for HDD option.
+ *
+ * This thread reads bytes from disk in readlist order (not by sizelist group)
+ * and stores the data in the pathlist buffer for each file.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+static void * read_list_reader(void * arg)
+{
+  (void)arg;
+  char * self = "                                        [RL-reader] ";
+  struct size_list * sizelist;
+  struct read_list_entry * rlentry;
+  ssize_t received;
+  off_t max_to_read;
+  off_t size;
+  uint32_t count;
+  int rlpos = 0;
+  int new_avg, read_round_one, read_round_two;
+  int loops = 0;
+  int done = 0;
+  int first_pass = 1;
+  long t1;
+  long took;
+  char * pathlist_entry;
+  char * pathlist_head;
+  char * path;
+  char * buffer;
+
+  pthread_setspecific(thread_name, self);
+  LOG(L_THREADS, "Thread created\n");
+
+  if (read_list_end == 0) {                                  // LCOV_EXCL_START
+    LOG(L_INFO, "readlist is empty, nothing to read\n");
+    return NULL;
+  }                                                          // LCOV_EXCL_STOP
+
+  do {
+    loops++;
+    read_round_one = 0;
+    read_round_two = 0;
+    rlpos = 0;
+    LOG(L_THREADS, "Starting read list loop #%d\n", loops);
+
+    do {
+
+      rlentry = &read_list[rlpos];
+      pathlist_head = rlentry->pathlist_head;
+      pathlist_entry = rlentry->pathlist_self;
+      sizelist = pl_get_szl_entry(pathlist_head);
+
+      if (sizelist == NULL) {                                // LCOV_EXCL_START
+        printf("error: sizelist is null in pathlist!\n");
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+
+      LOG_BASE {
+        if (pathlist_head != sizelist->path_list) {          // LCOV_EXCL_START
+          printf("error: inconsistent sizelist in pathlist head!\n");
+          printf("pathlist head (%p) -> sizelist %p\n",pathlist_head,sizelist);
+          printf("sizelist (%p) -> pathlist head %p\n",
+                 sizelist, sizelist->path_list);
+          exit(1);
+        }                                                    // LCOV_EXCL_STOP
+      }
+
+      d_mutex_lock(&sizelist->lock, "process_readlist");
+
+      size = sizelist->size;
+      if (size < 0) {                                        // LCOV_EXCL_START
+        printf("error: size %ld makes no sense\n", (long)size);
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+
+      switch(sizelist->state) {
+      case SLS_NEED_BYTES_ROUND_1:
+        read_round_one++;
+        if (size <= round1_max_bytes) {
+          max_to_read = size;
+        } else {
+          max_to_read = hash_one_block_size;
+        }
+        break;
+      case SLS_NEED_BYTES_ROUND_2:
+        read_round_two++;
+        max_to_read = size;
+        break;
+      case SLS_NEEDS_ROUND_3:
+      case SLS_READY_1:
+      case SLS_READY_2:
+      case SLS_DONE:
+      case SLS_DELETED:
+        goto PRL_NODE_DONE;
+      default:                                               // LCOV_EXCL_START
+        printf("error: process_readlist can't handle state %s\n",
+               state_name(sizelist->state));
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+
+      count = pl_get_path_count(pathlist_head);
+      path = pl_entry_get_path(pathlist_entry);
+      if (path == NULL || path[0] == 0) {
+        goto PRL_NODE_DONE;
+      }
+
+      LOG(L_MORE_THREADS, "Set (%d files of size %ld in state %s): "
+          "read %s\n", count, (long)size, state_name(sizelist->state), path);
+
+      buffer = pl_entry_get_buffer(pathlist_entry);
+      if (buffer != NULL) {
+        free(buffer);
+      }
+
+      buffer = (char *)malloc(max_to_read);
+      t1 = get_current_time_millis();
+      received = read_file_bytes(path, buffer, max_to_read, 0);
+      took = get_current_time_millis() - t1;
+
+      if (received != max_to_read) {
+        // File may be unreadable or changed size, either way, ignore it.
+        LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
+            (long)received, path, (long)max_to_read);
+        path[0] = 0;
+        uint32_t new_count = pl_decrease_path_count(pathlist_head, 1);
+        free(buffer);
+        if (new_count == 0) {
+          sizelist->state = SLS_READY_1;
+          //          stats_sets_dup_not[ROUND1]++;
+          LOG(L_MORE_THREADS, "Set (%d files of size %ld): state now %s\n",
+              count, (long)size, state_name(sizelist->state));
+        }
+
+      } else {
+
+        sizelist->bytes_read = received;
+        if (received == size) {
+          sizelist->fully_read = 1;
+        }
+
+        sizelist->buffers_filled++;
+        if (sizelist->buffers_filled == count) {
+          switch (sizelist->state) {
+          case SLS_NEED_BYTES_ROUND_1:
+            sizelist->state = SLS_READY_1;
+            break;
+          case SLS_NEED_BYTES_ROUND_2:
+            sizelist->state = SLS_READY_2;
+            break;
+          default:
+            printf("error: state is %s\n", state_name(sizelist->state));
+            exit(1);
+          }
+          LOG(L_MORE_THREADS, "Set (%d files of size %ld): state now %s\n",
+              count, (long)size, state_name(sizelist->state));
+        }
+
+        read_count++;
+        new_avg = avg_read_time + (took - avg_read_time) / read_count;
+        avg_read_time = new_avg;
+
+        LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
+            took, read_count, avg_read_time);
+
+        pl_entry_set_buffer(pathlist_entry, buffer);
+      }
+
+    PRL_NODE_DONE:
+      d_mutex_unlock(&sizelist->lock);
+      rlpos++;
+
+    } while (rlpos < read_list_end);
+
+    LOG(L_THREADS, "Finished loop %d: read_round_one:%d, read_round_two:%d "
+        "r12_hasher_done:%d\n",
+        loops, read_round_one, read_round_two, r12_hasher_done);
+
+    if (first_pass) {
+      long now = get_current_time_millis();
+      stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
+      first_pass = 0;
+      stats_round_start[ROUND2] = now;
+    }
+
+    // If all the hasher threads are done, nobody needs me anymore.
+    if (r12_hasher_done) {
+      done = 1;
+    }
+
+    if (!done) {
+      d_mutex_lock(&round12_lock, "read list reader end loop");
+      LOG(L_THREADS, "Waiting for something to do...\n");
+      d_cond_wait(&round12_cond, &round12_lock);
+      d_mutex_unlock(&round12_lock);
+      if (r12_hasher_done) {
+        done = 1;
+      }
+    }
+
+  } while (!done);
+
+  LOG(L_THREADS, "DONE (%d loops)\n", loops);
+
+  stats_reader_loops[ROUND1] = 1;
+  stats_reader_loops[ROUND2] = loops - 1;
+
+  return(NULL);
+}
+
+
+/** ***************************************************************************
+ * Size list-based reader thread (used in SSD mode only).
+ *
+ * Loops through the size list, looking for size entries which need bytes
+ * read from disk (SLS_NEED_BYTES_ROUND_1 or SLS_NEED_BYTES_ROUND_2)
+ * and then reads the needed bytes and saves them in the path list.
+ *
+ * Parameters:
+ *    arg - Not used.
+ *
+ * Return: none
+ *
+ */
+static void * size_list_reader(void * arg)
+{
+  (void)arg;
+  char * self = "                                        [SL-reader] ";
+  struct size_list * size_node;
+  struct size_list * size_node_next;
+  int read_round_one, read_round_two, sets;
+  int loops = 0;
+  int done = 0;
+  int first_pass = 1;
+  off_t max_to_read;
+  int round_two_possible = 0;
+
+  pthread_setspecific(thread_name, self);
+  LOG(L_THREADS, "Thread created\n");
+
+  if (intermediate_blocks > 0) {
+    round_two_possible = 1;
+  }
+
+  do {
+    size_node = size_list_head;
+    sets = 0;
+    loops++;
+    read_round_one = 0;
+    read_round_two = 0;
+    LOG(L_THREADS, "Starting size list loop #%d\n", loops);
+
+    do {
+      d_mutex_lock(&size_node->lock, "reader top");
+
+      LOG(L_MORE_THREADS, "SET %d (loop %d) size:%ld state:%s\n", ++sets,
+          loops, (long)size_node->size, state_name(size_node->state));
+
+      switch(size_node->state) {
+
+      case SLS_NEED_BYTES_ROUND_1:
+        if (size_node->size <= round1_max_bytes) {
+          max_to_read = round1_max_bytes;
+        } else {
+          max_to_read = hash_one_block_size;
+        }
+        reader_read_bytes(size_node, max_to_read);
+        read_round_one++;
+        size_node->state = SLS_READY_1;
+        break;
+
+      case SLS_NEED_BYTES_ROUND_2:
+        max_to_read = hash_block_size * intermediate_blocks;
+        reader_read_bytes(size_node, max_to_read);
+        read_round_two++;
+        size_node->state = SLS_READY_2;
+        break;
+      }
+
+      size_node_next = size_node->next;
+      d_mutex_unlock(&size_node->lock);
+
+      LOG_THREADS {
+        int sum = read_round_one + read_round_two;
+        if (sum > 0 && sum % 100 == 0) {
+          LOG(L_THREADS, "Update in loop %d: "
+              "read_round_one:%d, read_round_two:%d\n",
+              loops, read_round_one, read_round_two);
+        }
+      }
+
+      size_node = size_node_next;
+
+    } while (size_node != NULL);
+
+    LOG(L_THREADS, "Finished loop %d: read_round_one:%d, read_round_two:%d "
+        "r12_hasher_done:%d\n",
+        loops, read_round_one, read_round_two, r12_hasher_done);
+
+    if (first_pass) {
+
+      long now = get_current_time_millis();
+      stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
+      first_pass = 0;
+      stats_round_start[ROUND2] = now;
+
+      // If round two is not possible (in size_list (SSD) mode, only done
+      // if configured), there is nothing left for this thread to do.
+      if (!round_two_possible) {
+        LOG(L_THREADS, "round two not enabled so work is done\n");
+        done = 1;
+      }
+    }
+
+    // If all the hasher threads are done, nobody needs me anymore.
+    if (r12_hasher_done) {
+      done = 1;
+    }
+
+  } while (!done);
+
+  LOG(L_THREADS, "DONE (%d loops)\n", loops);
+
+  stats_reader_loops[ROUND1] = 1;
+  stats_reader_loops[ROUND2] = loops - 1;
+  sl_reader_done = 1;
+
+  return(NULL);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void new_process_size_list(sqlite3 * dbh)
+{
+  pthread_t reader_thread;
+  pthread_t hasher_thread[64];
+  int hashers = 2;
+
+  if (size_list_head == NULL) {
+    return;
+  }
+
+  stats_round_start[ROUND1] = get_current_time_millis();
+
+  // Start appropriate file reader thread
+  LOG(L_THREADS, "Starting file reader thread...\n");
+  if (hdd_mode) { d_create(&reader_thread, read_list_reader, NULL); }
+  else { d_create(&reader_thread, size_list_reader, NULL); }
+
+  usleep(10000);
+
+  // Start hasher thread
+  LOG(L_THREADS, "Starting %d threads...\n", hashers);
+  for (int n = 0; n < hashers; n++) {
+    struct r12hasher_arg args;
+    args.dbh = dbh;
+    args.n = n + 1;
+    d_create(&hasher_thread[n], round12_hasher, &args);
+    usleep(5000);
+  }
+
+  // Meanwhile, the size tree is no longer needed, so free it. Might
+  // as well do it while this thread has nothing else to do but wait.
+  free_size_tree();
+
+  LOG(L_THREADS, "process_size_list: waiting for workers to finish\n");
+
+  for (int n = 0; n < hashers; n++) {
+    d_join(hasher_thread[n], NULL);
+    LOG(L_THREADS, "process_size_list: joined hasher thread %d\n", n);
+  }
+
+  r12_hasher_done = 1;  // Lets reader thread exit, if it hasn't yet
+  d_mutex_lock(&round12_lock, "round12_hasher end loop");
+  d_cond_signal(&round12_cond);
+  d_mutex_unlock(&round12_lock);
+  d_join(reader_thread, NULL);
+
+  LOG(L_THREADS, "process_size_list: joined reader thread\n");
+
+  // Stop timer of round2 (it was started by the reader thread after
+  // completing one pass).
+  long now = get_current_time_millis();
+  stats_round_duration[ROUND2] = now - stats_round_start[ROUND2];
+
+  // However, if there was no round2, any time there is just remnant of round1
+  // hashing, so reassign accordingly to avoid confusion.
+  if (stats_reader_loops[ROUND2] == 0) {
+    stats_round_duration[ROUND1] += stats_round_duration[ROUND2];
+    stats_round_duration[ROUND2] = 0;
+  }
+
+  // Only entries remaining in the size_list are those marked SLS_NEEDS_ROUND_3
+  process_round_3(dbh);
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
  *
  */
@@ -2031,5 +2542,187 @@ void free_size_list()
       free(me);
       me = p;
     }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void process_size_list(sqlite3 * dbh)
+{
+  if (size_list_head == NULL) {
+    return;
+  }
+
+  char * line;
+  char * node;
+  char * path_list_head;
+  int count = 0;
+  int round_one_hash_blocks = 1;
+
+  struct size_list * size_node = size_list_head;
+
+  while (size_node != NULL) {
+    count++;
+    path_list_head = size_node->path_list;
+
+    uint32_t path_count = pl_get_path_count(path_list_head);
+
+    node = pl_get_first_entry(path_list_head);
+
+    LOG_PROGRESS {
+      LOG(L_PROGRESS,
+          "Processing %d/%d (%d files of size %ld)\n",
+          count, stats_size_list_count, path_count, (long)size_node->size);
+      if (size_node->size < 0) {
+        printf("Or not, since size makes no sense!\n");       // LCOV_EXCL_LINE
+        exit(1);                                              // LCOV_EXCL_LINE
+      }
+    }
+
+    // If we only have two files of this size, compare them directly
+    if (opt_compare_two && path_count == 2) {
+      char * path1 = pl_entry_get_path(node);
+      char * path2 = pl_entry_get_path(pl_entry_get_next(node));
+
+      compare_two_files(dbh, path1, path2, size_node->size, ROUND1);
+      stats_two_file_compare++;
+      goto CONTINUE;
+    }
+
+    // If we only have three files of this size, compare them directly
+    if (opt_compare_three && path_count == 3) {
+      char * path1 = pl_entry_get_path(node);
+      char * node2 = pl_entry_get_next(node);
+      char * path2 = pl_entry_get_path(node2);
+      char * path3 = pl_entry_get_path(pl_entry_get_next(node2));
+
+      compare_three_files(dbh, path1, path2, path3, size_node->size, ROUND1);
+      stats_three_file_compare++;
+      goto CONTINUE;
+    }
+
+    // If we have files of smallish size, do a full hash up front
+    if (size_node->size <= (hash_one_block_size * hash_one_max_blocks)) {
+      stats_full_hash_first++;
+      round_one_hash_blocks = 0;
+      LOG(L_INFO, "Computing full hash up front, file is small enough.\n");
+    } else {
+      stats_one_block_hash_first++;
+      round_one_hash_blocks = 1;
+    }
+
+    // Build initial hash list for these files
+    stats_sets_processed[ROUND1]++;
+    struct hash_list * hl_one = get_hash_list(HASH_LIST_ONE);
+    do {
+      line = pl_entry_get_path(node);
+      add_hash_list(hl_one, line, round_one_hash_blocks,
+                    hash_one_block_size, 0);
+      node = pl_entry_get_next(node);
+    } while (node != NULL);
+
+    LOG_TRACE {
+      LOG(L_TRACE, "Contents of hash list hl_one:\n");
+      print_hash_list(hl_one);
+    }
+
+    if (save_uniques) {
+      skim_uniques(dbh, hl_one, save_uniques);
+    }
+
+    // If no potential dups after this round, we're done!
+    if (HASH_LIST_NO_DUPS(hl_one)) {
+      LOG(L_TRACE, "No potential dups left, done!\n");
+      stats_sets_dup_not[ROUND1]++;
+      goto CONTINUE;
+    }
+
+    // If by now we already have a full hash, publish and we're done!
+    if (round_one_hash_blocks == 0) {
+      stats_sets_dup_done[ROUND1]++;
+      LOG(L_TRACE, "Some dups confirmed, here they are:\n");
+      publish_duplicate_hash_list(dbh, hl_one, size_node->size, ROUND1);
+      goto CONTINUE;
+    }
+
+    struct hash_list * hl_previous = hl_one;
+
+    // Do filtering pass with intermediate number of blocks, if configured
+    if (intermediate_blocks > 1) {
+      LOG(L_INFO, "Don't know yet. Filtering to second hash list\n");
+      stats_sets_processed[ROUND2]++;
+      struct hash_list * hl_partial = get_hash_list(HASH_LIST_PARTIAL);
+      hl_previous = hl_partial;
+      filter_hash_list(hl_one, intermediate_blocks,
+                       hash_block_size, hl_partial, 0);
+
+      LOG_TRACE {
+        LOG(L_TRACE, "Contents of hash list hl_partial:\n");
+        print_hash_list(hl_partial);
+      }
+
+      if (save_uniques) {
+        skim_uniques(dbh, hl_partial, save_uniques);
+      }
+
+      // If no potential dups after this round, we're done!
+      if (HASH_LIST_NO_DUPS(hl_partial)) {
+        LOG(L_TRACE, "No potential dups left, done!\n");
+        stats_sets_dup_not[ROUND2]++;
+        goto CONTINUE;
+      }
+
+      // If this size < hashed so far, we're done so publish to db
+      if (size_node->size < hash_block_size * intermediate_blocks) {
+        stats_sets_dup_done[ROUND2]++;
+        LOG(L_TRACE, "Some dups confirmed, here they are:\n");
+        publish_duplicate_hash_list(dbh, hl_partial, size_node->size, ROUND2);
+        goto CONTINUE;
+      }
+    }
+
+    // for anything left, do full file hash
+    LOG(L_INFO, "Don't know yet. Filtering to full hash list\n");
+    stats_sets_processed[ROUND3]++;
+    struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
+    filter_hash_list(hl_previous, 0, hash_block_size,
+                     hl_full, intermediate_blocks);
+    LOG_TRACE {
+      LOG(L_TRACE, "Contents of hash list hl_full:\n");
+      print_hash_list(hl_full);
+    }
+
+    if (save_uniques) {
+      skim_uniques(dbh, hl_full, save_uniques);
+    }
+
+    // If no potential dups after this round, we're done!
+    if (HASH_LIST_NO_DUPS(hl_full)) {
+      LOG(L_TRACE, "No potential dups left, done!\n");
+      stats_sets_dup_not[ROUND3]++;
+      goto CONTINUE;
+    }
+
+    // Still something left, go publish them to db
+    LOG(L_TRACE, "Finally some dups confirmed, here they are:\n");
+    stats_sets_dup_done[ROUND3]++;
+    publish_duplicate_hash_list(dbh, hl_full, size_node->size, ROUND3);
+
+    CONTINUE:
+    size_node = size_node->next;
   }
 }

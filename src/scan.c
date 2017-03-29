@@ -202,12 +202,12 @@ void walk_dir(sqlite3 * dbh, const char * path,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  strcpy(scan_list, path);
+  strlcpy(scan_list, path, DUPD_PATH_MAX);
   scan_list_pos = 0;
 
   while (scan_list_pos >= 0) {
 
-    strcpy(current, scan_list + DUPD_PATH_MAX * scan_list_pos);
+    strlcpy(current, scan_list + DUPD_PATH_MAX * scan_list_pos, DUPD_PATH_MAX);
     LOG(L_FILES, "\nDIR: (%d)[%s]\n", scan_list_pos, current);
     scan_list_pos--;
 
@@ -425,15 +425,7 @@ void scan()
   if (x_analyze) {
     analyze_process_size_list(dbh);
   } else {
-    if (hdd_mode) {
-      threaded_process_size_list_hdd(dbh);
-    } else {
-      if (threaded_hashcompare) {
-        threaded_process_size_list(dbh);
-      } else {
-        process_size_list(dbh);
-      }
-    }
+    new_process_size_list(dbh);
   }
 
   stats_time_process = get_current_time_millis() - read_phase_started;;

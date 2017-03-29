@@ -91,7 +91,7 @@ int report_format = REPORT_FORMAT_TEXT;
 pthread_key_t thread_name;
 pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 
-extern char * log_level_name[] = {
+char * log_level_name[] = {
   "NONE",
   "BASE",
   "MORE",
