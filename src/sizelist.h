@@ -72,23 +72,6 @@ struct size_list * add_to_size_list(off_t size, char * path_list);
 
 
 /** ***************************************************************************
- * Process the size list. The core of the duplicate detection is done
- * from here.
- *
- * This function walks down the size list produced during scanning.
- *
- * Duplicates are published to the sqlite database, unless write_db is false.
- *
- * Parameters:
- *    dbh - Database pointer.
- *
- * Return: none
- *
- */
-//void process_size_list(sqlite3 * dbh);
-
-
-/** ***************************************************************************
  * An internal testing version of process_size_list. Produces output
  * showing how many blocks needed to discard potential duplicates.
  * Not intended for normal usage.
@@ -100,24 +83,6 @@ struct size_list * add_to_size_list(off_t size, char * path_list);
  *
  */
 void analyze_process_size_list(sqlite3 * dbh);
-
-
-/** ***************************************************************************
- * Process the size list in two threads using read list ordering for HDDs.
- *
- * Otherwise same as process_size_list() above.
- *
- */
-//void threaded_process_size_list_hdd(sqlite3 * dbh);
-
-
-/** ***************************************************************************
- * Process the size list in two threads.
- *
- * Otherwise same as process_size_list() above.
- *
- */
-//void threaded_process_size_list(sqlite3 * dbh);
 
 
 /** ***************************************************************************
