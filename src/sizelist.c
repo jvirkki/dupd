@@ -46,21 +46,20 @@ static struct size_list * size_list_head;
 static struct size_list * size_list_tail;
 static struct size_list * deleted_list_head;
 static struct size_list * deleted_list_tail;
-static int reader_continue = 1;
+//static int reader_continue = 1;
 static int avg_read_time = 0;
 static int read_count = 0;
 static int open_files = 0;
-static int reader_main_hdd_round_2 = 0;
+//static int reader_main_hdd_round_2 = 0;
 static int round3_info_buffers_used = 0;
 
-static pthread_mutex_t reader_main_hdd_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t reader_main_hdd_cond = PTHREAD_COND_INITIALIZER;
+//static pthread_mutex_t reader_main_hdd_lock = PTHREAD_MUTEX_INITIALIZER;
+//static pthread_cond_t reader_main_hdd_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t show_processed_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t r3_loop_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t r3_loop_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t deleted_list_lock = PTHREAD_MUTEX_INITIALIZER;
-
 static pthread_mutex_t round12_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t round12_cond = PTHREAD_COND_INITIALIZER;
 
@@ -1509,6 +1508,7 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
  * Return: none
  *
  */
+/*
 static void * reader_main(void * arg)
 {
   (void)arg;
@@ -1570,6 +1570,7 @@ static void * reader_main(void * arg)
 
   return(NULL);
 }
+*/
 
 
 /** ***************************************************************************
@@ -1583,6 +1584,7 @@ static void * reader_main(void * arg)
  * Return: none
  *
  */
+/*
 static void process_readlist(int max_bytes_to_read, int min_block_size)
 {
   struct size_list * sizelist;
@@ -1702,6 +1704,7 @@ static void process_readlist(int max_bytes_to_read, int min_block_size)
 
   } while (rlpos < read_list_end);
 }
+*/
 
 
 /** ***************************************************************************
@@ -1720,6 +1723,7 @@ static void process_readlist(int max_bytes_to_read, int min_block_size)
  * Return: none
  *
  */
+/*
 static void * reader_main_hdd(void * arg)
 {
   (void)arg;
@@ -1759,12 +1763,14 @@ static void * reader_main_hdd(void * arg)
 
   return(NULL);
 }
+*/
 
 
 /** ***************************************************************************
  * Public function, see header file.
  *
  */
+/*
 void threaded_process_size_list_hdd(sqlite3 * dbh)
 {
   struct size_list * size_node;
@@ -1963,12 +1969,13 @@ void threaded_process_size_list_hdd(sqlite3 * dbh)
 
   LOG(L_THREADS, "DONE\n");
 }
-
+*/
 
 /** ***************************************************************************
  * Public function, see header file.
  *
  */
+/*
 void threaded_process_size_list(sqlite3 * dbh)
 {
   struct size_list * size_node;
@@ -2094,7 +2101,7 @@ void threaded_process_size_list(sqlite3 * dbh)
 
   LOG(L_THREADS, "DONE\n");
 }
-
+*/
 
 /** ***************************************************************************
  * Reader thread main function for HDD option.
@@ -2433,7 +2440,7 @@ static void * size_list_reader(void * arg)
  * Public function, see header file.
  *
  */
-void new_process_size_list(sqlite3 * dbh)
+void process_size_list(sqlite3 * dbh)
 {
   pthread_t reader_thread;
   pthread_t hasher_thread[64];
@@ -2561,6 +2568,7 @@ void free_size_list()
  * Public function, see header file.
  *
  */
+/*
 void process_size_list(sqlite3 * dbh)
 {
   if (size_list_head == NULL) {
@@ -2726,3 +2734,4 @@ void process_size_list(sqlite3 * dbh)
     size_node = size_node->next;
   }
 }
+*/

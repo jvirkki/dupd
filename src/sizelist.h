@@ -85,7 +85,7 @@ struct size_list * add_to_size_list(off_t size, char * path_list);
  * Return: none
  *
  */
-void process_size_list(sqlite3 * dbh);
+//void process_size_list(sqlite3 * dbh);
 
 
 /** ***************************************************************************
@@ -108,7 +108,7 @@ void analyze_process_size_list(sqlite3 * dbh);
  * Otherwise same as process_size_list() above.
  *
  */
-void threaded_process_size_list_hdd(sqlite3 * dbh);
+//void threaded_process_size_list_hdd(sqlite3 * dbh);
 
 
 /** ***************************************************************************
@@ -117,7 +117,7 @@ void threaded_process_size_list_hdd(sqlite3 * dbh);
  * Otherwise same as process_size_list() above.
  *
  */
-void threaded_process_size_list(sqlite3 * dbh);
+//void threaded_process_size_list(sqlite3 * dbh);
 
 
 /** ***************************************************************************
@@ -135,6 +135,6 @@ void threaded_process_size_list(sqlite3 * dbh);
  * Return: none
  *
  */
-void new_process_size_list(sqlite3 * dbh);
+void process_size_list(sqlite3 * dbh);
 
 #endif

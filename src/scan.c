@@ -425,7 +425,7 @@ void scan()
   if (x_analyze) {
     analyze_process_size_list(dbh);
   } else {
-    new_process_size_list(dbh);
+    process_size_list(dbh);
   }
 
   stats_time_process = get_current_time_millis() - read_phase_started;;
