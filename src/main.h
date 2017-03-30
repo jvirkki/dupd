@@ -303,13 +303,6 @@ extern int threaded_sizetree;
 
 
 /** ***************************************************************************
- * If true, read from disk (while hashing and comparing) in a separate thread.
- *
- */
-extern int threaded_hashcompare;
-
-
-/** ***************************************************************************
  * If database is older than this, show a warning.
  *
  */

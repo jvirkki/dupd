@@ -82,7 +82,6 @@ int x_analyze = 0;
 int only_testing = 0;
 int hdd_mode = 0;
 int threaded_sizetree = 1;
-int threaded_hashcompare = 1;
 int hardlink_is_unique = 0;
 int hash_function = HASH_FN_MD5;
 int hash_bufsize = -1;
@@ -324,7 +323,6 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_skip_three]) { opt_compare_three = 0; }
   if (options[OPT_hidden]) { scan_hidden = 1; }
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
-  if (options[OPT_no_thread_hash]) { threaded_hashcompare = 0; }
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }
 
   intermediate_blocks = opt_int(options[OPT_intblocks], intermediate_blocks);
@@ -390,7 +388,6 @@ static int process_args(int argc, char * argv[])
     opt_compare_two = 0;
     opt_compare_three = 0;
     threaded_sizetree = 0;
-    threaded_hashcompare = 0;
     save_uniques = 0;
     hdd_mode = 0;
     x_analyze = 1;

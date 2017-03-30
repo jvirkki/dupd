@@ -55,65 +55,65 @@
 // file_count (--file-count) NUM : max estimated number of files to scan
 #define OPT_file_count 2
 
-// avg_size (--avg-size) : deprecated
-#define OPT_avg_size 3
-
 // stats_file (--stats-file) FILE : save stats to this file
-#define OPT_stats_file 4
+#define OPT_stats_file 3
 
 // minsize (-m,--minsize) SIZE : min size of files to scan
-#define OPT_minsize 5
+#define OPT_minsize 4
 
 // hidden (--hidden) : include hidden files and dirs in scan
-#define OPT_hidden 6
+#define OPT_hidden 5
 
 // hdd (-D,--hdd) : select HDD mode
-#define OPT_hdd 7
+#define OPT_hdd 6
 
 // hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
-#define OPT_hardlink_is_unique 8
+#define OPT_hardlink_is_unique 7
 
 // no_thread_scan (--no-thread-scan) : do scan phase in a single thread
-#define OPT_no_thread_scan 9
-
-// no_thread_hash (--no-thread-hash) : do hash/compare phase in a single thread
-#define OPT_no_thread_hash 10
+#define OPT_no_thread_scan 8
 
 // pathsep (--pathsep) CHAR : change internal path separator to CHAR
-#define OPT_pathsep 11
+#define OPT_pathsep 9
 
 // firstblocks (--firstblocks) N : max blocks to read in first hash pass
-#define OPT_firstblocks 12
+#define OPT_firstblocks 10
 
 // firstblocksize (--firstblocksize) N : size of firstblocks to read
-#define OPT_firstblocksize 13
+#define OPT_firstblocksize 11
 
 // intblocks (--intblocks) N : blocks to read in intermediate hash
-#define OPT_intblocks 14
+#define OPT_intblocks 12
 
 // blocksize (--blocksize) N : size of regular blocks to read
-#define OPT_blocksize 15
+#define OPT_blocksize 13
 
 // fileblocksize (--fileblocksize) N : size of blocks to read in file compare
-#define OPT_fileblocksize 16
+#define OPT_fileblocksize 14
 
 // skip_two (--skip-two) : do not compare two files directly
-#define OPT_skip_two 17
+#define OPT_skip_two 15
 
 // skip_three (--skip-three) : do not compare three files directly
-#define OPT_skip_three 18
+#define OPT_skip_three 16
 
 // cmp_two (--cmp-two) : force direct comparison of two files
-#define OPT_cmp_two 19
+#define OPT_cmp_two 17
 
 // cmp_three (--cmp-three) : force direct comparison of three files
-#define OPT_cmp_three 20
+#define OPT_cmp_three 18
 
 // uniques (--uniques) : save info about unique files
-#define OPT_uniques 21
+#define OPT_uniques 19
 
 // x_analyze (--x-analyze) : for testing only
-#define OPT_x_analyze 22
+#define OPT_x_analyze 20
+
+// avg_size (--avg-size) : deprecated
+#define OPT_avg_size 21
+
+// no_thread_hash (--no-thread-hash) : obsoleted
+#define OPT_no_thread_hash 22
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
 #define OPT_cut 23

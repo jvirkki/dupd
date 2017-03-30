@@ -4,19 +4,21 @@ source common
 
 DESC="scan(files6): uniques w/larger files, some differ early, no thread scan"
 
-cd files6
-cat files.tar.gz | gunzip | tar xf -
-cd ..
+# no-thread-hash is obsolete
 
-$DUPD_CMD scan --path `pwd`/files6 --uniques --no-thread-hash > /dev/null
-checkrv $?
+# cd files6
+# cat files.tar.gz | gunzip | tar xf -
+# cd ..
 
-echo "select * from files;" | sqlite3 ~/.dupd_sqlite | sort | sed -e 's/.*files6//' > nreport
+# $DUPD_CMD scan --path `pwd`/files6 --uniques --no-thread-hash > /dev/null
+# checkrv $?
 
-check_nreport output.56
+# echo "select * from files;" | sqlite3 ~/.dupd_sqlite | sort | sed -e 's/.*files6//' > nreport
 
-cd files6
-rm -f 1 2 3 4 5
-cd ..
+# check_nreport output.56
+
+# cd files6
+# rm -f 1 2 3 4 5
+# cd ..
 
 tdone
