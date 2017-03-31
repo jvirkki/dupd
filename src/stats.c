@@ -40,6 +40,7 @@ long stats_round_start[ROUNDS] = { -1,-1,-1 };
 int stats_round_duration[ROUNDS] = { -1,-1,-1 };
 int stats_duplicate_groups[ROUNDS] = { 0,0,0 };
 int stats_reader_loops[ROUNDS] = { 0,0,0 };
+int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS] = { {0,0}, {0,0}, {0,0} };
 
 uint64_t stats_total_bytes = 0;
 uint64_t stats_total_bytes_read = 0;
@@ -110,6 +111,11 @@ void report_stats()
     printf("  Block size %d (%d max blocks)\n",
            hash_one_block_size, hash_one_max_blocks);
     printf("  Reader loops: %d\n", stats_reader_loops[ROUND1]);
+    printf("  Hasher loops:");
+    for (int i = 0; i < MAX_HASHER_THREADS; i++) {
+      printf("   %d", stats_hasher_loops[ROUND1][i]);
+    }
+    printf("\n");
     printf("  Sets fully hashed in round one: %d\n", stats_full_hash_first);
     printf("  Sets with single block first round: %d\n",
            stats_one_block_hash_first);
@@ -125,6 +131,11 @@ void report_stats()
     printf("  Block size %d (%d max blocks)\n",
            hash_block_size, intermediate_blocks);
     printf("  Reader loops: %d\n", stats_reader_loops[ROUND2]);
+    printf("  Hasher loops:");
+    for (int i = 0; i < MAX_HASHER_THREADS; i++) {
+      printf("   %d", stats_hasher_loops[ROUND2][i]);
+    }
+    printf("\n");
     printf("  Sets with dups ruled out in second round: %d\n",
            stats_sets_dup_not[ROUND2]);
     printf("  Sets with dups confirmed in second round: %d\n",
@@ -136,6 +147,11 @@ void report_stats()
            stats_sets_processed[ROUND3], stats_round_duration[ROUND3]);
     printf("  Block size %d\n", hash_block_size);
     printf("  Reader loops: %d\n", stats_reader_loops[ROUND3]);
+    printf("  Hasher loops:");
+    for (int i = 0; i < MAX_HASHER_THREADS; i++) {
+      printf("   %d", stats_hasher_loops[ROUND3][i]);
+    }
+    printf("\n");
     printf("  Sets with dups ruled out in full round: %d\n",
            stats_sets_dup_not[ROUND3]);
     printf("  Sets with dups confirmed in full round: %d\n",

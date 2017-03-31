@@ -402,6 +402,7 @@ static void * round12_hasher(void * arg)
   int loops,need_to_wait, set_completed, set, free_myself, saw_ghost;
   int in_round_1, in_round_2, in_round_3, in_done;
   int out_round_1, out_round_2, out_round_3, out_done;
+  int total_round2_seen = 0;
   int self_done = 0;
 
   snprintf(self, 80,  "      [R12-hasher-%d] ", thread_count);
@@ -528,6 +529,7 @@ static void * round12_hasher(void * arg)
         break;
 
       case SLS_READY_2:
+        total_round2_seen++;
         reset_hash_list(local_hash_list);
         stats_sets_processed[ROUND2]++;
         set_completed = build_hash_list_round(dbh, size_node,
@@ -601,6 +603,19 @@ static void * round12_hasher(void * arg)
   } while (out_round_1 > 0 || out_round_2 > 0 || saw_ghost);
 
   LOG(L_THREADS, "DONE (%d loops) (sets done %d)\n", loops, self_done);
+
+  // Estimate loops per round - here this isn't clear cut because any
+  // given loop can handle both round1 and round2 sets. The following
+  // simplification is approximately correct most of the time.
+
+  if (total_round2_seen > 0) {
+    stats_hasher_loops[ROUND1][thread_count-1] = 1;
+    stats_hasher_loops[ROUND2][thread_count-1] = loops - 1;
+  } else {
+    // If nothing was done in round2, easy, everything was round1
+    stats_hasher_loops[ROUND1][thread_count-1] = loops;
+    stats_hasher_loops[ROUND2][thread_count-1] = 0;
+  }
 
   free_hash_list(local_hash_list);
   return NULL;
@@ -905,6 +920,7 @@ static void * round3_hasher(void * arg)
   d_mutex_unlock(&r3_loop_lock);
 
   LOG(L_THREADS, "DONE (%d loops)\n", loops);
+  stats_hasher_loops[ROUND3][0] = loops;
 
   return NULL;
 }
@@ -1773,6 +1789,10 @@ void process_size_list(sqlite3 * dbh)
   if (hdd_mode) { d_create(&reader_thread, read_list_reader, NULL); }
   else { d_create(&reader_thread, size_list_reader, NULL); }
 
+  // Meanwhile, the size tree is no longer needed, so free it. Might
+  // as well do it while this thread has nothing else to do but wait.
+  free_size_tree();
+
   usleep(10000);
 
   // Start hasher thread
@@ -1784,10 +1804,6 @@ void process_size_list(sqlite3 * dbh)
     d_create(&hasher_thread[n], round12_hasher, &args);
     usleep(5000);
   }
-
-  // Meanwhile, the size tree is no longer needed, so free it. Might
-  // as well do it while this thread has nothing else to do but wait.
-  free_size_tree();
 
   LOG(L_THREADS, "process_size_list: waiting for workers to finish\n");
 
