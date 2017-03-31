@@ -518,7 +518,7 @@ static void * round12_hasher(void * arg)
             }
 
           } else {
-            // In SSD mode, after round1 we'll do a round3 only if configured.
+            // In SSD mode, after round1 we'll do a round2 only if configured.
             if (intermediate_blocks > 1) {
               size_node->state = SLS_NEED_BYTES_ROUND_2;
             } else {
@@ -594,8 +594,10 @@ static void * round12_hasher(void * arg)
         loops, in_round_1, out_round_1, in_round_2, out_round_2,
         in_round_3, out_round_3, in_done, out_done, saw_ghost);
 
+    // If we saw sets in round2 states, signal the reader thread in case
+    // it is waiting for more work.
     if (out_round_2 > 0) {
-      d_mutex_lock(&round12_lock, "round12_hasher end loop");
+      d_mutex_lock(&round12_lock, "round12_hasher end loop signaling");
       d_cond_signal(&round12_cond);
       d_mutex_unlock(&round12_lock);
     }
@@ -1549,11 +1551,19 @@ static void * read_list_reader(void * arg)
       done = 1;
     }
 
+    // Every round1 buffer got read in the first loop. If a hasher thread
+    // decides a set needs a round2 we may need to do more reading. That may
+    // take a while so instead of looping, wait now. A hasher thread should
+    // wake us up after it completes a loop if it knows of any set needing
+    // round2 data.
     if (!done) {
-      d_mutex_lock(&round12_lock, "read list reader end loop");
       LOG(L_THREADS, "Waiting for something to do...\n");
+      d_mutex_lock(&round12_lock, "read list reader end loop");
       d_cond_wait(&round12_cond, &round12_lock);
       d_mutex_unlock(&round12_lock);
+      // Hasher threads might have all finished while we waited (in that
+      // case, the parent thread just woke us up). Check again whether
+      // there is anything more to do.
       if (r12_hasher_done) {
         done = 1;
       }
