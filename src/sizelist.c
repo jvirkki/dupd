@@ -505,6 +505,10 @@ static void * round12_hasher(void * arg)
                                               local_hash_list, ROUND1);
         round = '1';
 
+        if (!size_node->fully_read) {
+          stats_one_block_hash_first++;
+        }
+
         if (!set_completed) {
           // Need to set correct next state
 
@@ -524,6 +528,10 @@ static void * round12_hasher(void * arg)
             } else {
               size_node->state = SLS_NEEDS_ROUND_3;
             }
+          }
+        } else { // set_completed
+          if (size_node->fully_read) {
+            stats_full_hash_first++;
           }
         }
         break;
