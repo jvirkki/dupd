@@ -62,7 +62,9 @@ char * exclude_path = NULL;
 int exclude_path_len = 0;
 off_t minimum_file_size = 1;
 int hash_one_max_blocks = 16;
-int hash_one_block_size = 512;
+int hash_one_block_size = -1;
+int DEF_HDD_hash_one_block_size = 1024*64;
+int DEF_SSD_hash_one_block_size = 512;;
 int intermediate_blocks = 0;
 int hash_block_size = 8192;
 int filecmp_block_size = 131072;
@@ -327,8 +329,8 @@ static int process_args(int argc, char * argv[])
 
   intermediate_blocks = opt_int(options[OPT_intblocks], intermediate_blocks);
 
-  hash_one_block_size =
-    opt_int(options[OPT_firstblocksize], hash_one_block_size);
+  hash_one_block_size = opt_int(options[OPT_firstblocksize],
+                                hash_one_block_size);
 
   hash_block_size = opt_int(options[OPT_blocksize], hash_block_size);
 
@@ -401,6 +403,14 @@ static int process_args(int argc, char * argv[])
     }
     if (options[OPT_cmp_three]) {
       opt_compare_three = 1;
+    }
+  }
+
+  if (hash_one_block_size == -1) {
+    if (hdd_mode) {
+      hash_one_block_size = DEF_HDD_hash_one_block_size;
+    } else {
+      hash_one_block_size = DEF_SSD_hash_one_block_size;
     }
   }
 

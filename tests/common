@@ -1,5 +1,5 @@
 #
-#  Copyright 2014-2016 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2014-2017 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -18,6 +18,15 @@
 #
 
 rm -f report nreport
+
+check_equal () {
+    if [ "$1" != "$2" ]; then
+        echo "FAIL ${DESC}"
+        exit 1
+    else
+        echo "OK ${DESC}"
+    fi
+}
 
 checkrv () {
     if [ "$1" != "0" ]; then
@@ -45,5 +54,5 @@ check_nreport () {
 }
 
 tdone () {
-    rm -f report nreport
+    rm -f report nreport stx
 }
