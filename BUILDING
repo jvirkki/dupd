@@ -1,16 +1,9 @@
 
 Dependencies
 ------------
-dupd depends on libbloom (https://github.com/jvirkki/libbloom).
+dupd requires SQLite (-lsqlite3) and OpenSSL (-lcrypto).
 
-By default the build expects to find libbloom as a peer directory to dupd.
-If dupd is in $HOME/src/dupd/ then clone libbloom into $HOME/src/libbloom/
-
-You can override this location assumption by setting LIBBLOOM_INC and
-LIBBLOOM_LIB, see Makefile. Build libbloom before building dupd.
-
-Aside from that, dupd requires SQLite (-lsqlite3) and OpenSSL (-lcrypto).
-
+Note that dupd no longer requires libbloom.
 
 Building
 --------
