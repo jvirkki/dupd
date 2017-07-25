@@ -1419,6 +1419,13 @@ static void * read_list_reader(void * arg)
 
       rlentry = &read_list[rlpos];
       pathlist_head = rlentry->pathlist_head;
+
+      // A read_list entry may have been nulled out so check and skip those.
+      if (pathlist_head == NULL) {
+        rlpos++;
+        continue;
+      }
+
       pathlist_entry = rlentry->pathlist_self;
       sizelist = pl_get_szl_entry(pathlist_head);
 

@@ -1,5 +1,5 @@
 /*
-  Copyright 2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -75,6 +75,8 @@ void add_to_read_list(dev_t device, ino_t inode, char * head, char * entry);
 
 /** ***************************************************************************
  * Sort the read list.
+ *
+ * If hardlink_is_unique, also removes duplicate inodes from the list.
  *
  * Parameters: none
  *

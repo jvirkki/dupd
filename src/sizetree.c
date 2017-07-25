@@ -17,7 +17,6 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <bloom.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +39,6 @@ struct size_node {
 };
 
 static struct size_node * tip = NULL;
-static struct bloom inode_filter;
 
 struct stat_queue {
   int end;
@@ -384,13 +382,6 @@ int add_file(sqlite3 * dbh,
     return(-2);
   }
 
-  if (hardlink_is_unique) {
-    if (bloom_add(&inode_filter, &inode, sizeof(ino_t))) {
-      LOG(L_SKIPPED, "SKIP (inode seen before: %d): [%s]\n", (int)inode, path);
-      return(-2);
-    }
-  }
-
   if (tip == NULL) {
     tip = new_node(size, path);
     return(-2);
@@ -545,13 +536,6 @@ void init_sizetree()
   int n;
   struct stat_queue * p;
 
-  if (hardlink_is_unique) {
-    bloom_init(&inode_filter, file_count, 0.000001);
-    LOG_MORE_INFO {
-      bloom_print(&inode_filter);
-    }
-  }
-
   if (threaded_sizetree) {
     for (i = 0; i < QUEUE_COUNT; i++) {
       queue_removed[i] = 0;
@@ -592,10 +576,6 @@ void free_size_tree()
   struct stat_queue * p;
   struct stat_queue * t;
   int i;
-
-  if (hardlink_is_unique) {
-    bloom_free(&inode_filter);
-  }
 
   if (tip != NULL) {
     free_node(tip);

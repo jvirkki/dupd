@@ -17,7 +17,6 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <bloom.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -119,7 +118,6 @@ static void show_banner()
   printf("This program comes with ABSOLUTELY NO WARRANTY.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
   printf("under certain conditions. Run 'dupd license' for details.\n");
-  printf("dupd " DUPD_VERSION " incorporates libbloom-%s.\n", bloom_version());
   printf("\n");
 }
 
@@ -393,6 +391,13 @@ static int process_args(int argc, char * argv[])
     save_uniques = 0;
     hdd_mode = 0;
     x_analyze = 1;
+  }
+
+  if (hardlink_is_unique) {
+    if (!hdd_mode) {
+      LOG(L_BASE, "Enabling --hdd mode due to --hardlink-is-unique\n");
+    }
+    hdd_mode = 1;
   }
 
   if (hdd_mode) {

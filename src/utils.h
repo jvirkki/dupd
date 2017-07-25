@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sqlite3.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>

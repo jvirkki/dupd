@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include "main.h"
+#include "paths.h"
 #include "readlist.h"
 
 struct read_list_entry * read_list = NULL;
@@ -108,4 +109,24 @@ void add_to_read_list(dev_t device, ino_t inode, char * head, char * entry)
 void sort_read_list()
 {
   qsort(read_list, read_list_end, sizeof(struct read_list_entry), rl_compare);
+
+  // If hardlink_is_unique, we're always in hdd mode (forced in main).
+  // Now that the read_list is ordered, remove any paths which are duplicate
+  // inodes given that we don't care about them if hardlink_is_unique.
+
+  if (hardlink_is_unique) {
+    long i;
+    ino_t prev = 0;
+    for (i = 0; i < read_list_end; i++) {
+      if (read_list[i].inode == prev) {
+        char * path = pl_entry_get_path(read_list[i].pathlist_self);
+        LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.", path);
+        path[0] = 0;
+        pl_decrease_path_count(read_list[i].pathlist_head, 1);
+        read_list[i].pathlist_head = NULL;
+        read_list[i].pathlist_self = NULL;
+      }
+      prev = read_list[i].inode;
+    }
+  }
 }
