@@ -1,5 +1,5 @@
 /*
-  Copyright 2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -49,7 +49,7 @@ static int rl_compare(const void * a, const void * b)
 
 
 /** ***************************************************************************
- * Public function, see paths.h
+ * Public function, see readlist.h
  *
  */
 void init_read_list()
@@ -65,7 +65,7 @@ void init_read_list()
 
 
 /** ***************************************************************************
- * Public function, see paths.h
+ * Public function, see readlist.h
  *
  */
 void free_read_list()
@@ -82,7 +82,7 @@ void free_read_list()
 
 
 /** ***************************************************************************
- * Public function, see paths.h
+ * Public function, see readlist.h
  *
  */
 void add_to_read_list(dev_t device, ino_t inode, char * head, char * entry)
@@ -102,7 +102,7 @@ void add_to_read_list(dev_t device, ino_t inode, char * head, char * entry)
 
 
 /** ***************************************************************************
- * Public function, see paths.h
+ * Public function, see readlist.h
  *
  */
 void sort_read_list()
