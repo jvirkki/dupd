@@ -28,6 +28,10 @@ ifeq ($(LCOV_OUTPUT_DIR),)
 LCOV_OUTPUT_DIR=./lcov.out
 endif
 
+ifeq ($(DESTDIR),)
+DESTDIR=/usr/local
+endif
+
 BUILD=$(TOP)/build
 INC=
 LIB=
@@ -158,3 +162,14 @@ release:
 	gzip --best *.tar)
 	cp tar/*.tar.gz .
 	rm -rf tar/
+
+install: dupd
+	mkdir -p $(DESTDIR)/bin/
+	cp dupd $(DESTDIR)/bin/
+	mkdir -p $(DESTDIR)/man/man1
+	cp man/dupd.1 $(DESTDIR)/man/man1
+
+uninstall:
+	rm -f $(DESTDIR)/bin/dupd
+	rm -f $(DESTDIR)/man/man1/dupd.1
+

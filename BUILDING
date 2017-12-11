@@ -20,10 +20,16 @@ you want to hack on the code. See Makefile in that case.
 
 Installing
 ----------
-There is no install target as the dupd binary is fully self-contained.
-Just copy it wherever you like (e.g. $HOME/bin or /usr/local/bin).
 
-Copy the man page (man/dupd.1) to the corresponding location if you wish.
-(e.g. $HOME/man/man1/ or /usr/local/man/man1/). The same man page content is
-also available from dupd itself by running 'dupd man'.
+% make install
 
+This will, by default, install dupd under /usr/local
+
+You can override the location by setting DESTDIR
+
+% make install DESTDIR=/desired/path/here
+
+The install target will install dupd into $DESTDIR/bin and the dupd
+man page into $DESDIR/man/man1/dupd.1
+
+There is also an uninstall target which will remove dupd and its man page.
