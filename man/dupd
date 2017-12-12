@@ -17,6 +17,16 @@ DESCRIPTION
        be queried with subsequent commands without having to  scan  all  files
        again.
 
+       Even though dupd can be used as a simple duplicate reporting tool simi‐
+       lar to how other duplicate finders work (by running dupd  scan  ;  dupd
+       report),  the real power of dupd comes from interactively exploring the
+       filesystem for duplicates after the scan has completed. See  the  file,
+       ls, dups, uniques and refresh commands.
+
+       Additional  documentation  and  examples  are  available under the docs
+       directory in the source tree. If you don't have the source tree  avail‐
+       able, see https://github.com/jvirkki/dupd/blob/master/docs/index.md
+
 COMMANDS
        As  noted  in the synopsis, the first argument to dupd must be the com‐
        mand to run.  The command is one of:
@@ -300,6 +310,7 @@ EXIT
 SEE ALSO
        sqlite3(1)
 
+       https://github.com/jvirkki/dupd/blob/master/docs/index.md
 
 
 

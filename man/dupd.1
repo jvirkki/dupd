@@ -12,6 +12,16 @@ scans all the files in the given path(s) to find files with duplicate content.
 The sets of duplicate files are not (by default) displayed during a scan.
 Instead, the duplicate info is saved into a database which can be queried
 with subsequent commands without having to scan all files again.
+.PP
+Even though dupd can be used as a simple duplicate reporting tool similar
+to how other duplicate finders work (by running \fBdupd scan ; dupd report\fR),
+the real power of dupd comes from interactively exploring the filesystem
+for duplicates after the scan has completed. See the file, ls, dups, uniques
+and refresh commands.
+.PP
+Additional documentation and examples are available under the docs directory
+in the source tree. If you don't have the source tree available, see
+https://github.com/jvirkki/dupd/blob/master/docs/index.md
 .SH COMMANDS
 As noted in the synopsis, the first argument to dupd must be the command
 to run.
@@ -311,4 +321,5 @@ for more usage examples.
 dupd exits with status code 0 on success, non-zero on error.
 .SH SEE ALSO
 .BR sqlite3 (1)
-
+.PP
+.BR https://github.com/jvirkki/dupd/blob/master/docs/index.md
