@@ -28,8 +28,14 @@ ifeq ($(LCOV_OUTPUT_DIR),)
 LCOV_OUTPUT_DIR=./lcov.out
 endif
 
+# The install target will install dupd into $DESTDIR/bin/dupd
 ifeq ($(DESTDIR),)
 DESTDIR=/usr/local
+endif
+
+# Allows override of the man page base directory if necessary.
+ifeq ($(MAN_BASE),)
+MAN_BASE=$(DESTDIR)/man
 endif
 
 BUILD=$(TOP)/build
@@ -166,10 +172,9 @@ release:
 install: dupd
 	mkdir -p $(DESTDIR)/bin/
 	cp dupd $(DESTDIR)/bin/
-	mkdir -p $(DESTDIR)/man/man1
-	cp man/dupd.1 $(DESTDIR)/man/man1
+	mkdir -p $(MAN_BASE)/man1
+	cp man/dupd.1 $(MAN_BASE)/man1
 
 uninstall:
 	rm -f $(DESTDIR)/bin/dupd
-	rm -f $(DESTDIR)/man/man1/dupd.1
-
+	rm -f $(MAN_BASE)/man1/dupd.1
