@@ -8,6 +8,8 @@ notes on building dupd.
 dupd seeks to be fast and efficient. For most file sets it performs
 better than popular tools such as 'fdupes'.
 
+http://www.virkki.com/dupd
+
 Minimal usage:
 
 % dupd scan --path $HOME   (or whichever path you want to scan)

@@ -44,4 +44,4 @@ Documentation Links
 * [Performance](performance.md)
 * [Design Choices](design.md)
 * [Contribution guidelines](CONTRIBUTING.md)
-
+* [Home page](http://www.virkki.com/dupd)
