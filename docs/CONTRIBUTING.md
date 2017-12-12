@@ -21,10 +21,13 @@ for background on what dupd tries to accomplish.
 Pull requests
 -------------
 
-For small and/or obvious changes (say, about 25 change lines or less),
-feel free to submit a github pull request.
+For small and/or functionally obvious changes feel free to submit a
+github pull request.
 
 For anything larger than that, please first file an
 [issue](https://github.com/jvirkki/dupd/issues)
-describing the proposal.
-
+describing the proposal. Please also review the dupd
+[goals](https://github.com/jvirkki/dupd/blob/master/docs/index.md)
+and
+[design choices](https://github.com/jvirkki/dupd/blob/master/docs/design.md)
+documents first.
