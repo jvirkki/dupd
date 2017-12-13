@@ -28,15 +28,16 @@ ifeq ($(LCOV_OUTPUT_DIR),)
 LCOV_OUTPUT_DIR=./lcov.out
 endif
 
-# The install target will install dupd into $DESTDIR/bin/dupd
-ifeq ($(DESTDIR),)
-DESTDIR=/usr/local
-endif
+# The install target uses these default locations to install bin/dupd
+# and man1/dupd.1. Override in the environment if desired.  Note that
+# install prefixes these with the value of DESTDIR which should
+# normally be empty so it has no default. It is only used by build
+# environments which install to a temporary staging area. This is used
+# by the MacPorts build, for instance.
+# https://www.gnu.org/prep/standards/html_node/DESTDIR.html
 
-# Allows override of the man page base directory if necessary.
-ifeq ($(MAN_BASE),)
-MAN_BASE=$(DESTDIR)/man
-endif
+INSTALL_PREFIX ?= /usr/local
+MAN_BASE ?= $(INSTALL_PREFIX)/man
 
 BUILD=$(TOP)/build
 INC=
@@ -170,11 +171,11 @@ release:
 	rm -rf tar/
 
 install: dupd
-	mkdir -p $(DESTDIR)/bin/
-	cp dupd $(DESTDIR)/bin/
-	mkdir -p $(MAN_BASE)/man1
-	cp man/dupd.1 $(MAN_BASE)/man1
+	mkdir -p $(DESTDIR)$(INSTALL_PREFIX)/bin/
+	cp dupd $(DESTDIR)$(INSTALL_PREFIX)/bin/
+	mkdir -p $(DESTDIR)$(MAN_BASE)/man1
+	cp man/dupd.1 $(DESTDIR)$(MAN_BASE)/man1
 
 uninstall:
-	rm -f $(DESTDIR)/bin/dupd
-	rm -f $(MAN_BASE)/man1/dupd.1
+	rm -f $(DESTDIR)$(INSTALL_PREFIX)/bin/dupd
+	rm -f $(DESTDIR)$(MAN_BASE)/man1/dupd.1

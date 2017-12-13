@@ -25,11 +25,8 @@ Installing
 
 This will, by default, install dupd under /usr/local
 
-You can override the location by setting DESTDIR
+You can override the location by setting INSTALL_PREFIX
 
-% make install DESTDIR=/desired/path/here
-
-The install target will install dupd into $DESTDIR/bin and the dupd
-man page into $DESDIR/man/man1/dupd.1
+% make install INSTALL_PREFIX=/desired/path/here
 
 There is also an uninstall target which will remove dupd and its man page.
