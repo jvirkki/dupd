@@ -113,6 +113,7 @@ static void * scan_status(void * arg)
   }
 
   // Show final count along with time this phase took
+  pthread_mutex_lock(&status_lock);
   printf("\033[%dD", c);
   time_string(timebuf, 20, stats_time_scan);
   c = snprintf(line, 100, files,
@@ -121,6 +122,7 @@ static void * scan_status(void * arg)
                timebuf);
   SHOW_LINE;
   printf("\n");
+  pthread_mutex_unlock(&status_lock);
 
   int round = 0;
 
@@ -365,14 +367,14 @@ void scan()
     }
   }
 
+  if (threaded_sizetree) {
+    scan_done();
+  }
+
   d_mutex_lock(&status_lock, "scan end");
   stats_time_scan = get_current_time_millis() - scan_phase_started;
   pthread_cond_signal(&status_cond);
   d_mutex_unlock(&status_lock);
-
-  if (threaded_sizetree) {
-    scan_done();
-  }
 
   LOG(L_PROGRESS, "Files scanned: %" PRIu32 " (%ldms)\n",
       stats_files_count, stats_time_scan);
