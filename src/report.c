@@ -391,11 +391,14 @@ void operation_report()
  *
  */
 static int file_callback(sqlite3 * dbh,
-                         dev_t device, ino_t inode, off_t size, char * path)
+                         dev_t device, ino_t inode, off_t size, char * path,
+                         char * filename, struct direntry * dir_entry)
 {
   (void)size;                   /* not used */
   (void)device;
   (void)inode;                  /* not used */
+  (void)filename;
+  (void)dir_entry;
   char * unique_pfx = "";
   char * dup_pfx = "";
 
@@ -470,7 +473,7 @@ void operation_file()
 
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
-  file_callback(dbh, 0, 0, 0, file_path);
+  file_callback(dbh, 0, 0, 0, file_path, NULL, NULL);
   close_database(dbh);
   free_get_known_duplicates();
 }
@@ -491,7 +494,7 @@ void operation_ls()
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
   init_scanlist();
-  walk_dir(dbh, start_path[0], file_callback);
+  walk_dir(dbh, start_path[0], NULL, file_callback);
   close_database(dbh);
   free_get_known_duplicates();
 }
@@ -511,7 +514,7 @@ void operation_uniques()
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
   init_scanlist();
-  walk_dir(dbh, start_path[0], file_callback);
+  walk_dir(dbh, start_path[0], NULL, file_callback);
   close_database(dbh);
   free_get_known_duplicates();
 }
@@ -531,7 +534,7 @@ void operation_dups()
   sqlite3 * dbh = open_database(db_path, 0);
   init_get_known_duplicates();
   init_scanlist();
-  walk_dir(dbh, start_path[0], file_callback);
+  walk_dir(dbh, start_path[0], NULL, file_callback);
   close_database(dbh);
   free_get_known_duplicates();
 }

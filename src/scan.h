@@ -20,6 +20,8 @@
 #ifndef _DUPD_SCAN_H
 #define _DUPD_SCAN_H
 
+#include "dirtree.h"
+
 #define SCAN_SIZE_UNKNOWN -42
 #define SCAN_INODE_UNKNOWN 0
 #define SCAN_DEV_UNKNOWN -1
@@ -56,12 +58,15 @@ void free_scanlist();
  * Parameters:
  *    dbh          - sqlite3 database handle.
  *    path         - The path to process. Must not be null or empty.
+ *    dir_entry    - The dir tree entry for this directory.
+ *                   Can be NULL when walk_dir used in non-scan operations.
  *    process_file - Function to call on each file as it is found.
  * Return: none
  *
  */
-void walk_dir(sqlite3 * dbh, const char * path,
-              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *));
+void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
+              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *,
+                                  char *, struct direntry *));
 
 
 /** ***************************************************************************

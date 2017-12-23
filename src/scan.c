@@ -18,6 +18,7 @@
 */
 
 #include <dirent.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,7 +45,12 @@
 #define D_OTHER 3
 #define D_ERROR 4
 
-static char * scan_list = NULL;
+struct scan_list_entry {
+  struct direntry * dir_entry;
+  char path[DUPD_PATH_MAX];
+};
+
+static struct scan_list_entry * scan_list = NULL;
 static int scan_list_capacity = 0;
 static int scan_list_pos = -1;
 static int scan_completed = 0;
@@ -160,8 +166,9 @@ static void * scan_status(void * arg)
  */
 void init_scanlist()
 {
-  scan_list_capacity = x_small_buffers ? 1 : 1000;
-  scan_list = (char *)malloc(DUPD_PATH_MAX * scan_list_capacity);
+  scan_list_capacity = x_small_buffers ? 1 : 16;
+  scan_list = (struct scan_list_entry *)malloc(scan_list_capacity *
+                                               sizeof(struct scan_list_entry));
   scan_list_pos = -1;
 }
 
@@ -184,8 +191,9 @@ void free_scanlist()
  * Public function, see scan.h
  *
  */
-void walk_dir(sqlite3 * dbh, const char * path,
-              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *))
+void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
+              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *,
+                                  char *, struct direntry *))
 {
   STRUCT_STAT new_stat_info;
   int rv;
@@ -193,7 +201,7 @@ void walk_dir(sqlite3 * dbh, const char * path,
   struct dirent * entry;
   char newpath[DUPD_PATH_MAX];
   char current[DUPD_PATH_MAX];
-
+  struct direntry * current_dir_entry;
   dev_t device;
   ino_t inode;
   off_t size;
@@ -204,12 +212,17 @@ void walk_dir(sqlite3 * dbh, const char * path,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  strlcpy(scan_list, path, DUPD_PATH_MAX);
+  // Initialize scan_list with the top level starting dir
   scan_list_pos = 0;
+  scan_list[scan_list_pos].dir_entry = dir_entry;
+  strlcpy(scan_list[scan_list_pos].path, path, DUPD_PATH_MAX);
 
+  // Process directories off the scan_list until none left
   while (scan_list_pos >= 0) {
 
-    strlcpy(current, scan_list + DUPD_PATH_MAX * scan_list_pos, DUPD_PATH_MAX);
+    strlcpy(current, scan_list[scan_list_pos].path, DUPD_PATH_MAX);
+    current_dir_entry = scan_list[scan_list_pos].dir_entry;
+
     LOG(L_FILES, "\nDIR: (%d)[%s]\n", scan_list_pos, current);
     scan_list_pos--;
 
@@ -287,18 +300,25 @@ void walk_dir(sqlite3 * dbh, const char * path,
         if (scan_list_pos == scan_list_capacity) {
           scan_list_resizes++;
           scan_list_capacity *= 2;
-          scan_list =
-            (char *)realloc(scan_list, DUPD_PATH_MAX * scan_list_capacity);
+          scan_list = (struct scan_list_entry *)
+            realloc(scan_list, sizeof(struct scan_list_entry) *
+                    scan_list_capacity);
           LOG(L_RESOURCES, "Had to increase scan_list_capacity to %d\n",
               scan_list_capacity);
         }
-        strcpy(scan_list + DUPD_PATH_MAX * scan_list_pos, newpath);
+
+        strlcpy(scan_list[scan_list_pos].path, newpath, DUPD_PATH_MAX);
+        struct direntry * new_dir_entry =
+          new_child_dir(entry->d_name, current_dir_entry);
+        scan_list[scan_list_pos].dir_entry = new_dir_entry;
+
         LOG(L_TRACE, "queued dir at %d: %s\n", scan_list_pos, newpath);
         break;
 
       case D_FILE:
         // If it is a file, just process it now
-        (*process_file)(dbh, device, inode, size, newpath);
+        (*process_file)(dbh, device, inode, size, newpath,
+                        entry->d_name, current_dir_entry);
         break;
 
       case D_OTHER:
@@ -359,10 +379,11 @@ void scan()
     if (rv != 0) {
       printf("error: skipping requested path [%s]\n", start_path[i]);
     } else {
+      struct direntry * top = new_child_dir(start_path[i], NULL);
       if (threaded_sizetree) {
-        walk_dir(dbh, start_path[i], add_queue);
+        walk_dir(dbh, start_path[i], top, add_queue);
       } else {
-        walk_dir(dbh, start_path[i], add_file);
+        walk_dir(dbh, start_path[i], top, add_file);
       }
     }
   }

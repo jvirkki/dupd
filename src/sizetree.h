@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -22,22 +22,27 @@
 
 #include <sqlite3.h>
 
+#include "dirtree.h"
+
 
 /** ***************************************************************************
  * Add the given path to the size tree. Also adds the path to the path list.
  *
  * Parameters:
- *    dbh    - sqlite3 database handle (not used, set to NULL).
- *    device - The device of this file (or SCAN_DEV_UNKNOWN).
- *    inode  - The inode of this file (or SCAN_INODE_UNKNOWN).
- *    size   - Size of this file (or SCAN_SIZE_UNKNOWN).
- *    path   - Path of this file.
+ *    dbh       - sqlite3 database handle (not used, set to NULL).
+ *    device    - The device of this file (or SCAN_DEV_UNKNOWN).
+ *    inode     - The inode of this file (or SCAN_INODE_UNKNOWN).
+ *    size      - Size of this file (or SCAN_SIZE_UNKNOWN).
+ *    path      - Path of this file.
+ *    filename  - Name of this file, relative to dir_entry.
+ *    dir_entry - Directory entry of the dir containing this file.
  *
  * Return: none (int to comply with callback prototype)
  *
  */
 int add_file(sqlite3 * dbh,
-             dev_t device, ino_t inode, off_t size,  char * path);
+             dev_t device, ino_t inode, off_t size,  char * path,
+             char * filename, struct direntry * dir_entry);
 
 
 /** ***************************************************************************
@@ -47,17 +52,20 @@ int add_file(sqlite3 * dbh,
  * This is equivalent to add_file(), used when running in threaded scan mode.
  *
  * Parameters:
- *    dbh   - sqlite3 database handle (not used, set to NULL).
- *    device - The device of this file (or SCAN_DEV_UNKNOWN).
- *    inode  - The inode of this file (or SCAN_INODE_UNKNOWN).
- *    size  - Size of this file (or SCAN_SIZE_UNKNOWN).
- *    path  - Path of this file.
+ *    dbh       - sqlite3 database handle (not used, set to NULL).
+ *    device    - The device of this file (or SCAN_DEV_UNKNOWN).
+ *    inode     - The inode of this file (or SCAN_INODE_UNKNOWN).
+ *    size      - Size of this file (or SCAN_SIZE_UNKNOWN).
+ *    path      - Path of this file.
+ *    filename  - Name of this file, relative to dir_entry.
+ *    dir_entry - Directory entry of the dir containing this file.
  *
  * Return: none (int to comply with callback prototype)
  *
  */
 int add_queue(sqlite3 * dbh,
-              dev_t device, ino_t inode, off_t size, char * path);
+              dev_t device, ino_t inode, off_t size, char * path,
+              char * filename, struct direntry * dir_entry);
 
 
 /** ***************************************************************************
