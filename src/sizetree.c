@@ -37,6 +37,8 @@ struct size_node {
   char * paths;
   struct size_node * left;
   struct size_node * right;
+  char * filename;
+  struct direntry * dir_entry;
 };
 
 static struct size_node * tip = NULL;
@@ -113,19 +115,26 @@ static char * queue_state(int s)
  * size being added, so store it as a new path list.
  *
  * Parameters:
- *    size - Size of this file.
- *    path - Path of this file.
+ *    size      - Size of this file.
+ *    filename  - Name of the file (no path).
+ *    dir_entry - Directory where filename lives.
  *
  * Return: ptr to the node created
  *
  */
-static struct size_node * new_node(off_t size, char * path)
+static struct size_node * new_node(off_t size,
+                                   char * filename, struct direntry * dir_entry)
 {
   struct size_node * n = (struct size_node *)malloc(sizeof(struct size_node));
   n->left = NULL;
   n->right = NULL;
   n->size = size;
-  n->paths = insert_first_path(path);
+  n->paths = NULL;
+  n->dir_entry = dir_entry;
+  int l = strlen(filename);
+  n->filename = (char *)malloc(l + 1);
+  strlcpy(n->filename, filename, l + 1);
+
   return n;
 }
 
@@ -142,39 +151,49 @@ static struct size_node * new_node(off_t size, char * path)
  *
  */
 static void add_below(struct size_node * node,
-                      dev_t device, ino_t inode, off_t size, char * path,
+                      dev_t device, ino_t inode, off_t size,
                       char * filename, struct direntry * dir_entry)
 {
   struct size_node * p = node;
-  char buff[DUPD_PATH_MAX];
 
   while (1) {
     off_t s = size - p->size;
 
     if (!s) {
-      bzero(buff, DUPD_PATH_MAX);
-      build_path(filename, dir_entry, buff);
+      char buff[DUPD_PATH_MAX];
 
-      if (strcmp(buff, path)) {
-        printf("error: built path\n[%s]\ndiffers from given path\n[%s]\n",
-               buff, path);
-        exit(1);
+      // The first file of this size is kept in the size_node itself,
+      // waiting to see if another file of the same size is found.
+      // If we reached a size_node which exists but paths is NULL that
+      // means we just found the second file of this size. So it's time
+      // to add both the previous and current to the path list.
+
+      if (p->paths == NULL) {
+        bzero(buff, DUPD_PATH_MAX);
+        build_path(p->filename, p->dir_entry, buff);
+        p->paths = insert_first_path(buff);
+        p->dir_entry = NULL;
+        free(p->filename);
+        p->filename = NULL;
       }
 
-      insert_end_path(path, device, inode, size, p->paths);
+      bzero(buff, DUPD_PATH_MAX);
+      build_path(filename, dir_entry, buff);
+      insert_end_path(buff, device, inode, size, p->paths);
+
       return;
     }
 
     if (s > 0) {
       if (p->left == NULL) {
-        p->left = new_node(size, path);
+        p->left = new_node(size, filename, dir_entry);
         return;
       } else {
         p = p->left;
       }
     } else {
       if (p->right == NULL) {
-        p->right = new_node(size, path);
+        p->right = new_node(size, filename, dir_entry);
         return;
       } else {
         p = p->right;
@@ -198,11 +217,11 @@ static void add_below(struct size_node * node,
  */
 static void check_uniques(sqlite3 * dbh, struct size_node * node)
 {
-  int path_count = pl_get_path_count(node->paths);
-
-  if (path_count == 1) {
-    char * path = pl_entry_get_path(pl_get_first_entry(node->paths));
-    unique_to_db(dbh, path, "by-size");
+  if (node->paths == NULL) {
+    char buff[DUPD_PATH_MAX];
+    bzero(buff, DUPD_PATH_MAX);
+    build_path(node->filename, node->dir_entry, buff);
+    unique_to_db(dbh, buff, "by-size");
   }
 
   if (node->left != NULL) { check_uniques(dbh, node->left); }
@@ -337,6 +356,7 @@ static void free_node(struct size_node * node)
 {
   if (node->left != NULL) { free_node(node->left); }
   if (node->right != NULL) { free_node(node->right); }
+  if (node->filename != NULL) { free(node->filename); }
   free(node);
 }
 
@@ -399,11 +419,11 @@ int add_file(sqlite3 * dbh,
   }
 
   if (tip == NULL) {
-    tip = new_node(size, path);
+    tip = new_node(size, filename, dir_entry);
     return(-2);
   }
 
-  add_below(tip, device, inode, size, path, filename, dir_entry);
+  add_below(tip, device, inode, size, filename, dir_entry);
 
   return(-2);
 }
