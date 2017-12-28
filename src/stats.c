@@ -279,7 +279,7 @@ void save_stats()
   fprintf(fp, "hash_block_size %d\n", hash_block_size);
   fprintf(fp, "intermediate_blocks %d\n", intermediate_blocks);
   fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
-  fprintf(fp, "hashlist_path_realloc: %d\n", hashlist_path_realloc);
+  fprintf(fp, "hashlist_path_realloc %d\n", hashlist_path_realloc);
   fprintf(fp, "hash_list_len_inc %d\n", hash_list_len_inc);
   fprintf(fp, "scan_list_usage_max %d\n", scan_list_usage_max);
   fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);
