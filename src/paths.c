@@ -353,4 +353,5 @@ void report_path_block_usage()
   int pct = (int)((100 * space_used) / space_allocated);
   printf("Total path block size: %ld\n", space_allocated);
   printf("Bytes used in this run: %ld (%d%%)\n", space_used, pct);
+  printf("Total files in path list: %" PRIu32 "\n", stats_path_list_entries);
 }
