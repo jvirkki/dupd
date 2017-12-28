@@ -240,6 +240,8 @@ char * insert_first_path(char * path)
     dump_path_list("AFTER insert_first_path", -1, head);
   }
 
+  stats_path_list_entries++;
+
   return head;
 }
 
@@ -337,6 +339,8 @@ void insert_end_path(char * path,
     stats_max_pathlist = path_count;
     stats_max_pathlist_size = size;
   }
+
+  stats_path_list_entries++;
 }
 
 

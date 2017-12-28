@@ -46,6 +46,7 @@ extern uint64_t stats_total_bytes_hashed;
 extern uint64_t stats_comparison_bytes_read;
 extern uint32_t stats_max_pathlist;
 extern long stats_max_pathlist_size;
+extern uint32_t stats_path_list_entries;
 extern int stats_most_dups;
 extern int stats_all_blocks_count;
 extern int stats_duplicate_files;

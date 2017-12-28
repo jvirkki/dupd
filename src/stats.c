@@ -48,6 +48,7 @@ uint64_t stats_total_bytes_hashed = 0;
 uint64_t stats_comparison_bytes_read = 0;
 uint32_t stats_max_pathlist = 0;
 long stats_max_pathlist_size = 0;
+uint32_t stats_path_list_entries = 0;
 int stats_most_dups = 0;
 int stats_duplicate_files = 0;
 
@@ -280,6 +281,7 @@ void save_stats()
   fprintf(fp, "intermediate_blocks %d\n", intermediate_blocks);
   fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
   fprintf(fp, "hashlist_path_realloc %d\n", hashlist_path_realloc);
+  fprintf(fp, "stats_path_list_entries %" PRIu32 "\n", stats_path_list_entries);
   fprintf(fp, "hash_list_len_inc %d\n", hash_list_len_inc);
   fprintf(fp, "scan_list_usage_max %d\n", scan_list_usage_max);
   fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);
