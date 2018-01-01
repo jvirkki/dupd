@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -363,6 +363,6 @@ extern pthread_key_t thread_name;
  *
  */
 #define DUPD_PATH_MAX 4096
-
+#define DUPD_FILENAME_MAX 256
 
 #endif

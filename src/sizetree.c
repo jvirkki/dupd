@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -17,7 +17,6 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <limits.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +48,7 @@ struct stat_queue {
   ino_t inode;
   off_t size;
   struct direntry * dir_entry;
-  char filename[NAME_MAX];
+  char filename[DUPD_FILENAME_MAX];
   char path[DUPD_PATH_MAX];
   struct stat_queue * next;
 };
@@ -445,7 +444,7 @@ int add_queue(sqlite3 * dbh,
   producer_next->size = size;
   producer_next->inode = inode;
   producer_next->device = device;
-  strlcpy(producer_next->filename, filename, NAME_MAX);
+  strlcpy(producer_next->filename, filename, DUPD_FILENAME_MAX);
   producer_next->dir_entry = dir_entry;
   strlcpy(producer_next->path, path, DUPD_PATH_MAX);
   producer_next = producer_next->next;

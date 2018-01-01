@@ -17,12 +17,12 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "dirtree.h"
+#include "main.h"
 
 
 /** ***************************************************************************
@@ -92,7 +92,7 @@ void build_path(char * filename, struct direntry * entry, char * buffer)
  */
 void print_direntry(struct direntry * entry)
 {
-  char line[NAME_MAX];
+  char line[DUPD_FILENAME_MAX];
 
   while (entry != NULL) {
     memcpy(line, entry->name, entry->name_size);
