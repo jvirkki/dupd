@@ -502,20 +502,22 @@ int main(int argc, char * argv[])
     save_stats();
   }
 
-  if (operation == COMMAND_scan ||
-      operation == COMMAND_refresh || operation == COMMAND_license ||
-      operation == COMMAND_version || operation == COMMAND_validate ||
-      operation == COMMAND_usage || operation == COMMAND_man ||
-      operation == COMMAND_help) {
+  if (log_level >= 0) {
+    if (operation == COMMAND_scan ||
+        operation == COMMAND_refresh || operation == COMMAND_license ||
+        operation == COMMAND_version || operation == COMMAND_validate ||
+        operation == COMMAND_usage || operation == COMMAND_man ||
+        operation == COMMAND_help) {
 
-    if (!strcmp("dev", DUPD_VERSION + strlen(DUPD_VERSION) - 3)) {
-      if (isatty(fileno(stdout))) {
-        fprintf(stdout, "\nNote: This is a development version of dupd ("
-                DUPD_VERSION ") (" GITHASH ")\n");
-        fprintf(stdout,
-                "May contain known bugs or unstable work in progress!\n");
-        fprintf(stdout,
-                "If stability is desired, use a release version of dupd.\n");
+      if (!strcmp("dev", DUPD_VERSION + strlen(DUPD_VERSION) - 3)) {
+        if (isatty(fileno(stdout))) {
+          fprintf(stdout, "\nNote: This is a development version of dupd ("
+                  DUPD_VERSION ") (" GITHASH ")\n");
+          fprintf(stdout,
+                  "May contain known bugs or unstable work in progress!\n");
+          fprintf(stdout,
+                  "If stability is desired, use a release version of dupd.\n");
+        }
       }
     }
   }
