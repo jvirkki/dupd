@@ -366,6 +366,8 @@ static int process_args(int argc, char * argv[])
     hash_function = HASH_FN_SHA1;
   } else if (!strcmp("sha512", hash_name)) {
     hash_function = HASH_FN_SHA512;
+  } else if (!strcmp("xxhash", hash_name)) {
+    hash_function = HASH_FN_XXHASH;
   } else {
     printf("error: unknown hash %s\n", hash_name);
     return 2;

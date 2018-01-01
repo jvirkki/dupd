@@ -700,4 +700,35 @@ void show_license()
   printf("the library.  If this is what you want to do, use the GNU Lesser General\n");
   printf("Public License instead of this License.  But first, please read\n");
   printf("<http://www.gnu.org/philosophy/why-not-lgpl.html>.\n");
+
+  printf("\n");
+  printf("------------------------------------------------------------------------------\n");
+  printf("dupd incorporates xxHash, which has the following license:\n\n");
+
+  printf("   Copyright (C) 2012-2016, Yann Collet.\n");
+  printf("\n");
+  printf("   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)\n");
+  printf("\n");
+  printf("   Redistribution and use in source and binary forms, with or without\n");
+  printf("   modification, are permitted provided that the following conditions are\n");
+  printf("   met:\n");
+  printf("\n");
+  printf("       * Redistributions of source code must retain the above copyright\n");
+  printf("   notice, this list of conditions and the following disclaimer.\n");
+  printf("       * Redistributions in binary form must reproduce the above\n");
+  printf("   copyright notice, this list of conditions and the following disclaimer\n");
+  printf("   in the documentation and/or other materials provided with the\n");
+  printf("   distribution.\n");
+  printf("\n");
+  printf("   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n");
+  printf("   \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\n");
+  printf("   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR\n");
+  printf("   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\n");
+  printf("   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\n");
+  printf("   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT\n");
+  printf("   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\n");
+  printf("   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY\n");
+  printf("   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n");
+  printf("   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\n");
+  printf("   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n");
 }

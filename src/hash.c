@@ -21,6 +21,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -50,6 +51,7 @@
 #include "hash.h"
 #include "stats.h"
 #include "utils.h"
+#include "xxhash.h"
 
 #define MAX_BLOCK (1024 * 256)
 
@@ -189,12 +191,62 @@ static int sha512_buf(const char * buffer, int bufsize, char * output)
 
 
 /** ***************************************************************************
+ * XXHASH implementation for hash_fn().
+ *
+ */
+static int xxhash(char * output, uint64_t blocks, int bsize, int file)
+{
+  uint64_t counter = blocks;
+  ssize_t bytes;
+  XXH_errorcode rv;
+  XXH64_state_t * state = XXH64_createState();
+  XXH64_reset(state, 1);
+
+  while ((bytes = read(file, buffer, bsize)) > 0) {
+    stats_total_bytes_hashed += bytes;
+    stats_total_bytes_read += bytes;
+    rv = XXH64_update(state, buffer, bytes);
+    if (rv != XXH_OK) {
+      printf("error: XXH64_update failed\n");
+      exit(1);
+    }
+    if (blocks) {
+      counter--;
+      if (counter == 0) { break; }
+    }
+  }
+
+  close(file);
+  XXH64_hash_t result = XXH64_digest(state);
+  memcpy(output, &result, 8);
+  XXH64_freeState(state);
+  return(0);
+}
+
+
+/** ***************************************************************************
+ * XXHASH implementation for hash_fn_buf().
+ *
+ */
+static int xxhash_buf(const char * buffer, int bufsize, char * output)
+{
+  XXH64_hash_t result = XXH64(buffer, (size_t)bufsize, 1);
+  memcpy(output, &result, 8);
+  stats_total_bytes_hashed += bufsize;
+  return(0);
+}
+
+
+/** ***************************************************************************
  * Public function, see hash.h
  *
  */
 int hash_get_bufsize(int hash_function)
 {
   switch(hash_function) {
+
+  case HASH_FN_XXHASH:
+    return 8;
 
   case HASH_FN_MD5:
     return 16;
@@ -260,6 +312,9 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
   case HASH_FN_SHA512:
     return sha512(output, blocks, block_size, file);
 
+  case HASH_FN_XXHASH:
+    return xxhash(output, blocks, block_size, file);
+
   default:                                                   // LCOV_EXCL_START
     printf("error: invalid hash_function value %d\n", hash_function);
     exit(1);                                                 // LCOV_EXCL_STOP
@@ -283,6 +338,9 @@ int hash_fn_buf(const char * buffer, int bufsize, char * output)
 
   case HASH_FN_SHA512:
     return sha512_buf(buffer, bufsize, output);
+
+  case HASH_FN_XXHASH:
+    return xxhash_buf(buffer, bufsize, output);
 
   default:                                                   // LCOV_EXCL_START
     printf("error: invalid hash_function value %d\n", hash_function);
@@ -317,6 +375,12 @@ void * hash_fn_buf_init()
     return (void *)ctx;
   }
 
+  case HASH_FN_XXHASH: {
+    XXH64_state_t * state = XXH64_createState();
+    XXH64_reset(state, 1);
+    return (void *)state;
+  }
+
   default:                                                   // LCOV_EXCL_START
     printf("error: invalid hash_function value %d\n", hash_function);
     exit(1);                                                 // LCOV_EXCL_STOP
@@ -346,6 +410,10 @@ int hash_fn_buf_update(void * ctx, const char * buffer, int bufsize)
     SHA512_Update((SHA512_CTX *)ctx, buffer, bufsize);
     break;
 
+  case HASH_FN_XXHASH:
+    XXH64_update((XXH64_state_t *)ctx, buffer, bufsize);
+    break;
+
   default:                                                   // LCOV_EXCL_START
     printf("error: invalid hash_function value %d\n", hash_function);
     exit(1);
@@ -367,16 +435,26 @@ int hash_fn_buf_final(void * ctx, const char * buffer, int bufsize,
   case HASH_FN_MD5:
     MD5_Update((MD5_CTX *)ctx, buffer, bufsize);
     MD5_Final((unsigned char *)output, (MD5_CTX *)ctx);
+    free(ctx);
     break;
 
   case HASH_FN_SHA1:
     SHA1_Update((SHA_CTX *)ctx, buffer, bufsize);
     SHA1_Final((unsigned char *)output, (SHA_CTX *)ctx);
+    free(ctx);
     break;
 
   case HASH_FN_SHA512:
     SHA512_Update((SHA512_CTX *)ctx, buffer, bufsize);
     SHA512_Final((unsigned char *)output, (SHA512_CTX *)ctx);
+    free(ctx);
+    break;
+
+  case HASH_FN_XXHASH:
+    XXH64_update((XXH64_state_t *)ctx, buffer, (size_t)bufsize);
+    XXH64_hash_t result = XXH64_digest((XXH64_state_t *)ctx);
+    memcpy(output, &result, 8);
+    XXH64_freeState((XXH64_state_t *)ctx);
     break;
 
   default:                                                   // LCOV_EXCL_START

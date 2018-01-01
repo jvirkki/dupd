@@ -782,7 +782,7 @@ static void * round3_hasher(void * arg)
               hash_fn_buf_final(status->hash_ctx, status->buffer,
                                 status->bufsize, status->hash_result);
               status->state = SLS_R3_HASH_DONE;
-              free(status->hash_ctx);
+              status->hash_ctx = NULL; // must have been free'd by buf_final
               release_round3_info_buffer(status);
               entry_changed = 1;
               loop_hash_completed++;

@@ -25,6 +25,7 @@
 #define HASH_FN_MD5 1
 #define HASH_FN_SHA1 2
 #define HASH_FN_SHA512 3
+#define HASH_FN_XXHASH 4
 
 #define HASH_MAX_BUFSIZE 64
 
