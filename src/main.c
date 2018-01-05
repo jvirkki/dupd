@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -84,7 +84,7 @@ int only_testing = 0;
 int hdd_mode = 0;
 int threaded_sizetree = 1;
 int hardlink_is_unique = 0;
-int hash_function = HASH_FN_MD5;
+int hash_function = -1;
 int hash_bufsize = -1;
 long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 int report_format = REPORT_FORMAT_TEXT;
