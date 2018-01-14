@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -309,12 +309,11 @@ static int build_hash_list_round(sqlite3 * dbh,
                                  struct hash_list * hl,
                                  int round)
 {
-  char * node;
+  struct path_list_entry * node;
   char * path;
-  char * buffer;
   int completed = 0;
 
-  node = pl_get_first_entry(size_node->path_list);
+  node = pb_get_first_entry(size_node->path_list);
 
   // For small files, they may have been fully read already
   d_mutex_lock(&stats_lock, "build hash list stats");
@@ -327,18 +326,19 @@ static int build_hash_list_round(sqlite3 * dbh,
 
   // Build hash list for these files
   do {
-    path = pl_entry_get_path(node);
+    path = pb_get_filename(node);
 
     // The path may be null if this particular path within this pathlist
     // has been discarded as a potential duplicate already. If so, skip.
     if (path[0] != 0) {
-      buffer = pl_entry_get_buffer(node);
-      add_hash_list_from_mem(hl, path, buffer, size_node->bytes_read);
-      free(buffer);
-      pl_entry_set_buffer(node, NULL);
+      add_hash_list_from_mem(hl, node, node->buffer, size_node->bytes_read);
+      free(node->buffer);
+      node->buffer = NULL;
     }
 
-    node = pl_entry_get_next(node);
+    //node = pl_entry_get_next(node);
+    node = node->next;
+
   } while (node != NULL);
 
   LOG_TRACE {
@@ -349,7 +349,7 @@ static int build_hash_list_round(sqlite3 * dbh,
   // Remove the uniques seen (also save in db if save_uniques)
   int skimmed = skim_uniques(dbh, hl, save_uniques);
   if (skimmed) {
-    pl_decrease_path_count(size_node->path_list, skimmed);
+    size_node->path_list->list_size--;
   }
 
   // If no potential dups after this round, we're done!
@@ -560,7 +560,8 @@ static void * round12_hasher(void * arg)
 
       if (set_completed) {
         LOG_PROGRESS {
-          path_count = pl_get_path_count(size_node->path_list);
+          //path_count = pl_get_path_count(size_node->path_list);
+          path_count = size_node->path_list->list_size;
         }
         show_processed(stats_size_list_count, path_count,
                        size_node->size, loops, round);
@@ -658,7 +659,7 @@ static void * round3_hasher(void * arg)
   int loop_partial_hash;
   int loop_hash_completed;
   int loop_set_processed;
-  char * entry;
+  struct path_list_entry * entry;
   char * path;
   int set_count;
   char * self = "                                        [r3-hasher] ";
@@ -688,7 +689,7 @@ static void * round3_hasher(void * arg)
         goto R3H_NEXT_NODE;
       }
 
-      int count = pl_get_path_count(size_node->path_list);
+      int count = size_node->path_list->list_size;
       if ( (opt_compare_two && count == 2) ||
            (opt_compare_three && count == 3) ) {
         goto R3H_NEXT_NODE;
@@ -698,7 +699,7 @@ static void * round3_hasher(void * arg)
       off_t size = size_node->size;
 
       LOG_THREADS {
-        int count = pl_get_path_count(size_node->path_list);
+        int count = size_node->path_list->list_size;
         LOG(L_THREADS,
             "SET %d (%d files of size %ld) (loop %d) state: %s\n",
             set_count++, count, (long)size, loops,
@@ -714,20 +715,21 @@ static void * round3_hasher(void * arg)
       case SLS_NEEDS_ROUND_3:
         done = 0;
         every_hash_computed = 1;
-
-        entry = pl_get_first_entry(size_node->path_list);
+        entry = pb_get_first_entry(size_node->path_list);
 
         while (entry != NULL) {
           entry_changed = 0;
-          status = (struct round3_info *)pl_entry_get_buffer(entry);
-          path = pl_entry_get_path(entry);
+          status = (struct round3_info *)entry->buffer;
+          path = pb_get_filename(entry);
 
           LOG_MORE_THREADS {
+            char buffer[DUPD_PATH_MAX];
+            build_path(entry, buffer);
             if (status == NULL) {
-              LOG(L_MORE_THREADS, "   entry state: NULL [%s]\n", path);
+              LOG(L_MORE_THREADS, "   entry state: NULL [%s]\n", buffer);
             } else {
               LOG(L_MORE_THREADS, "   entry state: %s [%s]\n",
-                  state_name(status->state), path);
+                  state_name(status->state), buffer);
             }
           }
 
@@ -742,8 +744,7 @@ static void * round3_hasher(void * arg)
                 goto R3H_NEXT_NODE;
               }
               loop_buf_init++;
-
-              pl_entry_set_buffer(entry, (char *)status);
+              entry->buffer = (char *)status;
               status->read_from = 0;
               if (size < R3_BUFSIZE) {
                 status->read_count = size;
@@ -804,32 +805,37 @@ static void * round3_hasher(void * arg)
           }
 
           if (entry_changed) {
-            LOG(L_MORE_THREADS, "          => : %s [%s]\n",
-                state_name(status->state), path);
+            LOG_MORE_THREADS {
+              char buffer[DUPD_PATH_MAX];
+              build_path(entry, buffer);
+              LOG(L_MORE_THREADS, "          => : %s [%s]\n",
+                  state_name(status->state), buffer);
+            }
           }
 
-          entry = pl_entry_get_next(entry);
+          entry = entry->next;
         }
 
         if (every_hash_computed) {
 
           loop_set_processed++;
           stats_sets_processed[ROUND3]++;
-          entry = pl_get_first_entry(size_node->path_list);
+          entry = pb_get_first_entry(size_node->path_list);
           struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
 
           do {
-            path = pl_entry_get_path(entry);
+            path = pb_get_filename(entry);
+
             // The path may be null if this particular path within this
             // pathlist has been discarded as a potential duplicate already.
             // If so, skip.
             if (path[0] != 0) {
-              status = (struct round3_info *)pl_entry_get_buffer(entry);
-              add_to_hash_list(hl_full, path, status->hash_result);
+              status = (struct round3_info *)entry->buffer;
+              add_to_hash_list(hl_full, entry, status->hash_result);
               free_round3_info(status);
-              pl_entry_set_buffer(entry, NULL);
+              entry->buffer = NULL;
             }
-            entry = pl_entry_get_next(entry);
+            entry = entry->next;
           } while (entry != NULL);
 
           LOG_TRACE {
@@ -847,13 +853,15 @@ static void * round3_hasher(void * arg)
             LOG_TRACE {
               LOG(L_TRACE, "No potential dups left, done!\n");
               LOG(L_TRACE, "Discarded in round 3 the potentials: ");
-              entry = pl_get_first_entry(size_node->path_list);
+              entry = pb_get_first_entry(size_node->path_list);
               do {
-                path = pl_entry_get_path(entry);
+                path = pb_get_filename(entry);
                 if (path[0] != 0) {
-                  LOG(L_TRACE, "%s ", path);
+                  char buffer[DUPD_PATH_MAX];
+                  build_path(entry, buffer);
+                  LOG(L_TRACE, "%s ", buffer);
                 }
-                entry = pl_entry_get_next(entry);
+                entry = entry->next;
               } while (entry != NULL);
               LOG(L_TRACE, "\n");
             }
@@ -870,7 +878,7 @@ static void * round3_hasher(void * arg)
           }
 
           LOG_PROGRESS {
-            path_count = pl_get_path_count(size_node->path_list);
+            path_count = size_node->path_list->list_size;
           }
 
           show_processed(stats_size_list_count, path_count,
@@ -946,12 +954,15 @@ static void * round3_hasher(void * arg)
  * Return: bytes read
  *
  */
-static inline ssize_t round3_reader(char * entry, struct round3_info * status)
+static inline ssize_t round3_reader(struct path_list_entry * entry,
+                                    struct round3_info * status)
 {
-  char * path = pl_entry_get_path(entry);
-
   // If this is the first read request, file isn't open yet
   if (status->read_from == 0) {
+
+    char path[DUPD_PATH_MAX];
+    build_path(entry, path);
+
     status->fd = open(path, O_RDONLY);
     if (status->fd < 0) {                                    // LCOV_EXCL_START
       printf("Error opening [%s]\n", path);
@@ -1010,7 +1021,7 @@ static void process_round_3(sqlite3 * dbh)
   int read_partial;
   int read_final;
 
-  char * node;
+  struct path_list_entry * node;
   char * path = NULL;
 
   stats_round_start[ROUND3] = get_current_time_millis();
@@ -1060,7 +1071,7 @@ static void process_round_3(sqlite3 * dbh)
       did_one = 0;
       free_myself = 0;
       d_mutex_lock(&size_node->lock, "r3-reader top");
-      path_count = pl_get_path_count(size_node->path_list);
+      path_count = size_node->path_list->list_size;
 
       LOG_THREADS {
         off_t size = size_node->size;
@@ -1074,15 +1085,16 @@ static void process_round_3(sqlite3 * dbh)
 
       case SLS_NEEDS_ROUND_3:
         done = 0;
-        node = pl_get_first_entry(size_node->path_list);
+        node = pb_get_first_entry(size_node->path_list);
 
         // If we only have two files of this size, compare them directly
         if (opt_compare_two && path_count == 2) {
-          char * node1 = pl_entry_get_valid_node(node);
-          char * path1 = pl_entry_get_path(node1);
-          char * node2 = pl_entry_get_valid_node(pl_entry_get_next(node1));
-          char * path2 = pl_entry_get_path(node2);
-
+          char path1[DUPD_PATH_MAX];
+          char path2[DUPD_PATH_MAX];
+          struct path_list_entry * node1= pl_entry_get_valid_node(node);
+          struct path_list_entry * node2= pl_entry_get_valid_node(node1->next);
+          build_path(node1, path1);
+          build_path(node2, path2);
           compare_two_files(dbh, path1, path2, size_node->size, ROUND3);
           stats_two_file_compare++;
           size_node->state = SLS_DONE;
@@ -1094,13 +1106,15 @@ static void process_round_3(sqlite3 * dbh)
 
         // If we only have three files of this size, compare them directly
         if (opt_compare_three && path_count == 3) {
-          char * node1 = pl_entry_get_valid_node(node);
-          char * path1 = pl_entry_get_path(node1);
-          char * node2 = pl_entry_get_valid_node(pl_entry_get_next(node1));
-          char * path2 = pl_entry_get_path(node2);
-          char * node3 = pl_entry_get_valid_node(pl_entry_get_next(node2));
-          char * path3 = pl_entry_get_path(node3);
-
+          char path1[DUPD_PATH_MAX];
+          char path2[DUPD_PATH_MAX];
+          char path3[DUPD_PATH_MAX];
+          struct path_list_entry * node1= pl_entry_get_valid_node(node);
+          struct path_list_entry * node2= pl_entry_get_valid_node(node1->next);
+          struct path_list_entry * node3= pl_entry_get_valid_node(node2->next);
+          build_path(node1, path1);
+          build_path(node2, path2);
+          build_path(node3, path3);
           compare_three_files(dbh, path1, path2, path3,size_node->size,ROUND3);
           stats_three_file_compare++;
           size_node->state = SLS_DONE;
@@ -1111,18 +1125,19 @@ static void process_round_3(sqlite3 * dbh)
         }
 
         while (node != NULL) {
-          status = (struct round3_info *)pl_entry_get_buffer(node);
+          status = (struct round3_info *)node->buffer;
           changed = 0;
           skipped = 0;
-
-          path = pl_entry_get_path(node);
+          path = pb_get_filename(node);
 
           LOG_MORE_THREADS {
+            char buffer[DUPD_PATH_MAX];
+            build_path(node, buffer);
             if (status == NULL) {
-              LOG(L_MORE_THREADS, "   entry state: NULL [%s]\n", path);
+              LOG(L_MORE_THREADS, "   entry state: NULL [%s]\n", buffer);
             } else {
               LOG(L_MORE_THREADS, "   entry state: %s @%ld [%s]\n",
-                  state_name(status->state), (long)status->read_from, path);
+                  state_name(status->state), (long)status->read_from, buffer);
             }
           }
 
@@ -1178,7 +1193,7 @@ static void process_round_3(sqlite3 * dbh)
           if (skipped) {
             node = NULL;
           } else {
-            node = pl_entry_get_next(node);
+            node = node->next;
           }
 
         }
@@ -1199,7 +1214,7 @@ static void process_round_3(sqlite3 * dbh)
 
       if (did_one) {
         LOG_PROGRESS {
-          path_count = pl_get_path_count(size_node->path_list);
+          path_count = size_node->path_list->list_size;
         }
         show_processed(stats_size_list_count, path_count,
                        size_node->size, loops, '3');
@@ -1278,7 +1293,8 @@ static void process_round_3(sqlite3 * dbh)
  * Return: An intialized/allocated size list node.
  *
  */
-static struct size_list * new_size_list_entry(off_t size, char * path_list)
+static struct size_list * new_size_list_entry(off_t size,
+                                              struct path_list_head *path_list)
 {
   struct size_list * e = (struct size_list *)malloc(sizeof(struct size_list));
   e->size = size;
@@ -1315,12 +1331,12 @@ static struct size_list * new_size_list_entry(off_t size, char * path_list)
  */
 static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
 {
-  char * node;
-  char * path;
+  struct path_list_entry * node;
+  char path[DUPD_PATH_MAX];
   char * buffer;
   ssize_t received;
 
-  node = pl_get_first_entry(size_node->path_list);
+  node = pb_get_first_entry(size_node->path_list);
 
   if (size_node->size <= max_to_read) {
     size_node->bytes_read = size_node->size;
@@ -1331,7 +1347,7 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
   }
 
   do {
-    path = pl_entry_get_path(node);
+    build_path(node, path);
 
     // The path may be null if this particular path within this pathlist
     // has been discarded as a potential duplicate already. If so, skip.
@@ -1342,12 +1358,15 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
       if (received != size_node->bytes_read) {
         LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
             (long)received, path, (long)size_node->bytes_read);
-        path[0] = 0;
-        pl_decrease_path_count(size_node->path_list, 1);
+        { // TODO
+          char * fname = pb_get_filename(node);
+          fname[0] = 0;
+        }
+        size_node->path_list->list_size--;
         free(buffer);
 
       } else {
-        pl_entry_set_buffer(node, buffer);
+        node->buffer = buffer;
       }
 
       LOG_TRACE {
@@ -1358,10 +1377,10 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
       }
 
     } else {
-      pl_entry_set_buffer(node, NULL);
+      node->buffer = NULL;
     }
 
-    node = pl_entry_get_next(node);
+    node = node->next;
 
   } while (node != NULL);
 }
@@ -1395,9 +1414,9 @@ static void * read_list_reader(void * arg)
   int first_pass = 1;
   long t1;
   long took;
-  char * pathlist_entry;
-  char * pathlist_head;
-  char * path;
+  struct path_list_entry * pathlist_entry;
+  struct path_list_head * pathlist_head;
+  char path[DUPD_PATH_MAX];
   char * buffer;
 
   pthread_setspecific(thread_name, self);
@@ -1427,7 +1446,7 @@ static void * read_list_reader(void * arg)
       }
 
       pathlist_entry = rlentry->pathlist_self;
-      sizelist = pl_get_szl_entry(pathlist_head);
+      sizelist = pathlist_head->sizelist;
 
       if (sizelist == NULL) {                                // LCOV_EXCL_START
         printf("error: sizelist is null in pathlist!\n");
@@ -1477,8 +1496,8 @@ static void * read_list_reader(void * arg)
         exit(1);
       }                                                      // LCOV_EXCL_STOP
 
-      count = pl_get_path_count(pathlist_head);
-      path = pl_entry_get_path(pathlist_entry);
+      count = pathlist_head->list_size;
+      build_path(pathlist_entry, path);
       if (path == NULL || path[0] == 0) {
         goto PRL_NODE_DONE;
       }
@@ -1486,7 +1505,7 @@ static void * read_list_reader(void * arg)
       LOG(L_MORE_THREADS, "Set (%d files of size %ld in state %s): "
           "read %s\n", count, (long)size, state_name(sizelist->state), path);
 
-      buffer = pl_entry_get_buffer(pathlist_entry);
+      buffer = pathlist_entry->buffer;
       if (buffer != NULL) {
         free(buffer);
       }
@@ -1500,8 +1519,12 @@ static void * read_list_reader(void * arg)
         // File may be unreadable or changed size, either way, ignore it.
         LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
             (long)received, path, (long)max_to_read);
-        path[0] = 0;
-        uint32_t new_count = pl_decrease_path_count(pathlist_head, 1);
+        {
+          char * fname = pb_get_filename(pathlist_entry);
+          fname[0] =0; // TODO
+        }
+        pathlist_head->list_size--;
+        uint32_t new_count = pathlist_head->list_size;
         free(buffer);
         if (new_count == 0) {
           sizelist->state = SLS_READY_1;
@@ -1541,7 +1564,7 @@ static void * read_list_reader(void * arg)
         LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
             took, read_count, avg_read_time);
 
-        pl_entry_set_buffer(pathlist_entry, buffer);
+        pathlist_entry->buffer = buffer;
       }
 
     PRL_NODE_DONE:
@@ -1735,7 +1758,8 @@ void init_size_list()
  * Public function, see header file.
  *
  */
-struct size_list * add_to_size_list(off_t size, char * path_list)
+struct size_list * add_to_size_list(off_t size,
+                                    struct path_list_head * path_list)
 {
   if (size < 0) {
     printf("add_to_size_list: bad size! %ld\n", (long)size); // LCOV_EXCL_START
@@ -1757,6 +1781,7 @@ struct size_list * add_to_size_list(off_t size, char * path_list)
   size_list_tail->next = new_entry;
   size_list_tail = size_list_tail->next;
   stats_size_list_count++;
+
   return new_entry;
 }
 
@@ -1872,9 +1897,8 @@ void analyze_process_size_list(sqlite3 * dbh)
     return;
   }
 
-  char * line;
-  char * node;
-  char * path_list_head;
+  struct path_list_entry * node;
+  struct path_list_head * path_list_head;
   int count = 0;
   long total_blocks;
   long total_blocks_initial;
@@ -1895,10 +1919,10 @@ void analyze_process_size_list(sqlite3 * dbh)
     skip = 0;
     count++;
     path_list_head = size_node->path_list;
-    node = pl_get_first_entry(path_list_head);
+    node = pb_get_first_entry(path_list_head);
 
     LOG_PROGRESS {
-      uint32_t path_count = pl_get_path_count(path_list_head);
+      uint32_t path_count = path_list_head->list_size;
       LOG(L_PROGRESS, "Processing %d/%d "
           "(%d files of size %ld) (%ld blocks of size %d)\n",
           count, stats_size_list_count, path_count, (long)size_node->size,
@@ -1910,9 +1934,8 @@ void analyze_process_size_list(sqlite3 * dbh)
     int hl_current = 1;
     struct hash_list * hl_one = get_hash_list(hl_current);
     do {
-      line = pl_entry_get_path(node);
-      add_hash_list(hl_one, line, 1, analyze_block_size, skip);
-      node = pl_entry_get_next(node);
+      add_hash_list(hl_one, node, 1, analyze_block_size, skip);
+      node = node->next;
     } while (node != NULL);
 
     LOG_TRACE {

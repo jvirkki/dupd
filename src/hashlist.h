@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -39,7 +39,7 @@ struct hash_list {
   int has_dups;                 // true if this hash list has duplicates
   int hash_valid;               // true if hash buffer is set to valid value
   char hash[HASH_MAX_BUFSIZE];  // the hash string shared by all these paths
-  char ** pathptrs;             // pointers to all the paths with this hash
+  struct path_list_entry ** entries; // pointers to all paths with this hash
   int capacity;                 // 'paths' block current capacity
   int next_index;               // when adding a path, index of next one
   struct hash_list * next;      // next in list
@@ -134,24 +134,25 @@ struct hash_list * get_hash_list(int kind);
  *
  * Parameters:
  *     hl   - Add file to this hash list.
- *     path - Path of the file to add.
+ *     file - File to add.
  *     hash - The hash of this file (full or partial depending on round).
  *
  * Return: none.
  *
  */
-void add_to_hash_list(struct hash_list * hl, char * path, char * hash);
+void add_to_hash_list(struct hash_list * hl,
+                      struct path_list_entry * file, char * hash);
 
 
 /** ***************************************************************************
- * Adds a new file (path) to a given hash list. The hash of the file
+ * Adds a new file to a given hash list. The hash of the file
  * will be computed by reading 'blocks' number of blocks from the
  * file.  The hash list capacity gets expanded if necessary to hold
  * the new file.
  *
  * Parameters:
  *     hl     - Add file to this hash list.
- *     path   - Path of the file to add.
+ *     file - File to add.
  *     blocks - Number of blocks to read from file path when computing
  *              its hash. If 0, reads entire file.
  *     bsize  - Size of blocks to read.
@@ -160,25 +161,26 @@ void add_to_hash_list(struct hash_list * hl, char * path, char * hash);
  * Return: none.
  *
  */
-void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
-                   int bsize, off_t skip);
+void add_hash_list(struct hash_list * hl, struct path_list_entry * file,
+                   uint64_t blocks, int bsize, off_t skip);
 
 
 /** ***************************************************************************
- * Adds a new file (path) to a given hash list. The hash of the file
+ * Adds a new file to a given hash list. The hash of the file
  * will be computed from the buffer given.
  * The hash list capacity gets expanded if necessary to hold the new file.
  *
  * Parameters:
  *     hl      - Add file to this hash list.
- *     path    - Path of the file to add.
+ *     file - File to add.
  *     buffer  - Read file data from this buffer.
  *     bufsize - Size of buffer.
  *
  * Return: none.
  *
  */
-void add_hash_list_from_mem(struct hash_list * hl, char * path,
+void add_hash_list_from_mem(struct hash_list * hl,
+                            struct path_list_entry * file,
                             const char * buffer, off_t bufsize);
 
 

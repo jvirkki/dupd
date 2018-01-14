@@ -34,7 +34,7 @@
 
 struct size_node {
   off_t size;
-  char * paths;
+  struct path_list_head * paths;
   struct size_node * left;
   struct size_node * right;
   char * filename;
@@ -122,8 +122,8 @@ static char * queue_state(int s)
  * Return: ptr to the node created
  *
  */
-static struct size_node * new_node(off_t size,
-                                   char * filename, struct direntry * dir_entry)
+static struct size_node * new_node(off_t size, char * filename,
+                                   struct direntry * dir_entry)
 {
   struct size_node * n = (struct size_node *)malloc(sizeof(struct size_node));
   n->left = NULL;
@@ -160,8 +160,6 @@ static void add_below(struct size_node * node,
     off_t s = size - p->size;
 
     if (!s) {
-      char buff[DUPD_PATH_MAX];
-
       // The first file of this size is kept in the size_node itself,
       // waiting to see if another file of the same size is found.
       // If we reached a size_node which exists but paths is NULL that
@@ -169,17 +167,13 @@ static void add_below(struct size_node * node,
       // to add both the previous and current to the path list.
 
       if (p->paths == NULL) {
-        bzero(buff, DUPD_PATH_MAX);
-        build_path(p->filename, p->dir_entry, buff);
-        p->paths = insert_first_path(buff);
+        p->paths = insert_first_path(p->filename, p->dir_entry);
         p->dir_entry = NULL;
         free(p->filename);
         p->filename = NULL;
       }
 
-      bzero(buff, DUPD_PATH_MAX);
-      build_path(filename, dir_entry, buff);
-      insert_end_path(buff, device, inode, size, p->paths);
+      insert_end_path(filename, dir_entry, device, inode, size, p->paths);
 
       return;
     }
@@ -219,8 +213,7 @@ static void check_uniques(sqlite3 * dbh, struct size_node * node)
 {
   if (node->paths == NULL) {
     char buff[DUPD_PATH_MAX];
-    bzero(buff, DUPD_PATH_MAX);
-    build_path(node->filename, node->dir_entry, buff);
+    build_path_from_string(node->filename, node->dir_entry, buff);
     unique_to_db(dbh, buff, "by-size");
   }
 

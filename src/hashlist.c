@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -28,9 +28,11 @@
 #include <unistd.h>
 
 #include "dbops.h"
+#include "dirtree.h"
+#include "hash.h"
 #include "hashlist.h"
 #include "main.h"
-#include "hash.h"
+#include "paths.h"
 #include "stats.h"
 #include "utils.h"
 
@@ -70,7 +72,10 @@ static struct hash_list * new_hash_list_node()
   hl->has_dups = 0;
   hl->hash_valid = 0;
   hl->hash[0] = 0;
-  hl->pathptrs = (char **)malloc(sizeof(char *) * DEFAULT_PATH_CAPACITY);
+
+  hl->entries = (struct path_list_entry **)
+    malloc(sizeof(struct path_list_entry *) * DEFAULT_PATH_CAPACITY);
+
   hl->capacity = DEFAULT_PATH_CAPACITY;
   hl->next_index = 0;
   hl->next = NULL;
@@ -82,14 +87,17 @@ static struct hash_list * new_hash_list_node()
  * Public function, see header file.
  *
  */
-void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
+void add_to_hash_list(struct hash_list * hl,
+                      struct path_list_entry * file, char * hash)
 {
   struct hash_list * p = hl;
   struct hash_list * tail = hl;
   int hl_len = 0;
 
   LOG_MORE_TRACE {
-    LOG(L_MORE_TRACE, "Adding path %s to hash list which contains:\n", path);
+    char buffer[DUPD_PATH_MAX];
+    build_path(file, buffer);
+    LOG(L_MORE_TRACE, "Adding path %s to hash list which contains:\n", buffer);
     print_hash_list(hl);
   }
 
@@ -102,15 +110,15 @@ void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
       if (p->next_index == p->capacity) {
         // Found correct node but need more space in path list
         p->capacity = p->capacity * 2;
-        p->pathptrs =
-          (char **)realloc(p->pathptrs, p->capacity * sizeof(char *));
+        p->entries = (struct path_list_entry **)
+          realloc(p->entries, p->capacity * sizeof(struct path_list_entry *));
 
         hashlist_path_realloc++;
         LOG(L_RESOURCES, "Increased path capacity to %d\n", p->capacity);
       }
 
       // Add new path to existing node
-      p->pathptrs[p->next_index] = path;
+      p->entries[p->next_index] = file;
       if (p->next_index) {
         hl->has_dups = 1;
       }
@@ -136,7 +144,7 @@ void add_to_hash_list(struct hash_list * hl, char * path, char * hash)
   // Populate new node...
   memcpy(p->hash, hash, hash_bufsize);
   p->hash_valid = 1;
-  p->pathptrs[p->next_index] = path;
+  p->entries[p->next_index] = file;
   p->next_index++;
 
   // If there are additional hash list entries beyond this one (from a prior
@@ -195,7 +203,7 @@ void free_hash_list(struct hash_list * hl)
   struct hash_list * me = hl;
   while (p != NULL) {
     p = p->next;
-    free(me->pathptrs);
+    free(me->entries);
     free(me);
     me = p;
   }
@@ -281,20 +289,24 @@ struct hash_list * get_hash_list(int kind)
  * Public function, see header file.
  *
  */
-void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
-                   int bsize, off_t skip)
+void add_hash_list(struct hash_list * hl, struct path_list_entry * file,
+                   uint64_t blocks, int bsize, off_t skip)
 {
   assert(hl != NULL);                                        // LCOV_EXCL_LINE
-  assert(path != NULL);                                      // LCOV_EXCL_LINE
+  assert(file != NULL);                                      // LCOV_EXCL_LINE
 
   char hash_out[HASH_MAX_BUFSIZE];
+  char path[DUPD_PATH_MAX];
+
+  build_path(file, path);
+
   int rv = hash_fn(path, hash_out, blocks, bsize, skip);
   if (rv != 0) {
     LOG(L_SKIPPED, "SKIP [%s]: Unable to compute hash\n", path);
     return;
   }
 
-  add_to_hash_list(hl, path, hash_out);
+  add_to_hash_list(hl, file, hash_out);
 }
 
 
@@ -302,16 +314,16 @@ void add_hash_list(struct hash_list * hl, char * path, uint64_t blocks,
  * Public function, see header file.
  *
  */
-void add_hash_list_from_mem(struct hash_list * hl, char * path,
+void add_hash_list_from_mem(struct hash_list * hl,
+                            struct path_list_entry * file,
                             const char * buffer, off_t bufsize)
-
 {
   assert(hl != NULL);                                        // LCOV_EXCL_LINE
-  assert(path != NULL);                                      // LCOV_EXCL_LINE
+  assert(file != NULL);                                      // LCOV_EXCL_LINE
 
   char hash_out[HASH_MAX_BUFSIZE];
   hash_fn_buf(buffer, bufsize, hash_out);
-  add_to_hash_list(hl, path, hash_out);
+  add_to_hash_list(hl, file, hash_out);
 }
 
 
@@ -329,7 +341,7 @@ void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
       // have two or more files with same hash here.. might be duplicates...
       // promote them to new hash list
       for (int j=0; j < p->next_index; j++) {
-        add_hash_list(destination, *(p->pathptrs + j), blocks, bsize, skip);
+        add_hash_list(destination, *(p->entries + j), blocks, bsize, skip);
       }
     }
     p = p->next;
@@ -345,6 +357,8 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
                                  struct hash_list * hl, off_t size, int round)
 {
   struct hash_list * p = hl;
+  struct path_list_entry * entry;
+  char file[DUPD_PATH_MAX];
 
   pthread_mutex_lock(&publish_lock);
 
@@ -359,7 +373,9 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
         printf("Duplicates: file size: %ld, count: [%d]\n",
                (long)size, p->next_index);
         for (int j=0; j < p->next_index; j++) {
-          printf(" %s\n", *(p->pathptrs + j));
+          entry = *(p->entries + j);
+          build_path(entry, file);
+          printf(" %s\n", file);
         }
       }
 
@@ -376,11 +392,13 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
             LOG(L_RESOURCES, "Increased path_buffer %d\n", path_buffer_size);
           }
 
+          entry = *(p->entries + i);
+          build_path(entry, file);
+
           if (i + 1 < p->next_index) {
-            pos += sprintf(path_buffer + pos,
-                           "%s%c", *(p->pathptrs + i), path_separator);
+            pos += sprintf(path_buffer + pos, "%s%c", file, path_separator);
           } else{
-            sprintf(path_buffer + pos, "%s%c", *(p->pathptrs + i), 0);
+            sprintf(path_buffer + pos, "%s%c", file, 0);
           }
         }
 
@@ -400,13 +418,18 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
  */
 void print_hash_list(struct hash_list * src)
 {
+  char file[DUPD_PATH_MAX];
+  struct path_list_entry * entry;
   struct hash_list * p = src;
+
   while (p != NULL && p->hash_valid) {
     LOG(L_TRACE, "hash_valid: %d, has_dups: %d, next_index: %d   ",
         p->hash_valid, p->has_dups, p->next_index);
     memdump("hash", p->hash, hash_bufsize);
     for (int j=0; j < p->next_index; j++) {
-      LOG(L_TRACE, "  [%s]\n", *(p->pathptrs + j));
+      entry = *(p->entries + j);
+      build_path(entry, file);
+      LOG(L_TRACE, "  [%s]\n", file);
     }
     p = p->next;
   }
@@ -419,14 +442,24 @@ void print_hash_list(struct hash_list * src)
  */
 int skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db)
 {
+  char file[DUPD_PATH_MAX];
+  struct path_list_entry * entry;
   int skimmed = 0;
   struct hash_list * p = src;
+
   while (p != NULL && p->hash_valid) {
+
     if (p->next_index == 1) {
+
+      entry = *(p->entries);
+
       if (record_in_db) {
-        unique_to_db(dbh, *(p->pathptrs), "hashlist");
+        build_path(entry, file);
+         unique_to_db(dbh, file, "hashlist");
       }
-      *(p->pathptrs)[0] = 0;
+
+      char * filename = pb_get_filename(entry);
+      filename[0] = 0; // TODO
       skimmed++;
     }
     p = p->next;

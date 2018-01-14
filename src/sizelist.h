@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -25,7 +25,7 @@
 
 struct size_list {
   off_t size;
-  char * path_list;
+  struct path_list_head * path_list;
   int state;
   int fully_read;
   uint32_t buffers_filled;
@@ -68,7 +68,8 @@ void free_size_list();
  * Return: An intialized/allocated size list node.
  *
  */
-struct size_list * add_to_size_list(off_t size, char * path_list);
+struct size_list * add_to_size_list(off_t size,
+                                    struct path_list_head * path_list);
 
 
 /** ***************************************************************************

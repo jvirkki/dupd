@@ -1,5 +1,5 @@
 /*
-  Copyright 2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2017-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -23,6 +23,7 @@
 
 #include "dirtree.h"
 #include "main.h"
+#include "paths.h"
 
 
 /** ***************************************************************************
@@ -37,7 +38,7 @@ struct direntry * new_child_dir(char * name, struct direntry * parent)
     exit(1);
   }
 
-  uint16_t len = (uint16_t)strlen(name);
+  uint8_t len = (uint8_t)strlen(name);
   entry->name_size = len;
 
   entry->name = (char *)malloc(len);
@@ -61,27 +62,34 @@ struct direntry * new_child_dir(char * name, struct direntry * parent)
 
 
 /** ***************************************************************************
- * Public function, see dirtree.h
+ * Completes filling the buffer with all path components.
+ *
+ * Parameters:
+ *    filename - Pointer to the filename (may or may not be NULL-terminated).
+ *    name_len - Length of filename.
+ *    pos      - Start writing at this position (but we go backwards).
+ *    buffer - Buffer for writing output, was allocated by caller.
+ *    dir    - Start building path from this directory.
+ *
+ * Return: none (fills buffer)
  *
  */
-void build_path(char * filename, struct direntry * entry, char * buffer)
+static void internal_build_path(char * filename, int name_len,
+                                uint16_t pos, char * buffer,
+                                struct direntry * dir)
 {
-  int name_len = strlen(filename);
-  uint16_t pos = entry->total_size;
-
   // First copy the filename to the end of the path buffer
   buffer[pos] = '/';
   memcpy(buffer + pos + 1, filename, name_len);
   buffer[pos + name_len + 1] = 0;
 
   // Then walk up the tree filling parent directory name until done
-  struct direntry * part = entry;
-  while (part != NULL) {
-    pos -= part->name_size;
-    memcpy(buffer + pos, part->name, part->name_size);
+  while (dir != NULL) {
+    pos -= dir->name_size;
+    memcpy(buffer + pos, dir->name, dir->name_size);
     pos--;
-    part = part->parent;
-    if (part != NULL) { buffer[pos] = '/'; }
+    dir = dir->parent;
+    if (dir != NULL) { buffer[pos] = '/'; }
   }
 }
 
@@ -90,15 +98,26 @@ void build_path(char * filename, struct direntry * entry, char * buffer)
  * Public function, see dirtree.h
  *
  */
-void print_direntry(struct direntry * entry)
+void build_path_from_string(char * filename, struct direntry * entry,
+                            char * buffer)
 {
-  char line[DUPD_FILENAME_MAX];
+  int name_len = strlen(filename);
+  uint16_t pos = entry->total_size;
 
-  while (entry != NULL) {
-    memcpy(line, entry->name, entry->name_size);
-    line[entry->name_size] = 0;
-    printf("direntry: name [%s] (len=%d) total_size=%d\n", line,
-           entry->name_size, entry->total_size);
-    entry = entry->parent;
-  }
+  internal_build_path(filename, name_len, pos, buffer, entry);
+}
+
+
+/** ***************************************************************************
+ * Public function, see dirtree.h
+ *
+ */
+
+void build_path(struct path_list_entry * entry, char * buffer)
+{
+  int name_len = entry->filename_size;
+  uint16_t pos = entry->dir->total_size;
+  char * filename = pb_get_filename(entry);
+
+  internal_build_path(filename, name_len, pos, buffer, entry->dir);
 }

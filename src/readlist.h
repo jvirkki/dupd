@@ -1,5 +1,5 @@
 /*
-  Copyright 2016-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -28,8 +28,8 @@
 struct read_list_entry {
   dev_t device;
   ino_t inode;
-  char * pathlist_head;
-  char * pathlist_self;
+  struct path_list_head * pathlist_head;
+  struct path_list_entry * pathlist_self;
 };
 
 extern struct read_list_entry * read_list;
@@ -70,7 +70,8 @@ void free_read_list();
  * Return: none
  *
  */
-void add_to_read_list(dev_t device, ino_t inode, char * head, char * entry);
+void add_to_read_list(dev_t device, ino_t inode, struct path_list_head * head,
+                      struct path_list_entry * entry);
 
 
 /** ***************************************************************************

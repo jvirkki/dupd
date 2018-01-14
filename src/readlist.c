@@ -1,5 +1,5 @@
 /*
-  Copyright 2016-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "dirtree.h"
 #include "main.h"
 #include "paths.h"
 #include "readlist.h"
@@ -86,7 +87,8 @@ void free_read_list()
  * Public function, see readlist.h
  *
  */
-void add_to_read_list(dev_t device, ino_t inode, char * head, char * entry)
+void add_to_read_list(dev_t device, ino_t inode, struct path_list_head * head,
+                      struct path_list_entry * entry)
 {
   read_list[read_list_end].device = device;
   read_list[read_list_end].inode = inode;
@@ -119,11 +121,15 @@ void sort_read_list()
     ino_t prev = 0;
     for (i = 0; i < read_list_end; i++) {
       if (read_list[i].inode == prev) {
-        char * path = pl_entry_get_path(read_list[i].pathlist_self);
+        char path[DUPD_PATH_MAX];
+        build_path(read_list[i].pathlist_self, path);
         LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.", path);
-        path[0] = 0;
-        pl_decrease_path_count(read_list[i].pathlist_head, 1);
+        read_list[i].pathlist_head->list_size--;
         read_list[i].pathlist_head = NULL;
+        {
+          char * fname = pb_get_filename(read_list[i].pathlist_self);
+          fname[0] =0; // TODO
+        }
         read_list[i].pathlist_self = NULL;
       }
       prev = read_list[i].inode;

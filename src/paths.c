@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -32,6 +32,10 @@
 #include "stats.h"
 #include "utils.h"
 
+
+// Path lists (head + entries) are stored in path blocks which are preallocated
+// as needed. This list holds the blocks we've had to allocate.
+
 struct path_block_list {
   char * ptr;
   struct path_block_list * next;
@@ -49,50 +53,59 @@ static long space_allocated;
  * Debug function. Dumps the path list for a given size starting from head.
  *
  */
-void dump_path_list(const char * line, off_t size, char * head)
+void dump_path_list(const char * line, off_t size,
+                    struct path_list_head * head)
 {
-  printf("----- dump_size_list for size %ld -----\n", (long)size);
+  printf("----- dump path block list for size %ld -----\n", (long)size);
   printf("%s\n", line);
 
   printf("  head: %p\n", head);
+  printf("  last_elem: %p\n", head->last_entry);
+  printf("  list_size: %d\n", head->list_size);
+  printf("  sizelist back ptr: %p\n", head->sizelist);
 
-  char * last_elem = pl_get_last_entry(head);
-  printf("  last_elem: %p\n", last_elem);
-
-  struct size_list * szl = pl_get_szl_entry(head);
-  printf("  sizelist back ptr: %p\n", szl);
-  if (szl != NULL) {
-    printf("   forward ptr back to me: %p\n", szl->path_list);
-    if (szl->path_list != head) {                            // LCOV_EXCL_START
+  if (head->sizelist != NULL) {
+    printf("   forward ptr back to me: %p\n", head->sizelist->path_list);
+    if (head->sizelist->path_list != head) {                 // LCOV_EXCL_START
       printf("error: mismatch!\n");
       exit(1);
     }                                                        // LCOV_EXCL_STOP
   }
 
-  uint32_t list_len = pl_get_path_count(head);
-  printf("  list_len: %d\n", (int)list_len);
-
-  char * first_elem = pl_get_first_entry(head);
-  printf("  first_elem: %p\n", first_elem);
+  struct path_list_entry * entry = pb_get_first_entry(head);
+  printf("  first_elem: %p\n", entry);
 
   uint32_t counted = 1;
+  char buffer[DUPD_PATH_MAX];
+  char * filename;
 
-  char * here = first_elem;
-  while (here != NULL) {
+  while (entry != NULL) {
     if (counted < 2 || log_level >= L_TRACE) {
-      printf("   buffer: %p\n", pl_entry_get_buffer(here));
-      printf("   [%s]\n", pl_entry_get_path(here));
-      printf("   next: %p\n", pl_entry_get_next(here));
+      printf(" --entry %d\n", counted);
+      printf("   file state: %d\n", entry->file_state);
+      printf("   filename_size: %d\n", entry->filename_size);
+      printf("   dir: %p\n", entry->dir);
+      printf("   next: %p\n", entry->next);
+      printf("   buffer: %p\n", entry->buffer);
+
+      filename = pb_get_filename(entry);
+      bzero(buffer, DUPD_PATH_MAX);
+      memcpy(buffer, filename, entry->filename_size);
+      buffer[entry->filename_size] = 0;
+      printf("   filename (direct read): [%s]\n", buffer);
+      bzero(buffer, DUPD_PATH_MAX);
+      build_path(entry, buffer);
+      printf("   built path: [%s]\n", buffer);
     }
     counted++;
-    here = pl_entry_get_next(here);
+    entry = entry->next;
   }
 
   counted--;
   printf("counted entries: %d\n", counted);
-  if (counted != list_len) {
+  if (counted != head->list_size) {
                                                              // LCOV_EXCL_START
-    printf("list_len (%d) != counted entries (%d)\n", list_len, counted);
+    printf("list_len (%d)!=counted entries (%d)\n", head->list_size, counted);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
@@ -199,42 +212,46 @@ void free_path_block()
  * Public function, see paths.h
  *
  */
-char * insert_first_path(char * path)
+struct path_list_head * insert_first_path(char * filename,
+                                          struct direntry * dir_entry)
 {
-  int space_needed = (2 * sizeof(char *)) + strlen(path) + 2;
-  check_space((3 * sizeof(char *)) + space_needed); // first entry overhead
-  space_used += (3 * sizeof(char *)) + space_needed;
+  int filename_len = strlen(filename);
 
-  char * head = next_entry;
-  char * new_entry = pl_get_first_entry(head);
+  int space_needed = filename_len +
+    sizeof(struct path_list_head) + sizeof(struct path_list_entry);
 
-  // See paths.h for documentation on structure
+  check_space(space_needed);
+  space_used += space_needed;
 
-  // Initialize ListSize (to 1)
-  pl_init_path_count(head);
+  // The new list head will live at the top of the available space (next_entry)
+  struct path_list_head * head = (struct path_list_head *)next_entry;
+
+  // The first entry will live immediately after the head
+  struct path_list_entry * first_entry =
+    (struct path_list_entry *)((char *)head + sizeof(struct path_list_head));
+
+  // And the filename of first entry lives immediately after its entry
+  char * filebuf = pb_get_filename(first_entry);
+
+  // Move the free space pointer forward for the amount of space we took above
+  next_entry += space_needed;
 
   // The associated sizelist does not exist yet
-  pl_set_szl_entry(head, NULL);
+  head->sizelist = NULL;
 
-  // PTR2LAST - Set to point to self since we're the first and last elem now
-  pl_entry_set_next(head, new_entry);
+  // Last entry is the first entry since there's only one now
+  head->last_entry = first_entry;
 
-  // And update PTR2NEXT of the new (now last) entry we just added to NULL
-  pl_entry_set_next(new_entry, NULL);
+  // Initialize list size to 1
+  head->list_size = 1;
 
-  // Set the byte buffer to NULL, nothing read yet
-  pl_entry_set_buffer(new_entry, NULL);
-
-  // Copy path string to new entry
-  strcpy(pl_entry_get_path(new_entry), path);
-
-  // Update top of free space to point beyond the space we just used up
-  next_entry = new_entry + space_needed;
-
-  if (next_entry >= path_block_end) {                        // LCOV_EXCL_START
-    printf("error: path block too small!\n");
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
+  // Initialize the first entry
+  first_entry->file_state = FST_NEW;
+  first_entry->filename_size = (uint8_t)filename_len;
+  first_entry->dir = dir_entry;
+  first_entry->next = NULL;
+  first_entry->buffer = NULL;
+  memcpy(filebuf, filename, filename_len);
 
   LOG_TRACE {
     dump_path_list("AFTER insert_first_path", -1, head);
@@ -250,35 +267,50 @@ char * insert_first_path(char * path)
  * Public function, see paths.h
  *
  */
-void insert_end_path(char * path,
-                     dev_t device, ino_t inode, off_t size, char * head)
+void insert_end_path(char * filename, struct direntry * dir_entry,
+                     dev_t device, ino_t inode, off_t size,
+                     struct path_list_head * head)
 {
-  int space_needed = (2 * sizeof(char *)) + strlen(path) + 1;
+  int filename_len = strlen(filename);
+  int space_needed = sizeof(struct path_list_entry) + filename_len;
   check_space(space_needed);
   space_used += space_needed;
 
-  char * prior = NULL;
-  char * new_entry = next_entry;
+  LOG_MORE_TRACE {
+    dump_path_list("BEFORE insert_end_path", size, head);
+  }
 
-  if (pl_get_path_count(head) == 1) {
+  // The entry will live at the top of the available space (next_entry)
+  struct path_list_entry * entry = (struct path_list_entry *)next_entry;
 
-    // If there is only one entry in this path list, it means we are
-    // adding the second element to this path list. Which in turn means
-    // we have just identified a size which is a candidate for duplicate
-    // processing later, so add it to the size list now.
+  // And the filename of first entry lives immediately after its entry
+  char * filebuf = pb_get_filename(entry);
+
+  // Move the free space pointer forward for the amount of space we took above
+  next_entry += space_needed;
+
+  // Last entry in this list is now this one and the list grew by one
+  struct path_list_entry * prior = head->last_entry;
+  head->last_entry = entry;
+  prior->next = entry;
+  head->list_size++;
+
+  // Initialize this new entry
+  entry->file_state = FST_NEW;
+  entry->filename_size = (uint8_t)filename_len;
+  entry->dir = dir_entry;
+  entry->next = NULL;
+  entry->buffer = NULL;
+  memcpy(filebuf, filename, filename_len);
+
+  // If there are now two entries in this path list, it means we have
+  // just identified a size which is a candidate for duplicate
+  // processing later, so add it to the size list now.
+
+  if (head->list_size == 2) {
 
     struct size_list * new_szl = add_to_size_list(size, head);
-    pl_set_szl_entry(head, new_szl);
-
-    LOG_PROGRESS {
-      struct size_list * szl = pl_get_szl_entry(head);
-      if (szl != new_szl) {                                  // LCOV_EXCL_START
-        printf("error: set szl to %p, but got back %p\n", new_szl, szl);
-        exit(1);
-      }                                                      // LCOV_EXCL_STOP
-    }
-
-    prior = pl_get_first_entry(head);
+    head->sizelist = new_szl;
 
     if (hdd_mode) {
       // Add the first entry to the read list. It wasn't added earlier
@@ -286,7 +318,10 @@ void insert_end_path(char * path,
       // We'll need to re-stat() it to get info. This should be fast
       // because it should be in the cache already. (Alternatively,
       // could keep this info in the path list head.)
-      char * first_path = pl_entry_get_path(prior);
+
+      char first_path[DUPD_PATH_MAX];
+      build_path(prior, first_path);
+
       STRUCT_STAT info;
       if (get_file_info(first_path, &info)) {                // LCOV_EXCL_START
         printf("error: unable to stat %s\n", first_path);
@@ -294,49 +329,19 @@ void insert_end_path(char * path,
       }                                                      // LCOV_EXCL_STOP
       add_to_read_list(info.st_dev, info.st_ino, head, prior);
     }
-
-  } else {
-    // Just jump to the end of the path list
-    prior = pl_get_last_entry(head);
   }
 
   if (hdd_mode) {
     // Then add the current path to the read list as well.
-    add_to_read_list(device, inode, head, new_entry);
+    add_to_read_list(device, inode, head, entry);
   }
-
-  // Update PTR2LAST to point to the new last entry
-  pl_entry_set_next(head, new_entry);
-
-  // Update prior (previous last) PTR2NEXT to also point to the new last entry
-  pl_entry_set_next(prior, new_entry);
-
-  // And update PTR2NEXT of the new (now last) entry we just added to NULL
-  pl_entry_set_next(new_entry, NULL);
-
-  // Set the byte buffer to NULL, nothing read yet
-  pl_entry_set_buffer(new_entry, NULL);
-
-  // Copy path string to new entry
-  strcpy(pl_entry_get_path(new_entry), path);
-
-  // Increase ListSize of this path list
-  uint32_t path_count = pl_increase_path_count(head);
-
-  // Update top of free space to point beyond the space we just used up
-  next_entry = new_entry + space_needed;
-
-  if (next_entry >= path_block_end) {                        // LCOV_EXCL_START
-    printf("error: path block too small!\n");
-    exit(1);
-  }                                                           // LCOV_EXCL_STOP
 
   LOG_TRACE {
     dump_path_list("AFTER insert_end_path", size, head);
   }
 
-  if (path_count > stats_max_pathlist) {
-    stats_max_pathlist = path_count;
+  if (head->list_size > stats_max_pathlist) {
+    stats_max_pathlist = head->list_size;
     stats_max_pathlist_size = size;
   }
 

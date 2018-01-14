@@ -1,5 +1,5 @@
 /*
-  Copyright 2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2017-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -22,11 +22,13 @@
 
 #include <stdint.h>
 
+#include "paths.h"
+
 struct direntry {
-  uint16_t total_size;      // Total length of the path (including self 'name')
-  uint16_t name_size;       // Length of the 'name' string
-  char * name;              // NOT null-terminated directory name
   struct direntry * parent;
+  uint16_t total_size;      // Total length of the path (including self 'name')
+  uint8_t name_size;        // Length of the 'name' string
+  char * name;              // NOT null-terminated directory name
 };
 
 
@@ -46,29 +48,31 @@ struct direntry * new_child_dir(char * name, struct direntry * parent);
 
 
 /** ***************************************************************************
- * Build a path string given a filename and a directory entry.
+ * Build a path string given a filename and a direntry.
  *
  * Parameters:
- *    filename - Name of the file.
+ *    filename - Name of the file, null-terminated string.
  *    entry    - Directory entry of the dir where filename is located.
  *    buffer   - Output buffer, must have been allocated by caller.
  *
  * Return: none
  *
  */
-void build_path(char * filename, struct direntry * entry, char * buffer);
+void build_path_from_string(char * filename, struct direntry * entry,
+                            char * buffer);
 
 
 /** ***************************************************************************
- * Debug function. Print to stdout entry and all its parents up the tree.
+ * Build a path string given a path block entry.
  *
  * Parameters:
- *    entry    - Directory entry to print.
+ *    entry    - Path block entry for a file.
+ *    buffer   - Output buffer, must have been allocated by caller.
  *
  * Return: none
  *
  */
-void print_direntry(struct direntry * entry);
+void build_path(struct path_list_entry * entry, char * buffer);
 
 
 #endif
