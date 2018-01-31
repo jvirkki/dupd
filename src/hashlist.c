@@ -61,16 +61,6 @@ struct hash_list {
 
 
 /** ***************************************************************************
- * The three supported hash lists. Must be initialized with
- * initialize_hash_lists(). see header file for constants.
- *
- */
-static struct hash_list * hl_one;
-static struct hash_list * hl_partial;
-static struct hash_list * hl_full;
-
-
-/** ***************************************************************************
  * Create a new hash list node. A node can contains all the known
  * files (paths) which have a given hash. The new node returned is not
  * yet linked to any hash list.  The new node gets a preallocated path
@@ -229,81 +219,6 @@ void free_hash_list(struct hash_list * hl)
  * Public function, see header file.
  *
  */
-void init_hash_lists()
-{
-  assert(hl_one == NULL);                                    // LCOV_EXCL_LINE
-  assert(hl_partial == NULL);                                // LCOV_EXCL_LINE
-  assert(hl_full == NULL);                                   // LCOV_EXCL_LINE
-
-  hl_one = init_hash_list();
-  hl_full = init_hash_list();
-
-  // The intermediate hash list is unused by default, so only allocate it
-  // if it has been enabled.
-  if (intermediate_blocks > 0) {
-    hl_partial = init_hash_list();
-  }
-
-  if (x_small_buffers) {
-    path_buffer = (char *)malloc(10);
-    path_buffer_size = 10;
-  } else {
-    path_buffer = (char *)malloc(DEFAULT_PATH_BUFFER * DUPD_PATH_MAX);
-    path_buffer_size = DEFAULT_PATH_BUFFER * DUPD_PATH_MAX;
-  }
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-void free_hash_lists()
-{
-  if (hl_one != NULL) {
-    free_hash_list(hl_one);
-  }
-  if (hl_partial != NULL) {
-    free_hash_list(hl_partial);
-  }
-  if (hl_full != NULL) {
-    free_hash_list(hl_full);
-  }
-  if (path_buffer != NULL) {
-    free(path_buffer);
-  }
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-struct hash_list * get_hash_list(int kind)
-{
-  switch (kind) {
-  case HASH_LIST_ONE:
-    reset_hash_list(hl_one);
-    reset_hash_list(hl_one->next);
-    return hl_one;
-  case HASH_LIST_PARTIAL:
-    reset_hash_list(hl_partial);
-    reset_hash_list(hl_partial->next);
-    return hl_partial;
-  case HASH_LIST_FULL:
-    reset_hash_list(hl_full);
-    reset_hash_list(hl_full->next);
-    return hl_full;
-  default:
-    return NULL;
-  }
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
 void add_hash_list(struct hash_list * hl, struct path_list_entry * file,
                    uint64_t blocks, int bsize, off_t skip)
 {
@@ -339,28 +254,6 @@ void add_hash_list_from_mem(struct hash_list * hl,
   char hash_out[HASH_MAX_BUFSIZE];
   hash_fn_buf(buffer, bufsize, hash_out);
   add_to_hash_list(hl, file, hash_out);
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
-                      struct hash_list * destination, off_t skip)
-{
-  struct hash_list * p = src;
-  while (p != NULL && p->hash_valid) {
-
-    if (p->next_index > 1) {
-      // have two or more files with same hash here.. might be duplicates...
-      // promote them to new hash list
-      for (int j=0; j < p->next_index; j++) {
-        add_hash_list(destination, *(p->entries + j), blocks, bsize, skip);
-      }
-    }
-    p = p->next;
-  }
 }
 
 

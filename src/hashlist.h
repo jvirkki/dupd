@@ -27,34 +27,7 @@
 #include "hash.h"
 #include "paths.h"
 
-#define HASH_LIST_ONE 1
-#define HASH_LIST_PARTIAL 2
-#define HASH_LIST_FULL 3
-
 struct hash_list;
-
-
-/** ***************************************************************************
- * Initialize the default hash lists needed by dupd. After initialization, the
- * lists can be retrieved with get_hash_list().
- *
- * Parameters: none
- *
- * Return: none
- *
- */
-void init_hash_lists();
-
-
-/** ***************************************************************************
- * Free storage for all default hash lists.
- *
- * Parameters: none
- *
- * Return: none
- *
- */
-void free_hash_lists();
 
 
 /** ***************************************************************************
@@ -96,21 +69,6 @@ struct hash_list * init_hash_list();
  *
  */
 void reset_hash_list(struct hash_list * hl);
-
-
-/** ***************************************************************************
- * Retrieve a pointer to one of the available hash lists. Use one of
- * the HASH_LIST_* constants defined above to name the kind of list to
- * retrieve.
- *
- * Parameters:
- *     kind - The specific hash list to return.
- *
- * Return: Pointer to the head of the requested hash list. The list is
- * allocated but empty. Can return NULL if 'kind' is invalid.
- *
- */
-struct hash_list * get_hash_list(int kind);
 
 
 /** ***************************************************************************
@@ -167,28 +125,6 @@ void add_hash_list(struct hash_list * hl, struct path_list_entry * file,
 void add_hash_list_from_mem(struct hash_list * hl,
                             struct path_list_entry * file,
                             const char * buffer, off_t bufsize);
-
-
-/** ***************************************************************************
- * Copy potentially duplicate files from src hash list to destination hash
- * list, recomputing the hash using 'blocks' blocks.
- *
- * Files which do not have potential duplicates in the src list are dropped,
- * so in most cases destination hash list will contain fewer files than src.
- *
- * Parameters:
- *     src         - Source hash list.
- *     blocks      - Number of blocks to read from file path when computing
- *                   its hash. If 0, reads entire file.
- *     bsize       - Size of blocks to read.
- *     destination - Destination hash list.
- *     skip        - Skip this many blocks when hashing from the file.
- *
- * Return: none.
- *
- */
-void filter_hash_list(struct hash_list * src, uint64_t blocks, int bsize,
-                      struct hash_list * destination, off_t skip);
 
 
 /** ***************************************************************************

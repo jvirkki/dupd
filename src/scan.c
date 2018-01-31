@@ -348,7 +348,6 @@ void scan()
 
   init_size_list();
   init_path_block();
-  init_hash_lists();
   init_filecompare();
   init_sizetree();
   init_scanlist();

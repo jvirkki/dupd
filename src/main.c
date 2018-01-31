@@ -480,7 +480,6 @@ int main(int argc, char * argv[])
   free_size_tree();
   free_size_list();
   free_path_block();
-  free_hash_lists();
   free_filecompare();
   free_scanlist();
   free_start_paths();

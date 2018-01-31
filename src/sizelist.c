@@ -669,6 +669,8 @@ static void * round3_hasher(void * arg)
   pthread_setspecific(thread_name, self);
   LOG(L_THREADS, "thread created\n");
 
+  struct hash_list * hl_full = init_hash_list();
+
   do {
     size_node = size_list_head;
     loops++;
@@ -823,7 +825,7 @@ static void * round3_hasher(void * arg)
           loop_set_processed++;
           stats_sets_processed[ROUND3]++;
           entry = pb_get_first_entry(size_node->path_list);
-          struct hash_list * hl_full = get_hash_list(HASH_LIST_FULL);
+          reset_hash_list(hl_full);
 
           do {
             path = pb_get_filename(entry);
