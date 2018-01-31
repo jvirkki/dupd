@@ -95,6 +95,7 @@ struct round3_info {
 struct r12hasher_arg {
   sqlite3 * dbh;
   int n;
+  int hasher_threads;
 };
 
 
@@ -439,7 +440,8 @@ static void * round12_hasher(void * arg)
       free_myself = 0;
       saw_ghost = 0;
 
-      if (thread_count == 1) {
+      //if (thread_count == 1) {
+      if (args->hasher_threads == 1) {
         d_mutex_lock(&size_node->lock, "R12-hasher-1 top");
       } else {
         if (pthread_mutex_trylock(&size_node->lock)) {
@@ -1851,6 +1853,7 @@ void process_size_list(sqlite3 * dbh)
     struct r12hasher_arg args;
     args.dbh = dbh;
     args.n = n + 1;
+    args.hasher_threads = hashers;
     d_create(&hasher_thread[n], round12_hasher, &args);
     usleep(5000);
   }
