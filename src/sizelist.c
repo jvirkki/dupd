@@ -353,7 +353,7 @@ static int build_hash_list_round(sqlite3 * dbh,
   }
 
   // If no potential dups after this round, we're done!
-  if (HASH_LIST_NO_DUPS(hl)) {
+  if (!hash_list_has_dups(hl)) {
     LOG(L_TRACE, "No potential dups left, done!\n");
     size_node->state = SLS_DONE;
     completed = 1;
@@ -848,7 +848,7 @@ static void * round3_hasher(void * arg)
           }
 
           // If no potential dups after this round, we're done!
-          if (HASH_LIST_NO_DUPS(hl_full)) {
+          if (!hash_list_has_dups(hl_full)) {
 
             LOG_TRACE {
               LOG(L_TRACE, "No potential dups left, done!\n");
@@ -1950,7 +1950,7 @@ void analyze_process_size_list(sqlite3 * dbh)
     while(1) {
 
       // If no potential dups after this round, we're done!
-      if (HASH_LIST_NO_DUPS(hl_one)) {
+      if (!hash_list_has_dups(hl_one)) {
         LOG(L_TRACE, "No potential dups left, done!\n");
         stats_sets_dup_not[ROUND1]++;
         goto ANALYZER_CONTINUE;

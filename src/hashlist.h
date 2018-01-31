@@ -25,28 +25,13 @@
 #include <sys/types.h>
 
 #include "hash.h"
+#include "paths.h"
 
 #define HASH_LIST_ONE 1
 #define HASH_LIST_PARTIAL 2
 #define HASH_LIST_FULL 3
 
-
-/** ***************************************************************************
- * A hash list node. See new_hash_list_node().
- *
- */
-struct hash_list {
-  int has_dups;                 // true if this hash list has duplicates
-  int hash_valid;               // true if hash buffer is set to valid value
-  char hash[HASH_MAX_BUFSIZE];  // the hash string shared by all these paths
-  struct path_list_entry ** entries; // pointers to all paths with this hash
-  int capacity;                 // 'paths' block current capacity
-  int next_index;               // when adding a path, index of next one
-  struct hash_list * next;      // next in list
-};
-
-#define HASH_LIST_HAS_DUPS(hl) (hl->has_dups)
-#define HASH_LIST_NO_DUPS(hl) (!(hl->has_dups))
+struct hash_list;
 
 
 /** ***************************************************************************
@@ -256,6 +241,18 @@ void print_hash_list(struct hash_list * src);
  *
  */
 int skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db);
+
+
+/** ***************************************************************************
+ * Return true if this hash list has duplicates.
+ *
+ * Parameters:
+ *     hl - Hash list.
+ *
+ * Return: 1 if hl has duplicates, 0 otherwise.
+ *
+ */
+int hash_list_has_dups(struct hash_list * hl);
 
 
 #endif

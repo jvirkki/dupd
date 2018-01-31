@@ -46,6 +46,21 @@ static pthread_mutex_t publish_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /** ***************************************************************************
+ * A hash list node. See new_hash_list_node().
+ *
+ */
+struct hash_list {
+  int has_dups;                 // true if this hash list has duplicates
+  int hash_valid;               // true if hash buffer is set to valid value
+  char hash[HASH_MAX_BUFSIZE];  // the hash string shared by all these paths
+  struct path_list_entry ** entries; // pointers to all paths with this hash
+  int capacity;                 // 'paths' block current capacity
+  int next_index;               // when adding a path, index of next one
+  struct hash_list * next;      // next in list
+};
+
+
+/** ***************************************************************************
  * The three supported hash lists. Must be initialized with
  * initialize_hash_lists(). see header file for constants.
  *
@@ -465,4 +480,14 @@ int skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db)
     p = p->next;
   }
   return skimmed;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+inline int hash_list_has_dups(struct hash_list * hl)
+{
+  return hl->has_dups;
 }
