@@ -2,14 +2,6 @@
 
 source common
 
+# obsolete
 DESC="scan(analyze)"
-$DUPD_CMD scan --path `pwd`/files -v -v -v -v -v --x-analyze >> /dev/null
-checkrv $?
-
-DESC="ls"
-$DUPD_CMD ls --cut `pwd`/files/ --path `pwd`/files/ > nreport
-checkrv $?
-
-check_nreport output.08
-
 tdone
