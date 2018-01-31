@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -76,9 +76,6 @@ int hashlist_path_realloc = 0;
 int hash_list_len_inc = 0;
 int scan_list_usage_max = 0;
 int scan_list_resizes = 0;
-int stats_analyzer_one_block = 0;
-int stats_analyzer_all_blocks = 0;
-int stats_analyzer_buckets[20];
 
 
 /** ***************************************************************************
@@ -173,27 +170,6 @@ void report_stats()
            (int)((100 * stats_comparison_bytes_read) / stats_total_bytes));
 
     printf("\n");
-
-    if (x_analyze) {
-      printf("\n");
-      printf("Sets decided in 1 block: %d (%d%%)\n",
-             stats_analyzer_one_block,
-             (int)((100 * stats_analyzer_one_block) / stats_size_list_count));
-      printf("Sets all blocks (>1) read from disk : %d (%d%%)\n",
-             stats_analyzer_all_blocks,
-             (int)((100 * stats_analyzer_all_blocks) / stats_size_list_count));
-      int partial = stats_size_list_count -
-        stats_analyzer_one_block - stats_analyzer_all_blocks;
-      printf("Sets partially read: %d (%d%%)\n", partial,
-             (int)((100 * partial) / stats_size_list_count));
-
-      for (int i = 0; i < 20; i++) {
-        printf("   %2d%% - %2d%%: %d\n",
-               i * 5, (i + 1) * 5 - 1, stats_analyzer_buckets[i]);
-      }
-      printf("\n");
-    }
-
   }
 
   LOG_BASE {
@@ -285,8 +261,6 @@ void save_stats()
   fprintf(fp, "hash_list_len_inc %d\n", hash_list_len_inc);
   fprintf(fp, "scan_list_usage_max %d\n", scan_list_usage_max);
   fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);
-  fprintf(fp, "stats_analyzer_one_block %d\n", stats_analyzer_one_block);
-  fprintf(fp, "stats_analyzer_all_blocks %d\n", stats_analyzer_all_blocks);
   fprintf(fp, "\n");
   fclose(fp);
 }

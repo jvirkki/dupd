@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -444,12 +444,7 @@ void scan()
   // Processing phase - walk through size list whittling down the potentials
 
   read_phase_started = get_current_time_millis();
-
-  if (x_analyze) {
-    analyze_process_size_list(dbh);
-  } else {
-    process_size_list(dbh);
-  }
+  process_size_list(dbh);
 
   stats_time_process = get_current_time_millis() - read_phase_started;;
 

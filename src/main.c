@@ -79,7 +79,6 @@ int scan_hidden = 0;
 int path_separator = '\x1C';
 char * path_sep_string = NULL;
 int x_small_buffers = 0;
-int x_analyze = 0;
 int only_testing = 0;
 int hdd_mode = 0;
 int threaded_sizetree = 1;
@@ -384,15 +383,6 @@ static int process_args(int argc, char * argv[])
   } else {
     printf("error: unknown report format %s\n", report_format_name);
     return 2;
-  }
-
-  if (options[OPT_x_analyze]) {
-    opt_compare_two = 0;
-    opt_compare_three = 0;
-    threaded_sizetree = 0;
-    save_uniques = 0;
-    hdd_mode = 0;
-    x_analyze = 1;
   }
 
   if (hardlink_is_unique) {
