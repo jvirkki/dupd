@@ -405,6 +405,7 @@ static void * round12_hasher(void * arg)
   int out_round_1, out_round_2, out_round_3, out_done;
   int total_round2_seen = 0;
   int self_done = 0;
+  int skipped_some = 0;
 
   snprintf(self, 80,  "      [R12-hasher-%d] ", thread_count);
   pthread_setspecific(thread_name, self);
@@ -418,6 +419,7 @@ static void * round12_hasher(void * arg)
     size_node = size_list_head;
     previous_size_node = NULL;
     set = 0;
+    skipped_some = 0;
     in_round_1 = 0;
     in_round_2 = 0;
     in_round_3 = 0;
@@ -450,6 +452,7 @@ static void * round12_hasher(void * arg)
           previous_size_node = size_node;
           size_node = size_node->next;
           set++;
+          skipped_some++;
           continue;
         }
       }
@@ -601,9 +604,9 @@ static void * round12_hasher(void * arg)
     } while (size_node != NULL);
 
     LOG(L_THREADS, "Finished size list loop #%d: "
-        "R1:%d->%d R2:%d->%d R3:%d->%d DONE:%d->%d (ghosted=%d)\n",
+        "R1:%d->%d R2:%d->%d R3:%d->%d DONE:%d->%d (ghosted=%d, skip=%d)\n",
         loops, in_round_1, out_round_1, in_round_2, out_round_2,
-        in_round_3, out_round_3, in_done, out_done, saw_ghost);
+        in_round_3, out_round_3, in_done, out_done, saw_ghost, skipped_some);
 
     // If we saw sets in round2 states, signal the reader thread in case
     // it is waiting for more work.
@@ -613,7 +616,7 @@ static void * round12_hasher(void * arg)
       d_mutex_unlock(&round12_lock);
     }
 
-  } while (out_round_1 > 0 || out_round_2 > 0 || saw_ghost);
+  } while (out_round_1 > 0 || out_round_2 > 0 || saw_ghost || skipped_some);
 
   LOG(L_THREADS, "DONE (%d loops) (sets done %d)\n", loops, self_done);
 
