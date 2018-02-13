@@ -22,6 +22,7 @@
 
 #include <pthread.h>
 #include <sqlite3.h>
+#include <sys/types.h>
 
 struct size_list {
   off_t size;

@@ -17,18 +17,15 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <inttypes.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+#ifndef _DUPD_TEST_HASHLIST_H
+#define _DUPD_TEST_HASHLIST_H
 
-#include "testing.h"
-#include "test_hashlist.h"
 
-void testing()
-{
-  test_hash_table();
-}
+/** ***************************************************************************
+ * Test hash table.
+ *
+ */
+void test_hash_table();
+
+
+#endif

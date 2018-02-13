@@ -31,33 +31,18 @@
 #include "dirtree.h"
 #include "hash.h"
 #include "hashlist.h"
+#include "hashlist_priv.h"
 #include "main.h"
 #include "paths.h"
 #include "stats.h"
 #include "utils.h"
 
 #define DEFAULT_PATH_CAPACITY 4
-#define DEFAULT_PATH_BUFFER 10
 #define DEFAULT_HASHLIST_ENTRIES 6
 
 static char * path_buffer = NULL;
 static int path_buffer_size = 0;
 static pthread_mutex_t publish_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
-/** ***************************************************************************
- * A hash list node. See new_hash_list_node().
- *
- */
-struct hash_list {
-  int has_dups;                 // true if this hash list has duplicates
-  int hash_valid;               // true if hash buffer is set to valid value
-  char hash[HASH_MAX_BUFSIZE];  // the hash string shared by all these paths
-  struct path_list_entry ** entries; // pointers to all paths with this hash
-  int capacity;                 // 'paths' block current capacity
-  int next_index;               // when adding a path, index of next one
-  struct hash_list * next;      // next in list
-};
 
 
 /** ***************************************************************************
@@ -74,7 +59,7 @@ struct hash_list {
 static struct hash_list * new_hash_list_node()
 {
   struct hash_list * hl = (struct hash_list *)malloc(sizeof(struct hash_list));
-  hl->has_dups = 0;
+
   hl->hash_valid = 0;
   hl->hash[0] = 0;
 
@@ -89,22 +74,47 @@ static struct hash_list * new_hash_list_node()
 
 
 /** ***************************************************************************
+ * Reset a hash list entry.
+ *
+ */
+static void reset_hash_list_entry(struct hash_list * hl)
+{
+  if (hl == NULL) {
+    return;
+  }
+
+  hl->hash_valid = 0;
+  hl->hash[0] = 0;
+  hl->next_index = 0;
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
  *
  */
-void add_to_hash_list(struct hash_list * hl,
-                      struct path_list_entry * file, char * hash)
+void add_to_hash_table(struct hash_table * hl,
+                       struct path_list_entry * file, char * hash)
 {
-  struct hash_list * p = hl;
-  struct hash_list * tail = hl;
+  struct hash_list * p = NULL;
+  struct hash_list * tail = NULL;
   int hl_len = 0;
+  uint8_t index;
 
   LOG_MORE_TRACE {
     char buffer[DUPD_PATH_MAX];
     build_path(file, buffer);
     LOG(L_MORE_TRACE, "Adding path %s to hash list which contains:\n", buffer);
-    print_hash_list(hl);
+    print_hash_table(hl);
   }
+
+  index = hash[hash_bufsize-1];
+  p = hl->table[index];
+  if (p == NULL) {
+    p = new_hash_list_node();
+    hl->table[index] = p;
+  }
+  tail = p;
 
   // Find the node which contains the paths for this hash, if it exists.
 
@@ -138,7 +148,7 @@ void add_to_hash_list(struct hash_list * hl,
 
   // If we don't have a unused node available, need to add a new node to list
   if (p == NULL) {
-    struct hash_list * new_node = init_hash_list();
+    struct hash_list * new_node = new_hash_list_node();
     tail->next = new_node;
     p = new_node;
     hash_list_len_inc++;
@@ -156,7 +166,7 @@ void add_to_hash_list(struct hash_list * hl,
   // run) mark the next one invalid because it likely contains stale data.
   p = p->next;
   if (p != NULL) {
-    reset_hash_list(p);
+    reset_hash_list_entry(p);
   }
 
   return;
@@ -167,17 +177,23 @@ void add_to_hash_list(struct hash_list * hl,
  * Public function, see header file.
  *
  */
-struct hash_list * init_hash_list()
+struct hash_table * init_hash_table()
 {
-  struct hash_list * head = new_hash_list_node();
-  struct hash_list * p = head;
-  int entries = x_small_buffers ? 1 : DEFAULT_HASHLIST_ENTRIES;
-  for (int n = 1; n < entries; n++) {
-    struct hash_list * next_node = new_hash_list_node();
-    p->next = next_node;
-    p = next_node;
+  struct hash_table * hl = NULL;
+
+  hl = (struct hash_table *)malloc(sizeof(struct hash_table));
+  hl->has_dups = 0;
+  hl->entries = 256;
+
+  struct hash_list ** hll = malloc(256 * sizeof(struct hash_list *));
+
+  for (int n = 0; n <= 255; n++) {
+    hll[n] = NULL;
   }
-  return head;
+
+  hl->table = hll;
+
+  return hl;
 }
 
 
@@ -185,32 +201,16 @@ struct hash_list * init_hash_list()
  * Public function, see header file.
  *
  */
-void reset_hash_list(struct hash_list * hl)
+void reset_hash_table(struct hash_table * hl)
 {
   if (hl == NULL) {
     return;
   }
 
   hl->has_dups = 0;
-  hl->hash_valid = 0;
-  hl->hash[0] = 0;
-  hl->next_index = 0;
-}
 
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-void free_hash_list(struct hash_list * hl)
-{
-  struct hash_list * p = hl;
-  struct hash_list * me = hl;
-  while (p != NULL) {
-    p = p->next;
-    free(me->entries);
-    free(me);
-    me = p;
+  for (int n = 0; n <= 255; n++) {
+    reset_hash_list_entry(hl->table[n]);
   }
 }
 
@@ -219,8 +219,33 @@ void free_hash_list(struct hash_list * hl)
  * Public function, see header file.
  *
  */
-void add_hash_list(struct hash_list * hl, struct path_list_entry * file,
-                   uint64_t blocks, int bsize, off_t skip)
+void free_hash_table(struct hash_table * hl)
+{
+  struct hash_list * me;
+  struct hash_list * p;
+
+  for (int n = 0; n <= 255; n++) {
+    p = hl->table[n];
+    me = p;
+    while (p != NULL) {
+      p = p->next;
+      free(me->entries);
+      free(me);
+      me = p;
+    }
+    hl->table[n] = NULL;
+  }
+  free(hl->table);
+  free(hl);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void add_hash_table(struct hash_table * hl, struct path_list_entry * file,
+                    uint64_t blocks, int bsize, off_t skip)
 {
   assert(hl != NULL);                                        // LCOV_EXCL_LINE
   assert(file != NULL);                                      // LCOV_EXCL_LINE
@@ -236,7 +261,7 @@ void add_hash_list(struct hash_list * hl, struct path_list_entry * file,
     return;
   }
 
-  add_to_hash_list(hl, file, hash_out);
+  add_to_hash_table(hl, file, hash_out);
 }
 
 
@@ -244,16 +269,16 @@ void add_hash_list(struct hash_list * hl, struct path_list_entry * file,
  * Public function, see header file.
  *
  */
-void add_hash_list_from_mem(struct hash_list * hl,
-                            struct path_list_entry * file,
-                            const char * buffer, off_t bufsize)
+void add_hash_table_from_mem(struct hash_table * hl,
+                             struct path_list_entry * file,
+                             const char * buffer, off_t bufsize)
 {
   assert(hl != NULL);                                        // LCOV_EXCL_LINE
   assert(file != NULL);                                      // LCOV_EXCL_LINE
 
   char hash_out[HASH_MAX_BUFSIZE];
   hash_fn_buf(buffer, bufsize, hash_out);
-  add_to_hash_list(hl, file, hash_out);
+  add_to_hash_table(hl, file, hash_out);
 }
 
 
@@ -261,8 +286,9 @@ void add_hash_list_from_mem(struct hash_list * hl,
  * Public function, see header file.
  *
  */
-void publish_duplicate_hash_list(sqlite3 * dbh,
-                                 struct hash_list * hl, off_t size, int round)
+static void publish_duplicate_hash_list(sqlite3 * dbh,
+                                        struct hash_list * hl,
+                                        off_t size, int round)
 {
   struct hash_list * p = hl;
   struct path_list_entry * entry;
@@ -324,16 +350,34 @@ void publish_duplicate_hash_list(sqlite3 * dbh,
  * Public function, see header file.
  *
  */
-void print_hash_list(struct hash_list * src)
+void publish_duplicate_hash_table(sqlite3 * dbh,
+                                  struct hash_table * hl,
+                                  off_t size, int round)
+{
+  for (int n = 0; n <= 255; n++) {
+    if (hl->table[n] != NULL) {
+      publish_duplicate_hash_list(dbh, hl->table[n], size, round);
+    }
+  }
+}
+
+
+/** ***************************************************************************
+ * Print a hash list for diagnostics.
+ *
+ */
+static void print_hash_list_entry(struct hash_list * src)
 {
   char file[DUPD_PATH_MAX];
   struct path_list_entry * entry;
   struct hash_list * p = src;
 
   while (p != NULL && p->hash_valid) {
-    LOG(L_TRACE, "hash_valid: %d, has_dups: %d, next_index: %d   ",
-        p->hash_valid, p->has_dups, p->next_index);
-    memdump("hash", p->hash, hash_bufsize);
+    LOG(L_TRACE, "hash_valid: %d, next_index: %d   ",
+        p->hash_valid, p->next_index);
+    LOG_TRACE {
+      memdump("hash", p->hash, hash_bufsize);
+    }
     for (int j=0; j < p->next_index; j++) {
       entry = *(p->entries + j);
       build_path(entry, file);
@@ -348,30 +392,57 @@ void print_hash_list(struct hash_list * src)
  * Public function, see header file.
  *
  */
-int skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db)
+void print_hash_table(struct hash_table * src)
+{
+  LOG(L_TRACE, "=====hash_table at %p, has_dups: %d\n",
+      src, src->has_dups);
+
+  for (int n = 0; n < 256; n++) {
+    LOG(L_TRACE, "  ---[ %d ]\n", n);
+    if (src->table[n] != NULL) {
+      print_hash_list_entry(src->table[n]);
+    }
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int skim_uniques(sqlite3 * dbh, struct hash_table * src, int record_in_db)
 {
   char file[DUPD_PATH_MAX];
   struct path_list_entry * entry;
   int skimmed = 0;
-  struct hash_list * p = src;
+  struct hash_list * p;
 
-  while (p != NULL && p->hash_valid) {
 
-    if (p->next_index == 1) {
+  for (int n = 0; n <= 255; n++) {
 
-      entry = *(p->entries);
+    if (src->table[n] != NULL) {
 
-      if (record_in_db) {
-        build_path(entry, file);
-         unique_to_db(dbh, file, "hashlist");
+      p = src->table[n];
+      while (p != NULL && p->hash_valid) {
+
+        if (p->next_index == 1) {
+
+          entry = *(p->entries);
+
+          if (record_in_db) {
+            build_path(entry, file);
+            unique_to_db(dbh, file, "hashlist");
+          }
+
+          char * filename = pb_get_filename(entry);
+          filename[0] = 0; // TODO
+          skimmed++;
+        }
+        p = p->next;
       }
-
-      char * filename = pb_get_filename(entry);
-      filename[0] = 0; // TODO
-      skimmed++;
     }
-    p = p->next;
   }
+
   return skimmed;
 }
 
@@ -380,7 +451,7 @@ int skim_uniques(sqlite3 * dbh, struct hash_list * src, int record_in_db)
  * Public function, see header file.
  *
  */
-inline int hash_list_has_dups(struct hash_list * hl)
+inline int hash_table_has_dups(struct hash_table * hl)
 {
   return hl->has_dups;
 }
