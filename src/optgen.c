@@ -76,15 +76,15 @@ int option_file[] = { 4 };
 int option_exclude_path[] = { 4, 5, 6, 7 };
 int option_link[] = { 8 };
 int option_hardlink[] = { 8 };
-int option_hash[] = { 15 };
-int option_verbose[] = { 15 };
-int option_verbose_threads[] = { 15 };
-int option_quiet[] = { 15 };
-int option_db[] = { 15 };
-int option_help[] = { 15 };
-int option_no_unique[] = { 15 };
-int option_x_small_buffers[] = { 15 };
-int option_x_testing[] = { 15 };
+int option_hash[] = { 16 };
+int option_verbose[] = { 16 };
+int option_verbose_threads[] = { 16 };
+int option_quiet[] = { 16 };
+int option_db[] = { 16 };
+int option_help[] = { 16 };
+int option_no_unique[] = { 16 };
+int option_x_small_buffers[] = { 16 };
+int option_x_testing[] = { 16 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -158,6 +158,10 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
   }
   if (l == 7 && !strncmp("version", argv[1], 7)) {
     *command = 14;
+    goto OPTS;
+  }
+  if (l == 7 && !strncmp("testing", argv[1], 7)) {
+    *command = 15;
     goto OPTS;
   }
 
@@ -1104,7 +1108,6 @@ void opt_show_help()
 {
   printf("scan      scan starting from the given path\n");
   printf("  -p --path PATH              path where scanning will start\n");
-  printf("     --nodb                   do not generate database file\n");
   printf("     --file-count NUM         max estimated number of files to scan\n");
   printf("     --stats-file FILE        save stats to this file\n");
   printf("  -m --minsize SIZE           min size of files to scan\n");

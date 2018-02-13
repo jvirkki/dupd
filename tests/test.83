@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="internal unit tests"
+$DUPD_CMD testing
+checkrv $?
+
+tdone

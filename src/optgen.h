@@ -49,7 +49,7 @@
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
 
-// nodb (--nodb) : do not generate database file
+// nodb (--nodb) : deprecated
 #define OPT_nodb 1
 
 // file_count (--file-count) NUM : max estimated number of files to scan
@@ -103,7 +103,7 @@
 // cmp_three (--cmp-three) : force direct comparison of three files
 #define OPT_cmp_three 18
 
-// uniques (--uniques) : save info about unique files
+// uniques (--uniques) : deprecated
 #define OPT_uniques 19
 
 // avg_size (--avg-size) : deprecated
@@ -199,8 +199,11 @@
 // version: show version and exit
 #define COMMAND_version 14
 
+// testing: testing only, ignore
+#define COMMAND_testing 15
+
 // GLOBAL: 
-#define COMMAND_GLOBAL 15
+#define COMMAND_GLOBAL 16
 
 /**
  * Function to parse the arguments.

@@ -39,6 +39,7 @@
 #include "sizelist.h"
 #include "sizetree.h"
 #include "stats.h"
+#include "testing.h"
 #include "utils.h"
 
 #define MAX_START_PATH 10
@@ -466,6 +467,7 @@ int main(int argc, char * argv[])
     case COMMAND_usage:     show_usage();                break;
     case COMMAND_man:       show_usage();                break;
     case COMMAND_help:      show_help();                 break;
+    case COMMAND_testing:   testing();                   break;
     case OPTGEN_NO_COMMAND: show_help();                 rv = 1; break;
 
     default:                                                 // LCOV_EXCL_START
