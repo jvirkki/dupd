@@ -20,4 +20,8 @@ DESC="validate with SHA512"
 $DUPD_CMD validate --hash sha512
 checkrv $?
 
+DESC="validate with xxHash"
+$DUPD_CMD validate --hash xxhash
+checkrv $?
+
 tdone

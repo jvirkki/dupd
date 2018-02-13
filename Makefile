@@ -1,5 +1,5 @@
 #
-#  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -129,6 +129,7 @@ gcov:
 
 lcov: gcov
 	lcov --capture --directory build --output-file lcov.info
+	lcov --remove lcov.info xxhash.c --output-file lcov.info
 	genhtml lcov.info --no-branch-coverage \
 		--output-directory $(LCOV_OUTPUT_DIR)
 	rm -f lcov.info
