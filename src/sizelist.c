@@ -337,7 +337,6 @@ static int build_hash_list_round(sqlite3 * dbh,
       node->buffer = NULL;
     }
 
-    //node = pl_entry_get_next(node);
     node = node->next;
 
   } while (node != NULL);
@@ -411,7 +410,7 @@ static void * round12_hasher(void * arg)
   pthread_setspecific(thread_name, self);
   LOG(L_THREADS, "Thread created\n");
 
-  struct hash_table * local_hash_table = init_hash_table();
+  struct hash_table * ht = init_hash_table();
   loops = 0;
 
   do {
@@ -504,10 +503,9 @@ static void * round12_hasher(void * arg)
         break;
 
       case SLS_READY_1:
-        reset_hash_table(local_hash_table);
+        reset_hash_table(ht);
         stats_sets_processed[ROUND1]++;
-        set_completed = build_hash_list_round(dbh, size_node,
-                                              local_hash_table, ROUND1);
+        set_completed = build_hash_list_round(dbh, size_node, ht, ROUND1);
         round = '1';
 
         if (!size_node->fully_read) {
@@ -543,10 +541,9 @@ static void * round12_hasher(void * arg)
 
       case SLS_READY_2:
         total_round2_seen++;
-        reset_hash_table(local_hash_table);
+        reset_hash_table(ht);
         stats_sets_processed[ROUND2]++;
-        set_completed = build_hash_list_round(dbh, size_node,
-                                              local_hash_table, ROUND2);
+        set_completed = build_hash_list_round(dbh, size_node, ht, ROUND2);
         round = '2';
 
         if (!set_completed) {
@@ -633,7 +630,7 @@ static void * round12_hasher(void * arg)
     stats_hasher_loops[ROUND2][thread_count-1] = 0;
   }
 
-  free_hash_table(local_hash_table);
+  free_hash_table(ht);
   return NULL;
 }
 
@@ -672,7 +669,7 @@ static void * round3_hasher(void * arg)
   pthread_setspecific(thread_name, self);
   LOG(L_THREADS, "thread created\n");
 
-  struct hash_table * hl_full = init_hash_table();
+  struct hash_table * ht = init_hash_table();
 
   do {
     size_node = size_list_head;
@@ -828,7 +825,7 @@ static void * round3_hasher(void * arg)
           loop_set_processed++;
           stats_sets_processed[ROUND3]++;
           entry = pb_get_first_entry(size_node->path_list);
-          reset_hash_table(hl_full);
+          reset_hash_table(ht);
 
           do {
             path = pb_get_filename(entry);
@@ -838,7 +835,7 @@ static void * round3_hasher(void * arg)
             // If so, skip.
             if (path[0] != 0) {
               status = (struct round3_info *)entry->buffer;
-              add_to_hash_table(hl_full, entry, status->hash_result);
+              add_to_hash_table(ht, entry, status->hash_result);
               free_round3_info(status);
               entry->buffer = NULL;
             }
@@ -846,16 +843,16 @@ static void * round3_hasher(void * arg)
           } while (entry != NULL);
 
           LOG_TRACE {
-            LOG(L_TRACE, "Contents of hash list hl_full:\n");
-            print_hash_table(hl_full);
+            LOG(L_TRACE, "Contents of hash list ht:\n");
+            print_hash_table(ht);
           }
 
           if (save_uniques) {
-            skim_uniques(dbh, hl_full, save_uniques);
+            skim_uniques(dbh, ht, save_uniques);
           }
 
           // If no potential dups after this round, we're done!
-          if (!hash_table_has_dups(hl_full)) {
+          if (!hash_table_has_dups(ht)) {
 
             LOG_TRACE {
               LOG(L_TRACE, "No potential dups left, done!\n");
@@ -880,7 +877,7 @@ static void * round3_hasher(void * arg)
             // Still something left, go publish them to db
             LOG(L_TRACE, "Finally some dups confirmed, here they are:\n");
             stats_sets_dup_done[ROUND3]++;
-            publish_duplicate_hash_table(dbh,hl_full, size_node->size, ROUND3);
+            publish_duplicate_hash_table(dbh, ht, size_node->size, ROUND3);
             size_node->state = SLS_DONE;
           }
 
@@ -946,6 +943,8 @@ static void * round3_hasher(void * arg)
 
   LOG(L_THREADS, "DONE (%d loops)\n", loops);
   stats_hasher_loops[ROUND3][0] = loops;
+
+  free_hash_table(ht);
 
   return NULL;
 }
