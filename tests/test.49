@@ -22,7 +22,7 @@ check_nreport output.40
 # refresh shouldn't change anything
 
 DESC="nothing changed, try refresh"
-$DUPD_CMD refresh
+$DUPD_CMD refresh > /dev/null
 checkrv $?
 
 DESC="generate report"

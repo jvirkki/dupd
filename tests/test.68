@@ -13,15 +13,19 @@ checkrv $?
 check_nreport output.01
 
 DESC="validate with SHA1"
-$DUPD_CMD validate -F sha1
+$DUPD_CMD validate -F sha1 > /dev/null
 checkrv $?
 
 DESC="validate with SHA512"
-$DUPD_CMD validate --hash sha512
+$DUPD_CMD validate --hash sha512 > /dev/null
 checkrv $?
 
 DESC="validate with xxHash"
-$DUPD_CMD validate --hash xxhash
+$DUPD_CMD validate --hash xxhash > /dev/null
+checkrv $?
+
+DESC="validate with MD5"
+$DUPD_CMD validate --hash md5 > /dev/null
 checkrv $?
 
 tdone

@@ -7,7 +7,7 @@ $DUPD_CMD scan --path `pwd`/files -q
 checkrv $?
 
 DESC="validate"
-$DUPD_CMD validate
+$DUPD_CMD validate > /dev/null
 checkrv $?
 
 tdone
