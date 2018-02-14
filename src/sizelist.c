@@ -1026,6 +1026,7 @@ static void process_round_3(sqlite3 * dbh)
   int read_three;
   int read_partial;
   int read_final;
+  int remaining;
 
   struct path_list_entry * node;
   char * path = NULL;
@@ -1035,6 +1036,7 @@ static void process_round_3(sqlite3 * dbh)
   // Purge sets which are already SLS_DONE by skipping over them so
   // we don't need to look at them again.
   skipped = 0;
+  remaining = 0;
   size_node = size_list_head;
   while (size_node != NULL) {
     next_node = size_node->next;
@@ -1045,11 +1047,17 @@ static void process_round_3(sqlite3 * dbh)
       skipped++;
       next_node = next_node_next;
     }
+    if (size_node->state != SLS_DONE) { remaining++; }
     size_node->next = next_node;
     size_node = size_node->next;
   }
 
   LOG(L_INFO, "Purged %d size list entries in DONE state\n", skipped);
+
+  LOG(L_INFO, "Entering round3, size list entries remaining: %d\n", remaining);
+  if (remaining == 0) {
+    goto R3_DONE;
+  }
 
   // Start my companion hasher thread
   if (pthread_create(&hasher_thread, NULL, round3_hasher, dbh)) {
@@ -1267,7 +1275,6 @@ static void process_round_3(sqlite3 * dbh)
 
   } while (!done);
 
-
   if (!r3_hasher_done) {
     LOG(L_THREADS, "Waiting for hasher thread...\n");
     d_mutex_lock(&r3_loop_lock, "r3-reader all done");
@@ -1277,6 +1284,7 @@ static void process_round_3(sqlite3 * dbh)
 
   d_join(hasher_thread, NULL);
 
+ R3_DONE:
   d_mutex_lock(&status_lock, "r3-reader end");
   stats_round_duration[ROUND3] =
     get_current_time_millis() - stats_round_start[ROUND3];
