@@ -5,8 +5,23 @@ dupd requires SQLite (-lsqlite3) and OpenSSL (-lcrypto).
 
 Note that dupd no longer requires libbloom.
 
+Branches
+--------
+The master branch contains the latest work in progress and it carries
+a version with a "-dev" suffix to highlight this. While in theory
+the master branch is always kept in a working state, this might not
+always be true in practice.
+
+If you're looking to build a stable binary for production use or
+packaging, it is best to build from the most recent release tag
+instead of using the master branch.
+
 Building
 --------
+Some pre-built binaries and/or packages are available so you might
+not have to build from source. For pointers on these, see the project page:
+http://www.virkki.com/dupd/
+
 The Makefile specifically supports Linux, SunOS, Darwin (OS X) and OpenBSD.
 If you build on other platforms, let me know.
 
