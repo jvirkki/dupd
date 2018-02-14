@@ -133,6 +133,7 @@ lcov: gcov
 	genhtml lcov.info --no-branch-coverage \
 		--output-directory $(LCOV_OUTPUT_DIR)
 	rm -f lcov.info
+	$(MAKE) clean
 
 # dupd uses optgen to generate its option parsing code based on
 # the config file src/options.conf
