@@ -349,7 +349,7 @@ static int build_hash_list_round(sqlite3 * dbh,
   // Remove the uniques seen (also save in db if save_uniques)
   int skimmed = skim_uniques(dbh, hl, save_uniques);
   if (skimmed) {
-    size_node->path_list->list_size--;
+    size_node->path_list->list_size -= skimmed;
   }
 
   // If no potential dups after this round, we're done!
