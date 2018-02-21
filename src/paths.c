@@ -76,6 +76,7 @@ void dump_path_list(const char * line, off_t size,
   printf("  first_elem: %p\n", entry);
 
   uint32_t counted = 1;
+  uint32_t valid = 0;
   char buffer[DUPD_PATH_MAX];
   char * filename;
 
@@ -89,13 +90,18 @@ void dump_path_list(const char * line, off_t size,
       printf("   buffer: %p\n", entry->buffer);
 
       filename = pb_get_filename(entry);
-      bzero(buffer, DUPD_PATH_MAX);
-      memcpy(buffer, filename, entry->filename_size);
-      buffer[entry->filename_size] = 0;
-      printf("   filename (direct read): [%s]\n", buffer);
-      bzero(buffer, DUPD_PATH_MAX);
-      build_path(entry, buffer);
-      printf("   built path: [%s]\n", buffer);
+      if (filename[0] != 0) { // TODO
+        bzero(buffer, DUPD_PATH_MAX);
+        memcpy(buffer, filename, entry->filename_size);
+        buffer[entry->filename_size] = 0;
+        printf("   filename (direct read): [%s]\n", buffer);
+        bzero(buffer, DUPD_PATH_MAX);
+        build_path(entry, buffer);
+        printf("   built path: [%s]\n", buffer);
+        valid++;
+      } else {
+        printf("   filename: REMOVED EARLIER\n");
+      }
     }
     counted++;
     entry = entry->next;
@@ -103,9 +109,10 @@ void dump_path_list(const char * line, off_t size,
 
   counted--;
   printf("counted entries: %d\n", counted);
-  if (counted != head->list_size) {
+  printf("valid entries: %d\n", valid);
+  if (valid != head->list_size) {
                                                              // LCOV_EXCL_START
-    printf("list_len (%d)!=counted entries (%d)\n", head->list_size, counted);
+    printf("list_len (%d)!=valid entries (%d)\n", head->list_size, valid);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
