@@ -360,7 +360,7 @@ static int process_args(int argc, char * argv[])
   path_sep_string[0] = (char)path_separator;
   path_sep_string[1] = 0;
 
-  char * hash_name = opt_string(options[OPT_hash], "md5");
+  char * hash_name = opt_string(options[OPT_hash], "xxhash");
   if (!strcmp("md5", hash_name)) {
     hash_function = HASH_FN_MD5;
   } else if (!strcmp("sha1", hash_name)) {
