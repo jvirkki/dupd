@@ -13,7 +13,7 @@ Performance related options
 
 Before doing a scan the most important performance-related
 consideration is whether the files to be scanned are on an SSD (solid
-state drive) or a HDD (hard disk drive, aka spinning rust).
+state drive) or a HDD (hard disk drive).
 
 If the file content needs to be read from a HDD, the I/O wait times
 (for the heads to move and the disk to spin to the right place) are by

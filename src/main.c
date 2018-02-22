@@ -313,6 +313,7 @@ static int process_args(int argc, char * argv[])
     snprintf(db_path, DUPD_PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
+  if (options[OPT_ssd]) { hdd_mode = 0; }
   if (options[OPT_hdd]) { hdd_mode = 1; }
   if (options[OPT_nodb]) { write_db = 0; }
   if (options[OPT_link]) { rmsh_link = RMSH_LINK_SOFT; }
@@ -410,6 +411,11 @@ static int process_args(int argc, char * argv[])
     } else {
       hash_one_block_size = DEF_SSD_hash_one_block_size;
     }
+  }
+
+  if (options[OPT_ssd] && options[OPT_hdd]) {
+    printf("error: SSD mode and HDD mode are mutually exclusive\n");
+    return 2;
   }
 
   return 0;
