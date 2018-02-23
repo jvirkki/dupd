@@ -23,16 +23,21 @@ are not only faster but also very even.
 
 For this reason `dupd` implements two different reading algorithms for
 the `scan` command. The SSD mode is lighter in CPU and memory usage
-and faster on SSD media. The HDD mode has more overhead and memory
-usage but it is faster (usually far faster) on HDDs.
+and usually faster on SSD media. The HDD mode has more overhead and
+memory usage but it is faster (usually far faster) on HDDs.
 
-**The SSD mode is the default scan mode.**
+**The HDD mode is the default scan mode.**
 
-This means that when scanning files from a HDD, be sure to give the `--hdd`
-option to enable this mode for best performance (but, see below).
+In general, the worst-case performance of the HDD mode is better than
+the worst-case of the SSD mode. This makes the HDD mode a safer default.
+
+For most data sets the HDD mode performs reasonably well even on SSD
+media so you don't necessarily need to override the default. That
+said, if you'd like to try getting every last bit of performance in
+scenarios where the SSD mode can be faster, give it a try:
 
 ```
-% dupd scan --hdd
+% dupd scan --ssd
 ```
 
 ### Minimum Size
@@ -54,8 +59,8 @@ but important difference.
 
 If the files being scanned are in the file cache (in RAM) then access
 patterns are closer to the SSD mode (but faster), even if the
-underlying data lives on a HDD. What this means is that the (default)
-SSD mode may be faster even if your machine has a HDD.
+underlying data lives on a HDD. What this means is that the SSD mode
+may be faster even if your machine has a HDD.
 
 But, are (most of) the files in the cache?
 
@@ -64,25 +69,6 @@ you'll be repeatedly running `dupd scan` as you explore directories
 with the interactive commands. This means the file content is highly
 likely to be in the cache during the second and subsequent `scan`
 operations.
-
-Here is an example from one system I have where the data is on a HDD:
-
-* First scan in SSD mode: 13 minutes
-* First scan in HDD mode: 1 minute
-* Second scan in SSD mode: 2 seconds
-* Second scan in HDD mode: 4 seconds
-
-As you can see, the HDD mode is vastly faster when reading from the
-physical disk, but twice as slow when reading from the populated file
-cache.
-
-As a rule of thumb on a HDD I recommend:
-
-1. Always run the first scan with `dupd scan --hdd`
-2. Work interactively as desired
-3. Run the second scan in SSD mode with `dupd scan`
-   * If this is slower, always use `--hdd` mode for that data set
-   * If it is faster, use SSD mode during subsequent scans in a work session
 
 Notice that dupd now displays the read throughput (in K/s) during the
 scan progress output. A good way to decide the best options to use for

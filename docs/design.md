@@ -37,22 +37,6 @@ The `--nodb` option disables the database generation. In this case
 functionality of `dupd`. But if you wanted to, you could.
 
 
-Assume SSD
-----------
-
-As documented in the [performance page](performance.md), `dupd` assumes files
-are stored on an SSD and optimizes for this scenario.
-
-### To override
-
-The `-D` or `--hdd` option selects the HDD mode which is usually substantially
-faster on a HDD (but see discussion on [performance page](performance.md)).
-
-While I do regularly test the HDD mode, personally nearly all my real
-world usage of `dupd` is with the SSD mode so it is possible there may
-be more bugs in the HDD mode. If so please let me know and file a bug!
-
-
 Hard links are duplicates
 -------------------------
 
