@@ -40,10 +40,7 @@ INSTALL_PREFIX ?= /usr/local
 MAN_BASE ?= $(INSTALL_PREFIX)/man
 
 BUILD=$(TOP)/build
-INC=
-LIB=
 CCC=$(CC) -Wall -Wextra -std=gnu99 $(OPT) $(LIB)
-CFLAGS=
 
 SRCS:=$(wildcard src/*.c)
 OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
