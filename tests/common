@@ -19,6 +19,8 @@
 
 rm -f report nreport
 
+UNAME=`uname`
+
 check_equal () {
     if [ "$1" != "$2" ]; then
         echo "FAIL ${DESC}"
@@ -31,7 +33,11 @@ check_equal () {
 checkrv () {
     if [ "$1" != "0" ]; then
         echo "FAIL ${DESC}"
-        exit 1
+        if [[ "$FAILOK" =~ "$UNAME" ]]; then
+            echo "IGNORING"
+        else
+            exit 1
+        fi
     else
         echo "OK ${DESC}"
     fi
