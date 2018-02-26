@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -79,7 +79,7 @@ static void print_path(char * prefix, char * path)
 
   if (cut_path != NULL) {
     char * cut = strstr(path, cut_path);
-    if (cut != NULL) {
+    if (cut == path) {
       pos = path + strlen(cut_path);
     }
   }
