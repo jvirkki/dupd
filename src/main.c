@@ -389,7 +389,7 @@ static int process_args(int argc, char * argv[])
 
   if (hardlink_is_unique) {
     if (!hdd_mode) {
-      LOG(L_BASE, "Enabling --hdd mode due to --hardlink-is-unique\n");
+      LOG(L_INFO, "Enabling --hdd mode due to --hardlink-is-unique\n");
     }
     hdd_mode = 1;
   }
