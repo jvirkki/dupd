@@ -1512,7 +1512,7 @@ static void * read_list_reader(void * arg)
 
       count = pathlist_head->list_size;
       build_path(pathlist_entry, path);
-      if (path == NULL || path[0] == 0) {
+      if (path[0] == 0) {
         goto PRL_NODE_DONE;
       }
 

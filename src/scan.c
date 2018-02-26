@@ -59,7 +59,7 @@ static long read_phase_started;
 pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t status_cond = PTHREAD_COND_INITIALIZER;
 
-#define SHOW_LINE printf(line); fflush(stdout);
+#define SHOW_LINE printf("%s", line); fflush(stdout);
 
 
 /** ***************************************************************************

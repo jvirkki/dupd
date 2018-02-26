@@ -10,6 +10,7 @@ DESC="file with relative --file"
 $DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ > nreport
 checkrv $?
 
+FAILOK=FreeBSD
 check_nreport output.44
 
 tdone

@@ -40,7 +40,7 @@ INSTALL_PREFIX ?= /usr/local
 MAN_BASE ?= $(INSTALL_PREFIX)/man
 
 BUILD=$(TOP)/build
-CCC=$(CC) -Wall -Wextra -std=gnu99 $(OPT) $(LIB)
+CCC=$(CC) -Wall -Wextra -std=gnu99 $(OPT)
 
 SRCS:=$(wildcard src/*.c)
 OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
@@ -60,6 +60,15 @@ endif
 endif
 
 ifeq ($(BUILD_OS),OpenBSD)
+OBJCP=objcopy
+CFLAGS=-m64
+USAGE=$(BUILD)/usage.o
+USAGE_ARCH=-O elf64-x86-64 -B i386
+endif
+
+ifeq ($(BUILD_OS),FreeBSD)
+INC+=-I/usr/local/include
+LIB+=-L/usr/local/lib
 OBJCP=objcopy
 CFLAGS=-m64
 USAGE=$(BUILD)/usage.o
@@ -88,7 +97,7 @@ endif
 
 
 dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
-	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) \
+	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) $(LIB) \
 	    -lsqlite3 -lcrypto -lpthread -lm -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h

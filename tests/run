@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 #
 #  Copyright 2014-2015 Jyri J. Virkki <jyri@virkki.com>

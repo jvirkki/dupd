@@ -41,6 +41,11 @@
 #define LSTAT lstat
 #endif
 
+#ifdef __FreeBSD__
+#define STRUCT_STAT struct stat
+#define LSTAT lstat
+#endif
+
 #ifdef sun
 #define STRUCT_STAT struct stat64
 #define LSTAT lstat64

@@ -11,6 +11,7 @@ DESC="scan relative path"
 $DUPD_CMD report --cut `pwd`/files2/ | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
+FAILOK=FreeBSD
 check_nreport output.43
 
 tdone
