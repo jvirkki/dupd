@@ -282,7 +282,7 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_x_small_buffers]) { x_small_buffers = 1; }
   if (options[OPT_x_testing]) { only_testing = 1; }
   if (options[OPT_quiet]) { log_level = -99; }
-
+  log_level = opt_int(options[OPT_verbose_level], log_level);
   log_level += opt_count(options[OPT_verbose]);
 
   path_separator = opt_char(options[OPT_pathsep], path_separator);

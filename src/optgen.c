@@ -79,7 +79,7 @@ int option_link[] = { 8 };
 int option_hardlink[] = { 8 };
 int option_hash[] = { 16 };
 int option_verbose[] = { 16 };
-int option_verbose_threads[] = { 16 };
+int option_verbose_level[] = { 16 };
 int option_quiet[] = { 16 };
 int option_db[] = { 16 };
 int option_help[] = { 16 };
@@ -912,28 +912,24 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 17 && !strncmp("--verbose-threads", argv[pos], 17))||
+    if ((l == 15 && !strncmp("--verbose-level", argv[pos], 15))||
         (l == 2 && !strncmp("-V", argv[pos], 2))) {
-      if (options[31] == NULL) {
-        options[31] = numstring[0];
-      } else {
-        options[31] = numstring[atoi(options[31])];
-        if (!strcmp(options[31], "X")) {
-          printf("error: option %s repeated too many times!\n", argv[pos]);
-          exit(1);
-        }
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --verbose-level\n");
+        exit(1);
       }
-      pos++;
-      // strict_options: is verbose_threads allowed?
+      options[31] = argv[pos+1];
+      pos += 2;
+      // strict_options: is verbose_level allowed?
       int ok = 0;
       unsigned int cc;
-      unsigned int len = sizeof(option_verbose_threads) / sizeof(option_verbose_threads)[0];
+      unsigned int len = sizeof(option_verbose_level) / sizeof(option_verbose_level)[0];
       for (cc = 0; cc < len; cc++) {
-        if (option_verbose_threads[cc] == *command) { ok = 1; }
-        if (option_verbose_threads[cc] == COMMAND_GLOBAL) { ok = 1; }
+        if (option_verbose_level[cc] == *command) { ok = 1; }
+        if (option_verbose_level[cc] == COMMAND_GLOBAL) { ok = 1; }
       }
       if (!ok) {
-        printf("error: option 'verbose_threads' not compatible with given command\n");
+        printf("error: option 'verbose_level' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -1193,6 +1189,7 @@ void opt_show_help()
   printf("General options:\n");
   printf("  -F --hash NAME           specify alternate hash function\n");
   printf("  -v --verbose             increase verbosity (may be repeated for more)\n");
+  printf("  -V --verbose-level N     set verbosity level to N\n");
   printf("  -q --quiet               quiet, supress all output except fatal errors\n");
   printf("  -d --db PATH             path to dupd database file\n");
   printf("  -h --help                show brief usage info\n");
