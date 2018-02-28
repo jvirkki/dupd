@@ -70,7 +70,7 @@ ifeq ($(BUILD_OS),FreeBSD)
 INC+=-I/usr/local/include
 LIB+=-L/usr/local/lib
 OBJCP=objcopy
-CFLAGS=-m64
+CFLAGS=-m64 -DDIRENT_HAS_TYPE
 USAGE=$(BUILD)/usage.o
 USAGE_ARCH=-O elf64-x86-64 -B i386
 endif
