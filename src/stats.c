@@ -33,16 +33,16 @@
 
 pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 
-int stats_sets_processed[ROUNDS] = { 0,0,0 };
-int stats_sets_dup_done[ROUNDS] = { 0,0,0 };
-int stats_sets_dup_not[ROUNDS] = { 0,0,0 };
-int stats_sets_full_read[ROUNDS] = { 0,0,0 };
-int stats_sets_part_read[ROUNDS] = { 0,0,0 };
-long stats_round_start[ROUNDS] = { -1,-1,-1 };
-int stats_round_duration[ROUNDS] = { -1,-1,-1 };
-int stats_duplicate_groups[ROUNDS] = { 0,0,0 };
-int stats_reader_loops[ROUNDS] = { 0,0,0 };
-int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS] = { {0,0}, {0,0}, {0,0} };
+int stats_sets_processed[ROUNDS] = { 0,0 };
+int stats_sets_dup_done[ROUNDS] = { 0,0 };
+int stats_sets_dup_not[ROUNDS] = { 0,0 };
+int stats_sets_full_read[ROUNDS] = { 0,0 };
+int stats_sets_part_read[ROUNDS] = { 0,0 };
+long stats_round_start[ROUNDS] = { -1,-1 };
+int stats_round_duration[ROUNDS] = { -1,-1 };
+int stats_duplicate_groups[ROUNDS] = { 0,0 };
+int stats_reader_loops[ROUNDS] = { 0,0 };
+int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS] = { {0,0}, {0,0} };
 int stats_hasher_queue_len[MAX_HASHER_THREADS] = { 0,0 };
 
 uint64_t stats_total_bytes = 0;
@@ -144,22 +144,6 @@ void report_stats()
     printf("  Groups of dups confirmed in second round: %d\n",
            stats_duplicate_groups[ROUND2]);
 
-    printf("Round three: hash list processed for %d size sets (%dms)\n",
-           stats_sets_processed[ROUND3], stats_round_duration[ROUND3]);
-    printf("  Block size %d\n", hash_block_size);
-    printf("  Reader loops: %d\n", stats_reader_loops[ROUND3]);
-    printf("  Hasher loops:");
-    for (int i = 0; i < MAX_HASHER_THREADS; i++) {
-      printf("   %d", stats_hasher_loops[ROUND3][i]);
-    }
-    printf("\n");
-    printf("  Sets with dups ruled out in full round: %d\n",
-           stats_sets_dup_not[ROUND3]);
-    printf("  Sets with dups confirmed in full round: %d\n",
-           stats_sets_dup_done[ROUND3]);
-    printf("  Groups of dups confirmed in full round: %d\n",
-           stats_duplicate_groups[ROUND3]);
-
     printf("\n");
     printf("Total bytes of all files: %" PRIu64 "\n", stats_total_bytes);
     printf("Total bytes read from disk: %" PRIu64 " (%d%%)\n",
@@ -179,7 +163,7 @@ void report_stats()
     char timebuf[20];
     time_string(timebuf, 20, get_current_time_millis() - stats_main_start);
     int total_groups = stats_duplicate_groups[ROUND1] +
-      stats_duplicate_groups[ROUND2] + stats_duplicate_groups[ROUND3];
+      stats_duplicate_groups[ROUND2];
     printf("Total duplicates: %d files in %d groups in %s\n",
            stats_duplicate_files, total_groups, timebuf);
     if (save_uniques) {
@@ -194,7 +178,6 @@ void report_stats()
   int totals_from_rounds =
     stats_sets_dup_not[ROUND1] + stats_sets_dup_done[ROUND1] +
     stats_sets_dup_not[ROUND2] + stats_sets_dup_done[ROUND2] +
-    stats_sets_dup_not[ROUND3] + stats_sets_dup_done[ROUND3] +
     stats_two_file_compare + stats_three_file_compare;
 
   if (totals_from_rounds != stats_size_list_count) {         // LCOV_EXCL_START
@@ -220,24 +203,18 @@ void save_stats()
           stats_comparison_bytes_read);
   fprintf(fp, "stats_duplicate_files %d\n", stats_duplicate_files);
   int total_groups = stats_duplicate_groups[ROUND1] +
-    stats_duplicate_groups[ROUND2] + stats_duplicate_groups[ROUND3];
+    stats_duplicate_groups[ROUND2];
   fprintf(fp, "stats_duplicate_groups %d\n", total_groups);
   fprintf(fp, "stats_duplicate_groups_1 %d\n", stats_duplicate_groups[ROUND1]);
   fprintf(fp, "stats_duplicate_groups_2 %d\n", stats_duplicate_groups[ROUND2]);
-  fprintf(fp, "stats_duplicate_groups_3 %d\n", stats_duplicate_groups[ROUND3]);
   fprintf(fp, "stats_full_hash_first %d\n", stats_full_hash_first);
   fprintf(fp, "stats_full_hash_second %d\n", stats_full_hash_second);
   fprintf(fp, "stats_partial_hash_second %d\n", stats_partial_hash_second);
   fprintf(fp, "stats_one_block_hash_first %d\n", stats_one_block_hash_first);
-  fprintf(fp, "stats_set_dups_done_full_round %d\n",
-          stats_sets_dup_done[ROUND3]);
   fprintf(fp, "stats_set_dups_done_round_one %d\n",
           stats_sets_dup_done[ROUND1]);
   fprintf(fp, "stats_set_dups_done_round_two %d\n",
           stats_sets_dup_done[ROUND2]);
-  fprintf(fp, "stats_set_full_round %d\n", stats_sets_processed[ROUND3]);
-  fprintf(fp, "stats_set_no_dups_full_round %d\n",
-          stats_sets_dup_not[ROUND3]);
   fprintf(fp, "stats_set_no_dups_round_one %d\n", stats_sets_dup_not[ROUND1]);
   fprintf(fp, "stats_set_no_dups_round_two %d\n", stats_sets_dup_not[ROUND2]);
   fprintf(fp, "stats_set_round_one %d\n", stats_sets_processed[ROUND1]);
@@ -260,7 +237,7 @@ void save_stats()
   fprintf(fp, "intermediate_blocks %d\n", intermediate_blocks);
   fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
   fprintf(fp, "hashlist_path_realloc %d\n", hashlist_path_realloc);
-  fprintf(fp, "stats_path_list_entries %" PRIu32 "\n", stats_path_list_entries);
+  fprintf(fp, "stats_path_list_entries %" PRIu32 "\n",stats_path_list_entries);
   fprintf(fp, "hash_list_len_inc %d\n", hash_list_len_inc);
   fprintf(fp, "scan_list_usage_max %d\n", scan_list_usage_max);
   fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);

@@ -23,10 +23,9 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#define ROUNDS 3
+#define ROUNDS 2
 #define ROUND1 0
 #define ROUND2 1
-#define ROUND3 2
 #define MAX_HASHER_THREADS 2
 
 pthread_mutex_t stats_lock;

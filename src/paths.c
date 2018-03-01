@@ -381,8 +381,8 @@ const char * pls_state(int state)
 {
   switch(state) {
   case PLS_NEW:                      return "PLS_NEW";
-  case PLS_R12_BUFFERS_FULL:         return "PLS_R12_BUFFERS_FULL";
-  case PLS_R3_NEEDED:                return "PLS_R3_NEEDED";
+  case PLS_R1_BUFFERS_FULL:          return "PLS_R1_BUFFERS_FULL";
+  case PLS_R2_NEEDED:                return "PLS_R2_NEEDED";
   case PLS_DONE:                     return "PLS_DONE";
   default:
     printf("\nerror: unknown pls_state %d\n", state);
@@ -399,7 +399,7 @@ const char * file_state(int state)
 {
   switch(state) {
   case FS_NEW:                        return "FS_NEW";
-  case FS_R12_BUFFER_FILLED:          return "FS_R12_BUFFER_FILLED";
+  case FS_R1_BUFFER_FILLED:           return "FS_R1_BUFFER_FILLED";
   case FS_INVALID:                    return "FS_INVALID";
   default:
     printf("\nerror: unknown file_state %d\n", state);

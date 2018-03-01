@@ -56,13 +56,13 @@ struct path_list_head {
 
 // File State used in path_list_entry
 #define FS_NEW 51
-#define FS_R12_BUFFER_FILLED 52
+#define FS_R1_BUFFER_FILLED 52
 #define FS_INVALID 53
 
 // Path List State in path_list_head
 #define PLS_NEW 11
-#define PLS_R12_BUFFERS_FULL 12
-#define PLS_R3_NEEDED 13
+#define PLS_R1_BUFFERS_FULL 12
+#define PLS_R2_NEEDED 13
 #define PLS_DONE 14
 
 

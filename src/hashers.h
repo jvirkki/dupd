@@ -46,7 +46,7 @@ struct hasher_param {
  * Return: none
  *
  */
-void * round12_hasher(void * arg);
+void * round1_hasher(void * arg);
 
 
 #endif

@@ -112,7 +112,7 @@ static int build_hash_list_round(sqlite3 * dbh,
  * Public function, see header file.
  *
  */
-void * round12_hasher(void * arg)
+void * round1_hasher(void * arg)
 {
   struct hasher_param * info = (struct hasher_param *)arg;
   struct path_list_head * entry = NULL;
@@ -166,8 +166,8 @@ void * round12_hasher(void * arg)
 
     if (entry != NULL) {
 
-      if (entry->state != PLS_R12_BUFFERS_FULL) {
-        printf("error: round12_hasher bad path list state %d\n", entry->state);
+      if (entry->state != PLS_R1_BUFFERS_FULL) {
+        printf("error: round1_hasher bad path list state %d\n", entry->state);
         exit(1);
       }
 
@@ -187,8 +187,8 @@ void * round12_hasher(void * arg)
       }
 
       if (!set_completed) {
-        entry->state = PLS_R3_NEEDED;
-        size_node->state = SLS_NEEDS_ROUND_3; // TODO remove sizenode state
+        entry->state = PLS_R2_NEEDED;
+        size_node->state = SLS_NEEDS_ROUND_2; // TODO remove sizenode state
 
       } else {
         if (size_node->fully_read) {

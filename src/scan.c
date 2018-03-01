@@ -160,7 +160,7 @@ static void * scan_status(void * arg)
                  stats_duplicate_groups[round], timebuf);
     SHOW_LINE;
 
-  } while (++round < 3);
+  } while (++round < ROUNDS);
 
   return NULL;
 }
@@ -412,7 +412,6 @@ void scan()
     }
     stats_round_duration[ROUND1] = 0;
     stats_round_duration[ROUND2] = 0;
-    stats_round_duration[ROUND3] = 0;
     return;
   }
 
@@ -455,7 +454,6 @@ void scan()
 
   if (stats_round_duration[ROUND1] < 0) { stats_round_duration[ROUND1] = 0; }
   if (stats_round_duration[ROUND2] < 0) { stats_round_duration[ROUND2] = 0; }
-  if (stats_round_duration[ROUND3] < 0) { stats_round_duration[ROUND3] = 0; }
 
   LOG(L_PROGRESS, "Duplicate processing took %ldms\n", stats_time_process);
   LOG(L_PROGRESS, "Largest duplicate set %d\n", stats_most_dups);
