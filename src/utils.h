@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <sqlite3.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/time.h>

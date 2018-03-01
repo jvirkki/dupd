@@ -37,7 +37,7 @@
  *
  */
 struct path_list_entry {
-  uint8_t file_state;
+  uint8_t state;
   uint8_t filename_size;
   struct direntry * dir;
   struct path_list_entry * next;
@@ -49,12 +49,35 @@ struct path_list_head {
   struct size_list * sizelist;
   struct path_list_entry * last_entry;
   uint16_t list_size;
+  uint8_t state;
   // first_entry follows
 };
 
 
-// File states used in path_list_entry
-#define FST_NEW 1
+// File State used in path_list_entry
+#define FS_NEW 51
+#define FS_R12_BUFFER_FILLED 52
+#define FS_INVALID 53
+
+// Path List State in path_list_head
+#define PLS_NEW 11
+#define PLS_R12_BUFFERS_FULL 12
+#define PLS_R3_NEEDED 13
+#define PLS_DONE 14
+
+
+/** ***************************************************************************
+ * Return string representation of path list state.
+ *
+ */
+const char * pls_state(int state);
+
+
+/** ***************************************************************************
+ * Return string representation of file state.
+ *
+ */
+const char * file_state(int state);
 
 
 /** ***************************************************************************

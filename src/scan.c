@@ -101,7 +101,7 @@ static void * scan_status(void * arg)
   const char * files =
     "Files: %8u                      %6u errors                 %12s";
   const char * sets =
-    "Sets : %8u/%8u %10uK (%7ldK/s)                  %12s";
+    "Sets : %8u/%8u %10uK (%7ldK/s) %4uq            %12s";
   const char * sets_done =
     "Round %d: %8u groups of duplicates confirmed                   %12s\n";
 
@@ -131,6 +131,7 @@ static void * scan_status(void * arg)
   pthread_mutex_unlock(&status_lock);
 
   int round = 0;
+  int queued;
 
   do {
     do {
@@ -140,8 +141,13 @@ static void * scan_status(void * arg)
       delta = delta / 1000;
       kread = stats_total_bytes_read / 1024;
       ksec = delta == 0 ? 0 : kread / delta;
+      queued = 0;
+      for (int q = 0; q < MAX_HASHER_THREADS; q++) {
+        queued += stats_hasher_queue_len[q];
+      }
+      if (queued < 0) { queued = 0; }
       c = snprintf(line, 100, sets, stats_size_list_done,
-                   stats_size_list_count, kread, ksec, timebuf);
+                   stats_size_list_count, kread, ksec, queued, timebuf);
       SHOW_LINE;
       status_wait();
 

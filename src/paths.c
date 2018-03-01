@@ -62,6 +62,7 @@ void dump_path_list(const char * line, off_t size,
   printf("  head: %p\n", head);
   printf("  last_elem: %p\n", head->last_entry);
   printf("  list_size: %d\n", head->list_size);
+  printf("  state: %s\n", pls_state(head->state));
   printf("  sizelist back ptr: %p\n", head->sizelist);
 
   if (head->sizelist != NULL) {
@@ -83,7 +84,7 @@ void dump_path_list(const char * line, off_t size,
   while (entry != NULL) {
     if (counted < 2 || log_level >= L_TRACE) {
       printf(" --entry %d\n", counted);
-      printf("   file state: %d\n", entry->file_state);
+      printf("   file state: %s\n", file_state(entry->state));
       printf("   filename_size: %d\n", entry->filename_size);
       printf("   dir: %p\n", entry->dir);
       printf("   next: %p\n", entry->next);
@@ -252,8 +253,11 @@ struct path_list_head * insert_first_path(char * filename,
   // Initialize list size to 1
   head->list_size = 1;
 
+  // New path list
+  head->state = PLS_NEW;
+
   // Initialize the first entry
-  first_entry->file_state = FST_NEW;
+  first_entry->state = FS_NEW;
   first_entry->filename_size = (uint8_t)filename_len;
   first_entry->dir = dir_entry;
   first_entry->next = NULL;
@@ -303,7 +307,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   head->list_size++;
 
   // Initialize this new entry
-  entry->file_state = FST_NEW;
+  entry->state = FS_NEW;
   entry->filename_size = (uint8_t)filename_len;
   entry->dir = dir_entry;
   entry->next = NULL;
@@ -366,4 +370,39 @@ void report_path_block_usage()
   printf("Total path block size: %ld\n", space_allocated);
   printf("Bytes used in this run: %ld (%d%%)\n", space_used, pct);
   printf("Total files in path list: %" PRIu32 "\n", stats_path_list_entries);
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
+const char * pls_state(int state)
+{
+  switch(state) {
+  case PLS_NEW:                      return "PLS_NEW";
+  case PLS_R12_BUFFERS_FULL:         return "PLS_R12_BUFFERS_FULL";
+  case PLS_R3_NEEDED:                return "PLS_R3_NEEDED";
+  case PLS_DONE:                     return "PLS_DONE";
+  default:
+    printf("\nerror: unknown pls_state %d\n", state);
+    exit(1);
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
+const char * file_state(int state)
+{
+  switch(state) {
+  case FS_NEW:                        return "FS_NEW";
+  case FS_R12_BUFFER_FILLED:          return "FS_R12_BUFFER_FILLED";
+  case FS_INVALID:                    return "FS_INVALID";
+  default:
+    printf("\nerror: unknown file_state %d\n", state);
+    exit(1);
+  }
 }

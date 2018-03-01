@@ -36,6 +36,35 @@ struct size_list {
   struct size_list * dnext;
 };
 
+// Size list states. TODO remove
+#define SLS_NEED_BYTES_ROUND_1 88
+#define SLS_READY_1 89
+#define SLS_NEED_BYTES_ROUND_2 90
+#define SLS_READY_2 91
+#define SLS_NEEDS_ROUND_3 92
+#define SLS_DONE 94
+#define SLS_R3_HASH_ME 96
+#define SLS_R3_HASH_ME_FINAL 97
+#define SLS_R3_HASH_DONE 98
+#define SLS_R3_READ_MORE 99
+#define SLS_R3_READ_FINAL 100
+#define SLS_R3_HASHER_IGNORE 101
+#define SLS_DELETED 102
+
+
+/** ***************************************************************************
+ * Print progress on set processing.
+ *
+ * Parameters:
+ *     total - Total sets processed.
+ *     files - Cound of files in set.
+ *     size  - Size of files in set.
+ *
+ * Return: none
+ *
+ */
+void show_processed(int total, int files, long size);
+
 
 /** ***************************************************************************
  * Initialize size list.

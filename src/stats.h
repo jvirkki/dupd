@@ -29,6 +29,8 @@
 #define ROUND3 2
 #define MAX_HASHER_THREADS 2
 
+pthread_mutex_t stats_lock;
+
 extern int stats_sets_processed[ROUNDS];
 extern int stats_sets_dup_done[ROUNDS];
 extern int stats_sets_dup_not[ROUNDS];
@@ -39,6 +41,7 @@ extern int stats_round_duration[ROUNDS];
 extern int stats_duplicate_groups[ROUNDS];
 extern int stats_reader_loops[ROUNDS];
 extern int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS];
+extern int stats_hasher_queue_len[MAX_HASHER_THREADS];
 
 extern uint64_t stats_total_bytes;
 extern uint64_t stats_total_bytes_read;

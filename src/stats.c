@@ -31,6 +31,8 @@
 #include "stats.h"
 #include "utils.h"
 
+pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
+
 int stats_sets_processed[ROUNDS] = { 0,0,0 };
 int stats_sets_dup_done[ROUNDS] = { 0,0,0 };
 int stats_sets_dup_not[ROUNDS] = { 0,0,0 };
@@ -41,6 +43,7 @@ int stats_round_duration[ROUNDS] = { -1,-1,-1 };
 int stats_duplicate_groups[ROUNDS] = { 0,0,0 };
 int stats_reader_loops[ROUNDS] = { 0,0,0 };
 int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS] = { {0,0}, {0,0}, {0,0} };
+int stats_hasher_queue_len[MAX_HASHER_THREADS] = { 0,0 };
 
 uint64_t stats_total_bytes = 0;
 uint64_t stats_total_bytes_read = 0;
