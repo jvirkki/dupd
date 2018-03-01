@@ -111,12 +111,6 @@ void report_stats()
            stats_sets_processed[ROUND1], stats_round_duration[ROUND1]);
     printf("  Block size %d (%d max blocks)\n",
            hash_one_block_size, hash_one_max_blocks);
-    printf("  Reader loops: %d\n", stats_reader_loops[ROUND1]);
-    printf("  Hasher loops:");
-    for (int i = 0; i < MAX_HASHER_THREADS; i++) {
-      printf("   %d", stats_hasher_loops[ROUND1][i]);
-    }
-    printf("\n");
     printf("  Sets fully hashed in round one: %d\n", stats_full_hash_first);
     printf("  Sets with single block first round: %d\n",
            stats_one_block_hash_first);

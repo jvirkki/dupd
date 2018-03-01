@@ -1345,8 +1345,6 @@ static void * size_list_reader(void * arg)
 
   LOG(L_THREADS, "DONE\n");
 
-  stats_reader_loops[ROUND1] = 1;
-
   return NULL;
 }
 
