@@ -19,26 +19,26 @@
 
 #include <dirent.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "dbops.h"
+#include "dirtree.h"
 #include "filecompare.h"
-#include "hashlist.h"
 #include "main.h"
-#include "paths.h"
 #include "readlist.h"
 #include "scan.h"
 #include "sizelist.h"
 #include "sizetree.h"
 #include "stats.h"
 #include "utils.h"
-
 
 #define D_DIR 1
 #define D_FILE 2
@@ -56,6 +56,7 @@ static int scan_list_pos = -1;
 static int scan_completed = 0;
 static long scan_phase_started;
 static long read_phase_started;
+static int fiemap_ok = 1;
 pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t status_cond = PTHREAD_COND_INITIALIZER;
 
@@ -198,20 +199,32 @@ void free_scanlist()
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
-              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *,
+              int (*process_file)(sqlite3 *, uint64_t, ino_t, off_t, char *,
                                   char *, struct direntry *))
 {
   STRUCT_STAT new_stat_info;
   int rv;
-
   struct dirent * entry;
   char newpath[DUPD_PATH_MAX];
-  char current[DUPD_PATH_MAX];
   struct direntry * current_dir_entry;
-  dev_t device;
+  char current[DUPD_PATH_MAX];
   ino_t inode;
   off_t size;
+  uint64_t block = 0;
   long type;
+
+#ifdef USE_FIEMAP
+  struct fiemap * fiemap;
+  int fiesize = sizeof(struct fiemap) + sizeof(struct fiemap_extent);
+
+  fiemap = (struct fiemap *)malloc(fiesize);
+  memset(fiemap, 0, fiesize);
+  fiemap->fm_start = 0;
+  fiemap->fm_length = hash_one_block_size * hash_one_max_blocks;
+  fiemap->fm_flags = 0;
+  fiemap->fm_extent_count = 1;
+  fiemap->fm_mapped_extents = 0;
+#endif
 
   if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
     printf("walk_dir called on null or empty path!\n");
@@ -274,7 +287,6 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
 #ifdef DIRENT_HAS_TYPE
       size = SCAN_SIZE_UNKNOWN;
       inode = SCAN_INODE_UNKNOWN;
-      device = SCAN_DEV_UNKNOWN;
       if (entry->d_type == DT_REG) {
         type = D_FILE;
       } else if (entry->d_type == DT_DIR) {
@@ -285,7 +297,6 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
         rv = get_file_info(newpath, &new_stat_info);
         size = new_stat_info.st_size;
         inode = new_stat_info.st_ino;
-        device = new_stat_info.st_dev;
         if (rv != 0) {
           type = D_ERROR;
         } else if (S_ISDIR(new_stat_info.st_mode)) {
@@ -323,7 +334,12 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
 
       case D_FILE:
         // If it is a file, just process it now
-        (*process_file)(dbh, device, inode, size, newpath,
+#ifdef USE_FIEMAP
+        if (hdd_mode) {
+          block = get_first_block_open(newpath, fiemap);
+        }
+#endif
+        (*process_file)(dbh, block, inode, size, newpath,
                         entry->d_name, current_dir_entry);
         break;
 
@@ -436,13 +452,11 @@ void scan()
     find_unique_sizes(dbh);
   }
 
-  if (hdd_mode) {
-    long t1 = get_current_time_millis();
-    sort_read_list();
-    LOG_PROGRESS {
-      long sort_time = get_current_time_millis() - t1;
-      printf("Time to sort read list: %ldms\n", sort_time);
-    }
+  long t1 = get_current_time_millis();
+  sort_read_list(fiemap_ok);
+  LOG_PROGRESS {
+    long sort_time = get_current_time_millis() - t1;
+    printf("Time to sort read list: %ldms\n", sort_time);
   }
 
   // Processing phase - walk through size list whittling down the potentials

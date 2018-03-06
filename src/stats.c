@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -75,8 +76,8 @@ long stats_time_process = 0;
 long stats_time_total = 0;
 long stats_main_start = 0;
 int path_buffer_realloc = 0;
-int hashlist_path_realloc = 0;
-int hash_list_len_inc = 0;
+int stats_hashlist_path_realloc = 0;
+int stats_hash_list_len_inc = 0;
 int scan_list_usage_max = 0;
 int scan_list_resizes = 0;
 
@@ -230,9 +231,9 @@ void save_stats()
   fprintf(fp, "hash_block_size %d\n", hash_block_size);
   fprintf(fp, "intermediate_blocks %d\n", intermediate_blocks);
   fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
-  fprintf(fp, "hashlist_path_realloc %d\n", hashlist_path_realloc);
+  fprintf(fp, "stats_hashlist_path_realloc %d\n", stats_hashlist_path_realloc);
   fprintf(fp, "stats_path_list_entries %" PRIu32 "\n",stats_path_list_entries);
-  fprintf(fp, "hash_list_len_inc %d\n", hash_list_len_inc);
+  fprintf(fp, "stats_hash_list_len_inc %d\n", stats_hash_list_len_inc);
   fprintf(fp, "scan_list_usage_max %d\n", scan_list_usage_max);
   fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);
   fprintf(fp, "\n");

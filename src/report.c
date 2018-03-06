@@ -18,15 +18,16 @@
 */
 
 #include <inttypes.h>
+#include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
 #include "dbops.h"
-#include "main.h"
+#include "dirtree.h"
 #include "hash.h"
-#include "report.h"
+#include "main.h"
 #include "scan.h"
 #include "utils.h"
 
@@ -391,11 +392,11 @@ void operation_report()
  *
  */
 static int file_callback(sqlite3 * dbh,
-                         dev_t device, ino_t inode, off_t size, char * path,
-                         char * filename, struct direntry * dir_entry)
+                         uint64_t block, ino_t inode, off_t size,
+                         char * path, char * filename, struct direntry * dir_entry)
 {
   (void)size;                   /* not used */
-  (void)device;
+  (void)block;
   (void)inode;                  /* not used */
   (void)filename;
   (void)dir_entry;

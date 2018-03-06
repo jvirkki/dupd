@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -208,3 +209,53 @@ size_t linux_strlcpy(char *dst, const char *src, size_t dstsize)
   strncpy(dst, src, dstsize);
   return n;
 }
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+#ifdef USE_FIEMAP
+uint64_t get_first_block_open(char * path, struct fiemap * fiemap)
+{
+  uint64_t rv;
+  int fd = open(path, O_RDONLY);
+
+  if (fd > 0) {
+    rv = get_first_block(fd, fiemap);
+    close(fd);
+    return rv;
+  }
+
+  return 0;
+}
+#endif
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+#ifdef USE_FIEMAP
+uint64_t get_first_block(int fd, struct fiemap * fiemap)
+{
+  int rv;
+
+  fiemap->fm_mapped_extents = 0;
+  fiemap->fm_extent_count = 1;
+
+  rv = ioctl(fd, FS_IOC_FIEMAP, fiemap);
+  if (rv < 0) {
+    LOG(L_SKIPPED, "FS_IOC_FIEMAP error, ignoring...\n");
+    fiemap->fm_mapped_extents = 0;
+    fiemap->fm_extents[0].fe_physical = 0;
+    return 0;
+  }
+
+  if (fiemap->fm_mapped_extents == 1) {
+    return fiemap->fm_extents[0].fe_physical;
+  }
+
+  return 0;
+}
+#endif

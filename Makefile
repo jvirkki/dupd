@@ -47,7 +47,7 @@ OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
 
 ifeq ($(BUILD_OS),Linux)
 OBJCP=objcopy
-CFLAGS=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE
+CFLAGS=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE -DUSE_FIEMAP
 USAGE=$(BUILD)/usage.o
 # On Linux, gcc by default compiles to the same bitness as the OS,
 # so need to set the flags to objcopy accordingly.

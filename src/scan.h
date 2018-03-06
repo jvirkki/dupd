@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -65,7 +65,7 @@ void free_scanlist();
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
-              int (*process_file)(sqlite3 *, dev_t, ino_t, off_t, char *,
+              int (*process_file)(sqlite3 *, uint64_t, ino_t, off_t, char *,
                                   char *, struct direntry *));
 
 

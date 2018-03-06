@@ -20,6 +20,8 @@
 #ifndef _DUPD_HASHLIST_PRIV_H
 #define _DUPD_HASHLIST_PRIV_H
 
+#include "hash.h"
+
 
 /** ***************************************************************************
  * A hash list entry.

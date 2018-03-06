@@ -30,11 +30,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "dirtree.h"
 #include "filecompare.h"
+#include "hash.h"
 #include "hashers.h"
 #include "hashlist.h"
 #include "main.h"
-#include "paths.h"
 #include "readlist.h"
 #include "scan.h"
 #include "sizelist.h"
@@ -1161,47 +1162,23 @@ static void * read_list_reader(void * arg)
 
     rlentry = &read_list[rlpos];
     pathlist_head = rlentry->pathlist_head;
-
-    // A read_list entry may have been nulled out so check and skip those.
-    if (pathlist_head == NULL) {
-      rlpos++;
-      continue;
-    }
-
     pathlist_entry = rlentry->pathlist_self;
+    sizelist = pathlist_head->sizelist;
 
-    // A pathlist may have been marked done because it was down to one file.
-    // Now we reached that file, but there is no need to read it, so skip.
-    if (pathlist_head->state == PLS_DONE) {
+    // A path list may have been marked done earlier if it was down to one
+    // file. Also a path entry may have been marked invalid when removing
+    // duplicate hardlinks. In either case, nothing to do for this entry.
+
+    if (pathlist_entry->state == FS_INVALID ||
+        pathlist_head->state == PLS_DONE) {
       pathlist_entry->state = FS_INVALID;
       rlpos++;
       continue;
     }
 
-    sizelist = pathlist_head->sizelist;
-
-    if (sizelist == NULL) {                                // LCOV_EXCL_START
-      printf("error: sizelist is null in pathlist!\n");
-      exit(1);
-    }                                                      // LCOV_EXCL_STOP
-
-    LOG_BASE {
-      if (pathlist_head != sizelist->path_list) {          // LCOV_EXCL_START
-        printf("error: inconsistent sizelist in pathlist head!\n");
-        printf("pathlist head (%p) -> sizelist %p\n",pathlist_head,sizelist);
-        printf("sizelist (%p) -> pathlist head %p\n",
-               sizelist, sizelist->path_list);
-        exit(1);
-      }                                                    // LCOV_EXCL_STOP
-    }
-
-    d_mutex_lock(&sizelist->lock, "process_readlist");
+    //    d_mutex_lock(&sizelist->lock, "process_readlist");
 
     size = sizelist->size;
-    if (size < 0) {                                        // LCOV_EXCL_START
-      printf("error: size %ld makes no sense\n", (long)size);
-      exit(1);
-    }                                                      // LCOV_EXCL_STOP
 
     if (size <= round1_max_bytes) {
       max_to_read = size;
@@ -1211,8 +1188,10 @@ static void * read_list_reader(void * arg)
 
     count = pathlist_head->list_size;
     build_path(pathlist_entry, path);
+
     if (path[0] == 0) {
-      goto PRL_NODE_DONE;
+      printf("error: path zero len\n");
+      exit(1);
     }
 
     LOG(L_MORE_THREADS, "Set (%d files of size %ld in state %s): read %s\n",
@@ -1227,10 +1206,6 @@ static void * read_list_reader(void * arg)
       // File may be unreadable or changed size, either way, ignore it.
       LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
           (long)received, path, (long)max_to_read);
-      {
-        char * fname = pb_get_filename(pathlist_entry);
-        fname[0] = 0; // TODO
-      }
       pathlist_entry->state = FS_INVALID;
       free(buffer);
       pathlist_head->list_size--;
@@ -1267,15 +1242,13 @@ static void * read_list_reader(void * arg)
           took, read_count, avg_read_time);
     }
 
-  PRL_NODE_DONE:
-    d_mutex_unlock(&sizelist->lock);
+    //    d_mutex_unlock(&sizelist->lock);
     rlpos++;
 
   } while (rlpos < read_list_end);
 
   long now = get_current_time_millis();
   stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
-  stats_round_start[ROUND2] = now;
 
   signal_hashers(hasher_info);
 
@@ -1339,7 +1312,6 @@ static void * size_list_reader(void * arg)
 
   long now = get_current_time_millis();
   stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
-  stats_round_start[ROUND2] = now;
 
   signal_hashers(hasher_info);
 

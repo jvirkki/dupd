@@ -20,8 +20,8 @@
 #ifndef _DUPD_STATS_H
 #define _DUPD_STATS_H
 
-#include <stdint.h>
 #include <inttypes.h>
+#include <stdint.h>
 
 #define ROUNDS 2
 #define ROUND1 0
@@ -83,8 +83,8 @@ extern long stats_time_process;
 extern long stats_time_total;
 extern long stats_main_start;
 extern int path_buffer_realloc;
-extern int hashlist_path_realloc;
-extern int hash_list_len_inc;
+extern int stats_hashlist_path_realloc;
+extern int stats_hash_list_len_inc;
 extern int scan_list_usage_max;
 extern int scan_list_resizes;
 

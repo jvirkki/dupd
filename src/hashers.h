@@ -21,8 +21,7 @@
 #define _DUPD_HASHERS_H
 
 #include <pthread.h>
-
-#include "paths.h"
+#include <sqlite3.h>
 
 #define HASHER_QUEUE_SIZE 5000
 

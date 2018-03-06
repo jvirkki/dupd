@@ -20,7 +20,10 @@
 #include "hashers.h"
 #include "hashlist.h"
 #include "main.h"
+#include "paths.h"
+#include "sizelist.h"
 #include "stats.h"
+#include "utils.h"
 
 
 /** ***************************************************************************
@@ -41,7 +44,6 @@ static int build_hash_list_round(sqlite3 * dbh,
                                  struct hash_table * hl)
 {
   struct path_list_entry * node;
-  char * path;
   int completed = 0;
 
   node = pb_get_first_entry(size_node->path_list);
@@ -54,18 +56,16 @@ static int build_hash_list_round(sqlite3 * dbh,
 
   LOG(L_TRACE, "Building hash list for size %ld\n", size_node->size);
 
-  // Build hash list for these files
+  // Build hash list for all files which have a buffer filled.
+  // That's the usual case but some files may be in other states such as
+  // FS_INVALID if they have been previously discarded.
   do {
-    path = pb_get_filename(node);
-
-    // The path may be null if this particular path within this pathlist
-    // has been discarded as a potential duplicate already. If so, skip.
-    if (path[0] != 0) { // TODO
+    if (node->state == FS_R1_BUFFER_FILLED) {
       add_hash_table_from_mem(hl, node, node->buffer, size_node->bytes_read);
       free(node->buffer);
       node->buffer = NULL;
+      node->state = FS_R1_DONE;
     }
-
     node = node->next;
   } while (node != NULL);
 

@@ -22,8 +22,6 @@
 #include <string.h>
 
 #include "dirtree.h"
-#include "main.h"
-#include "paths.h"
 
 
 /** ***************************************************************************

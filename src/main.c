@@ -24,12 +24,9 @@
 #include <unistd.h>
 
 #include "copying.h"
-#include "dbops.h"
 #include "filecompare.h"
 #include "hash.h"
-#include "hashlist.h"
 #include "main.h"
-#include "main_opt.h"
 #include "optgen.h"
 #include "paths.h"
 #include "readlist.h"

@@ -23,15 +23,13 @@
 #include <strings.h>
 #include <unistd.h>
 
-#include "hashlist.h"
+#include "dirtree.h"
 #include "main.h"
 #include "paths.h"
 #include "readlist.h"
 #include "sizelist.h"
-#include "sizetree.h"
 #include "stats.h"
 #include "utils.h"
-
 
 // Path lists (head + entries) are stored in path blocks which are preallocated
 // as needed. This list holds the blocks we've had to allocate.
@@ -47,6 +45,10 @@ static char * next_entry;
 static char * path_block_end;
 static long space_used;
 static long space_allocated;
+
+#ifdef USE_FIEMAP
+struct fiemap * fiemap = NULL;
+#endif
 
 
 /** ***************************************************************************
@@ -192,6 +194,19 @@ void init_path_block()
 
   space_used = 0;
   space_allocated = bsize;
+
+#ifdef USE_FIEMAP
+  int fiesize = sizeof(struct fiemap) + sizeof(struct fiemap_extent);
+
+  fiemap = (struct fiemap *)malloc(fiesize);
+  memset(fiemap, 0, fiesize);
+  fiemap->fm_start = 0;
+  fiemap->fm_length = hash_one_block_size * hash_one_max_blocks;
+  fiemap->fm_flags = 0;
+  fiemap->fm_extent_count = 1;
+  fiemap->fm_mapped_extents = 0;
+#endif
+
 }
 
 
@@ -213,6 +228,12 @@ void free_path_block()
   }
   first_path_block = NULL;
   last_path_block = NULL;
+
+#ifdef USE_FIEMAP
+  if (fiemap != NULL) {
+    free(fiemap);
+  }
+#endif
 }
 
 
@@ -279,7 +300,7 @@ struct path_list_head * insert_first_path(char * filename,
  *
  */
 void insert_end_path(char * filename, struct direntry * dir_entry,
-                     dev_t device, ino_t inode, off_t size,
+                     uint64_t block, ino_t inode, off_t size,
                      struct path_list_head * head)
 {
   int filename_len = strlen(filename);
@@ -330,21 +351,24 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
       // because it should be in the cache already. (Alternatively,
       // could keep this info in the path list head.)
 
+      uint64_t prevblock = 0;
       char first_path[DUPD_PATH_MAX];
       build_path(prior, first_path);
-
+#ifdef USE_FIEMAP
+      prevblock = get_first_block_open(first_path, fiemap);
+#endif
       STRUCT_STAT info;
       if (get_file_info(first_path, &info)) {                // LCOV_EXCL_START
         printf("error: unable to stat %s\n", first_path);
         exit(1);
       }                                                      // LCOV_EXCL_STOP
-      add_to_read_list(info.st_dev, info.st_ino, head, prior);
+      add_to_read_list(prevblock, info.st_ino, head, prior);
     }
   }
 
   if (hdd_mode) {
     // Then add the current path to the read list as well.
-    add_to_read_list(device, inode, head, entry);
+    add_to_read_list(block, inode, head, entry);
   }
 
   LOG_TRACE {

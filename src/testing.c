@@ -25,8 +25,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "testing.h"
 #include "test_hashlist.h"
+#include "testing.h"
 
 void testing()
 {

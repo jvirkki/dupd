@@ -18,6 +18,7 @@
 */
 
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,7 @@
 #include <unistd.h>
 
 #include "dbops.h"
+#include "dirtree.h"
 #include "main.h"
 #include "paths.h"
 #include "scan.h"
@@ -44,6 +46,7 @@ struct size_node {
 static struct size_node * tip = NULL;
 
 struct stat_queue {
+  uint64_t block;
   int end;
   dev_t device;
   ino_t inode;
@@ -150,9 +153,8 @@ static struct size_node * new_node(off_t size, char * filename,
  * Return: none
  *
  */
-static void add_below(struct size_node * node,
-                      dev_t device, ino_t inode, off_t size,
-                      char * filename, struct direntry * dir_entry)
+static void add_below(struct size_node * node, uint64_t block, ino_t inode,
+                      off_t size, char * filename, struct direntry * dir_entry)
 {
   struct size_node * p = node;
 
@@ -173,7 +175,7 @@ static void add_below(struct size_node * node,
         p->filename = NULL;
       }
 
-      insert_end_path(filename, dir_entry, device, inode, size, p->paths);
+      insert_end_path(filename, dir_entry, block, inode, size, p->paths);
 
       return;
     }
@@ -296,7 +298,7 @@ static void * worker_main(void * arg)
         done = 1;
 
       } else {
-        add_file(NULL, worker_next->device, worker_next->inode,
+        add_file(NULL, worker_next->block, worker_next->inode,
                  worker_next->size, worker_next->path,
                  worker_next->filename, worker_next->dir_entry);
         queue_removed[current_worker_queue]++;
@@ -359,7 +361,7 @@ static void free_node(struct size_node * node)
  *
  */
 int add_file(sqlite3 * dbh,
-             dev_t device, ino_t inode, off_t size,  char * path,
+             uint64_t block, ino_t inode, off_t size,  char * path,
              char * filename, struct direntry * dir_entry)
 {
   (void)dbh;                    /* not used */
@@ -381,7 +383,6 @@ int add_file(sqlite3 * dbh,
 
     size = new_stat_info.st_size;
     inode = new_stat_info.st_ino;
-    device = new_stat_info.st_dev;
   }
 
   stats_files_count++;
@@ -416,7 +417,7 @@ int add_file(sqlite3 * dbh,
     return(-2);
   }
 
-  add_below(tip, device, inode, size, filename, dir_entry);
+  add_below(tip, block, inode, size, filename, dir_entry);
 
   return(-2);
 }
@@ -427,7 +428,7 @@ int add_file(sqlite3 * dbh,
  *
  */
 int add_queue(sqlite3 * dbh,
-              dev_t device, ino_t inode, off_t size, char * path,
+              uint64_t block, ino_t inode, off_t size, char * path,
               char * filename, struct direntry * dir_entry)
 {
   (void)dbh;                    /* not used */
@@ -436,8 +437,8 @@ int add_queue(sqlite3 * dbh,
 
   // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;
+  producer_next->block = block;
   producer_next->inode = inode;
-  producer_next->device = device;
   strlcpy(producer_next->filename, filename, DUPD_FILENAME_MAX);
   producer_next->dir_entry = dir_entry;
   strlcpy(producer_next->path, path, DUPD_PATH_MAX);

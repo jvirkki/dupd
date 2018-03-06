@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -26,6 +26,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "hash.h"
+#include "main.h"
+#include "stats.h"
+#include "utils.h"
+#include "xxhash.h"
+
 #ifndef __APPLE__
 #include <openssl/md5.h>
 #include <openssl/sha.h>
@@ -47,11 +53,6 @@
 #define SHA512_Final CC_SHA512_Final
 #endif
 
-#include "main.h"
-#include "hash.h"
-#include "stats.h"
-#include "utils.h"
-#include "xxhash.h"
 
 #define MAX_BLOCK (1024 * 256)
 

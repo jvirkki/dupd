@@ -31,6 +31,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef USE_FIEMAP
+#include <linux/fs.h>
+#include <linux/fiemap.h>
+#endif
+
 #ifdef linux
 #define STRUCT_STAT struct stat
 #define LSTAT lstat
@@ -332,5 +337,36 @@ static inline void d_join(pthread_t thread, void **retval)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 }
+
+
+/** ***************************************************************************
+ * Return first storage block for a path.
+ *
+ * Parameters:
+ *    path   - file path
+ *    fiemap - fiemap struct with space for at least one extent.
+ *
+ * Return: zero on any errors, otherwise first storage block.
+ *
+ */
+#ifdef USE_FIEMAP
+uint64_t get_first_block_open(char * path, struct fiemap * fiemap);
+#endif
+
+
+/** ***************************************************************************
+ * Return first storage block for an open file descriptor.
+ *
+ * Parameters:
+ *    fd     - open file descriptor.
+ *    fiemap - fiemap struct with space for at least one extent.
+ *
+ * Return: zero on any errors, otherwise first storage block.
+ *
+ */
+#ifdef USE_FIEMAP
+uint64_t get_first_block(int fd, struct fiemap * fiemap);
+#endif
+
 
 #endif

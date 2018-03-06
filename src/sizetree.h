@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -30,7 +30,7 @@
  *
  * Parameters:
  *    dbh       - sqlite3 database handle (not used, set to NULL).
- *    device    - The device of this file (or SCAN_DEV_UNKNOWN).
+ *    block     - First physical block of this file (or zero).
  *    inode     - The inode of this file (or SCAN_INODE_UNKNOWN).
  *    size      - Size of this file (or SCAN_SIZE_UNKNOWN).
  *    path      - Path of this file.
@@ -41,7 +41,7 @@
  *
  */
 int add_file(sqlite3 * dbh,
-             dev_t device, ino_t inode, off_t size,  char * path,
+             uint64_t block, ino_t inode, off_t size,  char * path,
              char * filename, struct direntry * dir_entry);
 
 
@@ -53,7 +53,7 @@ int add_file(sqlite3 * dbh,
  *
  * Parameters:
  *    dbh       - sqlite3 database handle (not used, set to NULL).
- *    device    - The device of this file (or SCAN_DEV_UNKNOWN).
+ *    block     - First physical block of this file (or zero).
  *    inode     - The inode of this file (or SCAN_INODE_UNKNOWN).
  *    size      - Size of this file (or SCAN_SIZE_UNKNOWN).
  *    path      - Path of this file.
@@ -64,7 +64,7 @@ int add_file(sqlite3 * dbh,
  *
  */
 int add_queue(sqlite3 * dbh,
-              dev_t device, ino_t inode, off_t size, char * path,
+              uint64_t block, ino_t inode, off_t size, char * path,
               char * filename, struct direntry * dir_entry);
 
 

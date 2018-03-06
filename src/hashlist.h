@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-#include "hash.h"
 #include "paths.h"
 
 struct hash_table;
@@ -164,8 +163,7 @@ void print_hash_table(struct hash_table * src);
 /** ***************************************************************************
  * Look for unique files identified in the given hash table.
  *
- * The path of unique entries is nulled out (in its path list, given that the
- * hash table path is a pointer to the path list).
+ * The unique entries are marked invalid.
  *
  * If record_in_db is true, these files are also saved in the database.
  *

@@ -26,6 +26,7 @@
 #include "main.h"
 #include "paths.h"
 #include "test_hashlist.h"
+#include "utils.h"
 
 
 static void test_hash_table_basics()

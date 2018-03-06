@@ -23,8 +23,6 @@
 #include <pthread.h>
 #include <sys/types.h>
 
-#include "utils.h"
-
 #ifdef __APPLE__
 #endif
 

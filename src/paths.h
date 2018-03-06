@@ -21,8 +21,9 @@
 #define _DUPD_PATHS_H
 
 #include <inttypes.h>
-
-#include "sizelist.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 
 /** ***************************************************************************
@@ -58,6 +59,7 @@ struct path_list_head {
 #define FS_NEW 51
 #define FS_R1_BUFFER_FILLED 52
 #define FS_INVALID 53
+#define FS_R1_DONE 54
 
 // Path List State in path_list_head
 #define PLS_NEW 11
@@ -135,7 +137,7 @@ struct path_list_head * insert_first_path(char * filename,
  * Parameters:
  *    filename  - The filename of this file.
  *    dir_entry - Directory containing filename.
- *    device    - The device of this path.
+ *    block     - First physical block of file (zero if not used).
  *    inode     - The inode of this path.
  *    size      - The size of the files in this path list.
  *    head      - The head of this path list (from insert_first_path()).
@@ -144,7 +146,7 @@ struct path_list_head * insert_first_path(char * filename,
  *
  */
 void insert_end_path(char * filename, struct direntry * dir_entry,
-                     dev_t device, ino_t inode, off_t size,
+                     uint64_t block, ino_t inode, off_t size,
                      struct path_list_head * head);
 
 
@@ -187,6 +189,7 @@ pb_get_first_entry(struct path_list_head * head)
  */
 static inline char * pb_get_filename(struct path_list_entry * entry)
 {
+  if (entry == NULL) { return NULL; }
   return (char *)((char *)entry + sizeof(struct path_list_entry));
 }
 

@@ -1,5 +1,5 @@
 /*
-  Copyright 2016-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -18,6 +18,7 @@
 */
 
 #include <inttypes.h>
+#include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +34,6 @@
 #include "hashlist.h"
 #include "hashlist_priv.h"
 #include "main.h"
-#include "paths.h"
 #include "stats.h"
 #include "utils.h"
 
@@ -128,7 +128,7 @@ void add_to_hash_table(struct hash_table * hl,
         p->entries = (struct path_list_entry **)
           realloc(p->entries, p->capacity * sizeof(struct path_list_entry *));
 
-        hashlist_path_realloc++;
+        stats_hashlist_path_realloc++;
         LOG(L_RESOURCES, "Increased path capacity to %d\n", p->capacity);
       }
 
@@ -151,7 +151,7 @@ void add_to_hash_table(struct hash_table * hl,
     struct hash_list * new_node = new_hash_list_node();
     tail->next = new_node;
     p = new_node;
-    hash_list_len_inc++;
+    stats_hash_list_len_inc++;
     LOG(L_RESOURCES, "Increased hash node list length to %d\n",
         hl_len + DEFAULT_HASHLIST_ENTRIES);
   }
@@ -417,7 +417,6 @@ int skim_uniques(sqlite3 * dbh, struct hash_table * src, int record_in_db)
   int skimmed = 0;
   struct hash_list * p;
 
-
   for (int n = 0; n <= 255; n++) {
 
     if (src->table[n] != NULL) {
@@ -425,18 +424,16 @@ int skim_uniques(sqlite3 * dbh, struct hash_table * src, int record_in_db)
       p = src->table[n];
       while (p != NULL && p->hash_valid) {
 
+        // If this list has only one entry, it was unique.
         if (p->next_index == 1) {
-
           entry = *(p->entries);
+          entry->state = FS_INVALID;
+          skimmed++;
 
           if (record_in_db) {
             build_path(entry, file);
             unique_to_db(dbh, file, "hashlist");
           }
-
-          char * filename = pb_get_filename(entry);
-          filename[0] = 0; // TODO
-          skimmed++;
         }
         p = p->next;
       }

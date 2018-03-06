@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -25,8 +26,8 @@
 
 #include "dirtree.h"
 #include "main.h"
-#include "paths.h"
 #include "readlist.h"
+#include "utils.h"
 
 struct read_list_entry * read_list = NULL;
 long read_list_end;
@@ -34,19 +35,30 @@ static long read_list_size;
 
 
 /** ***************************************************************************
- * Sort function used by sort_read_list().
+ * Sort function used by sort_read_list() when sorting by inode.
  *
  */
-static int rl_compare(const void * a, const void * b)
+static int rl_compare_i(const void * a, const void * b)
 {
   struct read_list_entry * f = (struct read_list_entry *)a;
   struct read_list_entry * s = (struct read_list_entry *)b;
 
-  if (f->device == s->device) {
-    return f->inode - s->inode;
-  } else {
-    return f->device - s->device;
-  }
+  return f->inode - s->inode;
+}
+
+
+/** ***************************************************************************
+ * Sort function used by sort_read_list() when sorting by block.
+ *
+ */
+static int rl_compare_b(const void * a, const void * b)
+{
+  struct read_list_entry * f = (struct read_list_entry *)a;
+  struct read_list_entry * s = (struct read_list_entry *)b;
+
+  if (f->block > s->block) { return 1; }
+  if (f->block < s->block) { return -1; }
+  return 0;
 }
 
 
@@ -87,10 +99,11 @@ void free_read_list()
  * Public function, see readlist.h
  *
  */
-void add_to_read_list(dev_t device, ino_t inode, struct path_list_head * head,
+void add_to_read_list(uint64_t block, ino_t inode,
+                      struct path_list_head * head,
                       struct path_list_entry * entry)
 {
-  read_list[read_list_end].device = device;
+  read_list[read_list_end].block = block;
   read_list[read_list_end].inode = inode;
   read_list[read_list_end].pathlist_head = head;
   read_list[read_list_end].pathlist_self = entry;
@@ -108,15 +121,24 @@ void add_to_read_list(dev_t device, ino_t inode, struct path_list_head * head,
  * Public function, see readlist.h
  *
  */
-void sort_read_list()
+void sort_read_list(int use_block)
 {
-  qsort(read_list, read_list_end, sizeof(struct read_list_entry), rl_compare);
+  int sort_blocks = 0;
+#ifdef USE_FIEMAP
+  sort_blocks = 1;
+#endif
 
-  // If hardlink_is_unique, we're always in hdd mode (forced in main).
-  // Now that the read_list is ordered, remove any paths which are duplicate
-  // inodes given that we don't care about them if hardlink_is_unique.
+  if (!use_block) { sort_blocks = 0; }
+  if (!hdd_mode) { sort_blocks = 0; }
 
   if (hardlink_is_unique) {
+
+    // Have to sort by inode to purge duplicates
+    qsort(read_list, read_list_end,
+          sizeof(struct read_list_entry), rl_compare_i);
+
+    // Now that the read_list is ordered by inode, remove any paths
+    // which are duplicate inodes given that we don't care about them.
     long i;
     ino_t prev = 0;
     for (i = 0; i < read_list_end; i++) {
@@ -125,14 +147,15 @@ void sort_read_list()
         build_path(read_list[i].pathlist_self, path);
         LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.", path);
         read_list[i].pathlist_head->list_size--;
-        read_list[i].pathlist_head = NULL;
-        {
-          char * fname = pb_get_filename(read_list[i].pathlist_self);
-          fname[0] =0; // TODO
-        }
-        read_list[i].pathlist_self = NULL;
+        read_list[i].pathlist_self->state = FS_INVALID;
+        read_list[i].block = 0;
       }
       prev = read_list[i].inode;
     }
+  }
+
+  if (sort_blocks) {
+    qsort(read_list, read_list_end,
+          sizeof(struct read_list_entry), rl_compare_b);
   }
 }
