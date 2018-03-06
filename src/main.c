@@ -384,13 +384,6 @@ static int process_args(int argc, char * argv[])
     return 2;
   }
 
-  if (hardlink_is_unique) {
-    if (!hdd_mode) {
-      LOG(L_INFO, "Enabling --hdd mode due to --hardlink-is-unique\n");
-    }
-    hdd_mode = 1;
-  }
-
   if (hdd_mode) {
     opt_compare_two = 0;
     opt_compare_three = 0;
