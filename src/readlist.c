@@ -154,6 +154,11 @@ void sort_read_list(int use_block)
     }
   }
 
+  if (!hardlink_is_unique && !sort_blocks && hdd_mode) {
+    qsort(read_list, read_list_end,
+          sizeof(struct read_list_entry), rl_compare_i);
+  }
+
   if (sort_blocks) {
     qsort(read_list, read_list_end,
           sizeof(struct read_list_entry), rl_compare_b);
