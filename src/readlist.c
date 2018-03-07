@@ -55,10 +55,13 @@ static int rl_compare_b(const void * a, const void * b)
 {
   struct read_list_entry * f = (struct read_list_entry *)a;
   struct read_list_entry * s = (struct read_list_entry *)b;
-
+#ifdef USE_FIEMAP
   if (f->block > s->block) { return 1; }
   if (f->block < s->block) { return -1; }
   return 0;
+#else
+  return f->inode - s->inode;
+#endif
 }
 
 
@@ -103,7 +106,9 @@ void add_to_read_list(uint64_t block, ino_t inode,
                       struct path_list_head * head,
                       struct path_list_entry * entry)
 {
+#ifdef USE_FIEMAP
   read_list[read_list_end].block = block;
+#endif
   read_list[read_list_end].inode = inode;
   read_list[read_list_end].pathlist_head = head;
   read_list[read_list_end].pathlist_self = entry;
@@ -163,7 +168,9 @@ void sort_read_list(int use_block)
         LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.", path);
         read_list[i].pathlist_head->list_size--;
         read_list[i].pathlist_self->state = FS_INVALID;
+#ifdef USE_FIEMAP
         read_list[i].block = 0;
+#endif
       }
       prev = read_list[i].inode;
     }
