@@ -44,7 +44,7 @@
 // ab..e.g.ijkl.no..rstu.w.yzABC.E.G..JK.MNOPQR.TU.WXYZ0123456789
 //
 
-#define COUNT_OPTIONS 38
+#define COUNT_OPTIONS 39
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -115,50 +115,53 @@
 // no_thread_hash (--no-thread-hash) : obsoleted
 #define OPT_no_thread_hash 22
 
+// sort_by (--sort-by) NAME : testing
+#define OPT_sort_by 23
+
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 23
+#define OPT_cut 24
 
 // format (--format) NAME : report output format (text, csv, json)
-#define OPT_format 24
+#define OPT_format 25
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 25
+#define OPT_file 26
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 26
+#define OPT_exclude_path 27
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 27
+#define OPT_link 28
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 28
+#define OPT_hardlink 29
 
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 29
+#define OPT_hash 30
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 30
+#define OPT_verbose 31
 
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
-#define OPT_verbose_level 31
+#define OPT_verbose_level 32
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 32
+#define OPT_quiet 33
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 33
+#define OPT_db 34
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 34
+#define OPT_help 35
 
 // no_unique (--no-unique) : ignore unique table even if present, for testing
-#define OPT_no_unique 35
+#define OPT_no_unique 36
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 36
+#define OPT_x_small_buffers 37
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 37
+#define OPT_x_testing 38
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

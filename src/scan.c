@@ -336,7 +336,9 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
         // If it is a file, just process it now
 #ifdef USE_FIEMAP
         if (hdd_mode) {
-          block = get_first_block_open(newpath, fiemap);
+          if (sort_bypass != SORT_BY_NONE && sort_bypass != SORT_BY_INODE) {
+            block = get_first_block_open(newpath, fiemap);
+          }
         }
 #endif
         (*process_file)(dbh, block, inode, size, newpath,

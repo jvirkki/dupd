@@ -355,7 +355,9 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
       char first_path[DUPD_PATH_MAX];
       build_path(prior, first_path);
 #ifdef USE_FIEMAP
-      prevblock = get_first_block_open(first_path, fiemap);
+      if (sort_bypass != SORT_BY_NONE && sort_bypass != SORT_BY_INODE) {
+        prevblock = get_first_block_open(first_path, fiemap);
+      }
 #endif
       STRUCT_STAT info;
       if (get_file_info(first_path, &info)) {                // LCOV_EXCL_START

@@ -87,6 +87,7 @@ long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 int report_format = REPORT_FORMAT_TEXT;
 pthread_key_t thread_name;
 pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
+int sort_bypass = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -407,6 +408,23 @@ static int process_args(int argc, char * argv[])
     printf("error: SSD mode and HDD mode are mutually exclusive\n");
     return 2;
   }
+
+  char * sortby = opt_string(options[OPT_sort_by], "def");
+  if (!strcmp("inode", sortby)) {
+    sort_bypass = SORT_BY_INODE;
+  } else if (!strcmp("block", sortby)) {
+    sort_bypass = SORT_BY_BLOCK;
+  } else if (!strcmp("none", sortby)) {
+    sort_bypass = SORT_BY_NONE;
+  }
+  if (sort_bypass != 0) {
+    LOG(L_INFO, "Sort bypass set to %s\n", sortby);
+    if (hardlink_is_unique) {
+      printf("Don't do that..\n");
+      return 2;
+    }
+  }
+
 
   return 0;
 }

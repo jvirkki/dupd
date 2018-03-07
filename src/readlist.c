@@ -128,6 +128,21 @@ void sort_read_list(int use_block)
   sort_blocks = 1;
 #endif
 
+  switch (sort_bypass) {
+  case SORT_BY_NONE:
+    return;
+  case SORT_BY_INODE:
+    qsort(read_list, read_list_end,
+          sizeof(struct read_list_entry), rl_compare_i);
+    return;
+  case SORT_BY_BLOCK:
+    if (sort_blocks) {
+      qsort(read_list, read_list_end,
+            sizeof(struct read_list_entry), rl_compare_b);
+    }
+    return;
+  }
+
   if (!use_block) { sort_blocks = 0; }
   if (!hdd_mode) { sort_blocks = 0; }
 
