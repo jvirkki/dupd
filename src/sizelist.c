@@ -1247,9 +1247,6 @@ static void * read_list_reader(void * arg)
 
   } while (rlpos < read_list_end);
 
-  long now = get_current_time_millis();
-  stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
-
   signal_hashers(hasher_info);
 
   LOG(L_THREADS, "DONE\n");
@@ -1309,9 +1306,6 @@ static void * size_list_reader(void * arg)
     size_node = size_node_next;
 
   } while (size_node != NULL);
-
-  long now = get_current_time_millis();
-  stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
 
   signal_hashers(hasher_info);
 
@@ -1455,6 +1449,9 @@ void process_size_list(sqlite3 * dbh)
 
   d_join(reader_thread, NULL);
   LOG(L_THREADS, "process_size_list: joined reader thread\n");
+
+  long now = get_current_time_millis();
+  stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
 
   // Process any remaining entries in round 2.
   process_round_2(dbh);
