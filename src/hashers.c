@@ -125,7 +125,7 @@ void * round1_hasher(void * arg)
   char self[80];
   struct hash_table * ht = init_hash_table();
 
-  snprintf(self, 80,  "      [R12-hasher-%d] ", info->thread_num);
+  snprintf(self, 80,  "      [R1-hasher-%d] ", info->thread_num);
   pthread_setspecific(thread_name, self);
   LOG(L_THREADS, "Thread created\n");
 
@@ -136,7 +136,7 @@ void * round1_hasher(void * arg)
     // Get an entry from my queue or wait for it.
     // The reader thread adds path list entries to my work queue.
 
-    d_mutex_lock(&info->queue_lock, "R12-hasher-get");
+    d_mutex_lock(&info->queue_lock, "R1-hasher-get");
 
     while (info->done == 0 && info->queue_pos < 0) {
       d_cond_wait(&info->queue_cond, &info->queue_lock);
