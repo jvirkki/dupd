@@ -385,6 +385,7 @@ void scan()
   init_filecompare();
   init_sizetree();
   init_scanlist();
+  init_dirtree();
 
   if (hdd_mode) { init_read_list(); }
 

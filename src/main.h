@@ -38,6 +38,11 @@
 #ifdef __OpenBSD__
 #endif
 
+#define MB1 (1024 * 1024)
+#define MB8 (1024 * 1024 * 8)
+#define MB16 (1024 * 1024 * 16)
+#define GB1 (1024 * 1024 * 1024)
+
 
 /** ***************************************************************************
  * Verbosity is 1 by default, increased by one for every -v command

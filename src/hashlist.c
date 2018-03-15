@@ -244,6 +244,16 @@ void free_hash_table(struct hash_table * hl)
  * Public function, see header file.
  *
  */
+void free_hashlist()
+{
+  if (path_buffer != NULL) { free(path_buffer); }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void add_hash_table(struct hash_table * hl, struct path_list_entry * file,
                     uint64_t blocks, int bsize, off_t skip)
 {

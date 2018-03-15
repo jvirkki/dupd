@@ -43,10 +43,6 @@
 #define START_PATH_NULL 0
 #define START_PATH_GIVEN 1
 #define START_PATH_ERROR 2
-#define MB1 (1024 * 1024)
-#define MB8 (1024 * 1024 * 8)
-#define MB16 (1024 * 1024 * 16)
-#define GB1 (1024 * 1024 * 1024)
 
 static int operation = -1;
 static int start_path_count = 0;
@@ -545,6 +541,8 @@ int main(int argc, char * argv[])
   free_scanlist();
   free_start_paths();
   free_read_list();
+  free_dirtree();
+  free_hashlist();
 
   stats_time_total = get_current_time_millis() - stats_main_start;
 

@@ -43,6 +43,17 @@ void free_hash_table(struct hash_table * hl);
 
 
 /** ***************************************************************************
+ * Free any remaining buffers.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void free_hashlist();
+
+
+/** ***************************************************************************
  * Create a new hash table, empty but initialized.
  *
  * Caller is responsible for calling free_hash_table() when done.

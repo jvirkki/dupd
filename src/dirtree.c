@@ -22,6 +22,103 @@
 #include <string.h>
 
 #include "dirtree.h"
+#include "main.h"
+#include "utils.h"
+
+struct dirbuf_list {
+  char * ptr;
+  char * pos;
+  int size;
+  int free;
+  struct dirbuf_list * next;
+};
+
+static struct dirbuf_list * first_dirbuf;
+static struct dirbuf_list * last_dirbuf;
+static int direntry_size = sizeof(struct direntry);
+static int total_dirbufs = 0;
+
+
+/** ***************************************************************************
+ * Return a pointer to 'size' bytes in the dirbuf buffers.
+ *
+ * A new dirbuf is allocated if not enough space is available.
+ *
+ * Parameters:
+ *     size - Size (bytes) of the space requested.
+ *
+ * Return: Pointer to allocated space.
+ *
+ */
+static inline char * dirbuf_alloc(int size)
+{
+  if (last_dirbuf->free < size) {
+    int nextsize = last_dirbuf->size * 2;
+    struct dirbuf_list * n;
+
+    n = (struct dirbuf_list *)malloc(sizeof(struct dirbuf_list));
+    last_dirbuf->next = n;
+    last_dirbuf = n;
+
+    last_dirbuf->ptr = (char *)malloc(nextsize);
+    last_dirbuf->pos = last_dirbuf->ptr;
+    last_dirbuf->size = nextsize;
+    last_dirbuf->free = nextsize;
+    last_dirbuf->next = NULL;
+  }
+
+  char * p = last_dirbuf->pos;
+  last_dirbuf->pos += size;
+  last_dirbuf->free -= size;
+  total_dirbufs += size;
+
+  return p;
+}
+
+
+/** ***************************************************************************
+ * Public function, see dirtree.h
+ *
+ */
+void init_dirtree()
+{
+  int init_size = 64 * MB1;
+
+  if (x_small_buffers) { init_size = 1024; }
+
+  first_dirbuf = (struct dirbuf_list *)malloc(sizeof(struct dirbuf_list));
+  first_dirbuf->ptr = (char *)malloc(init_size);
+
+  last_dirbuf = first_dirbuf;
+  last_dirbuf->pos = last_dirbuf->ptr;
+  last_dirbuf->size = init_size;
+  last_dirbuf->free = init_size;
+  last_dirbuf->next = NULL;
+}
+
+
+/** ***************************************************************************
+ * Public function, see dirtree.h
+ *
+ */
+void free_dirtree()
+{
+  struct dirbuf_list * p;
+  struct dirbuf_list * prev;
+
+  p = first_dirbuf;
+  while(p != NULL) {
+    free(p->ptr);
+    prev = p;
+    p = p->next;
+    free(prev);
+  }
+
+  first_dirbuf = NULL;
+  last_dirbuf = NULL;
+
+  LOG(L_RESOURCES, "Total dirbuf space consumed: %d\n", total_dirbufs);
+}
 
 
 /** ***************************************************************************
@@ -30,21 +127,11 @@
  */
 struct direntry * new_child_dir(char * name, struct direntry * parent)
 {
-  struct direntry * entry = (struct direntry *)malloc(sizeof(struct direntry));
-  if (!entry) {
-    printf("error: unable to allocate direntry [%s]\n", name);
-    exit(1);
-  }
+  struct direntry * entry = (struct direntry *)dirbuf_alloc(direntry_size);
 
   uint8_t len = (uint8_t)strlen(name);
   entry->name_size = len;
-
-  entry->name = (char *)malloc(len);
-  if (!entry->name) {
-    printf("error: unable to allocate direntry name\n");
-    exit(1);
-  }
-
+  entry->name = dirbuf_alloc(len);
   memcpy(entry->name, name, len);
 
   entry->parent = parent;

@@ -26,10 +26,32 @@
 
 struct direntry {
   struct direntry * parent;
-  uint16_t total_size;      // Total length of the path (including self 'name')
-  uint8_t name_size;        // Length of the 'name' string
   char * name;              // NOT null-terminated directory name
+  uint8_t name_size;        // Length of the 'name' string
+  uint16_t total_size;      // Total length of the path (including self 'name')
 };
+
+
+/** ***************************************************************************
+ * Initialize dirtree.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void init_dirtree();
+
+
+/** ***************************************************************************
+ * Free any dirtree memory.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void free_dirtree();
 
 
 /** ***************************************************************************
