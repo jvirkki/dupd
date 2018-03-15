@@ -88,7 +88,7 @@ const char * file_state(int state);
  *
  */
 void dump_path_list(const char * line, off_t size,
-                    struct path_list_head * head);
+                    struct path_list_head * head, int dump_all);
 
 
 /** ***************************************************************************

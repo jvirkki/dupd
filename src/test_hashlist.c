@@ -115,5 +115,7 @@ void test_hash_table()
   LOG(L_PROGRESS, "=== hash table ===\n");
 
   init_path_block();
+  init_dirtree();
   test_hash_table_basics();
+  free_dirtree();
 }

@@ -56,7 +56,7 @@ struct fiemap * fiemap = NULL;
  *
  */
 void dump_path_list(const char * line, off_t size,
-                    struct path_list_head * head)
+                    struct path_list_head * head, int dump_all)
 {
   printf("----- dump path block list for size %ld -----\n", (long)size);
   printf("%s\n", line);
@@ -84,7 +84,7 @@ void dump_path_list(const char * line, off_t size,
   char * filename;
 
   while (entry != NULL) {
-    if (counted < 2 || log_level >= L_TRACE) {
+    if (counted < 2 || log_level >= L_TRACE || dump_all) {
       printf(" --entry %d\n", counted);
       printf("   file state: %s\n", file_state(entry->state));
       printf("   filename_size: %d\n", entry->filename_size);
@@ -101,9 +101,9 @@ void dump_path_list(const char * line, off_t size,
         bzero(buffer, DUPD_PATH_MAX);
         build_path(entry, buffer);
         printf("   built path: [%s]\n", buffer);
-        valid++;
+        if (entry->state != FS_INVALID) { valid++; }
       } else {
-        printf("   filename: REMOVED EARLIER\n");
+        printf("   filename: REMOVED EARLIER\n"); // TODO shouldn't exist
       }
     }
     counted++;
@@ -286,7 +286,7 @@ struct path_list_head * insert_first_path(char * filename,
   memcpy(filebuf, filename, filename_len);
 
   LOG_TRACE {
-    dump_path_list("AFTER insert_first_path", -1, head);
+    dump_path_list("AFTER insert_first_path", -1, head, 0);
   }
 
   stats_path_list_entries++;
@@ -309,7 +309,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   space_used += space_needed;
 
   LOG_MORE_TRACE {
-    dump_path_list("BEFORE insert_end_path", size, head);
+    dump_path_list("BEFORE insert_end_path", size, head, 0);
   }
 
   // The entry will live at the top of the available space (next_entry)
@@ -374,7 +374,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   }
 
   LOG_TRACE {
-    dump_path_list("AFTER insert_end_path", size, head);
+    dump_path_list("AFTER insert_end_path", size, head, 0);
   }
 
   if (head->list_size > stats_max_pathlist) {
@@ -445,6 +445,7 @@ int mark_path_entry_invalid(struct path_list_head * head,
 {
   entry->state = FS_INVALID;
   head->list_size--;
+  LOG(L_TRACE, "Reduced list size to %d\n", head->list_size);
 
   { // TODO
     char * fname = pb_get_filename(entry);
@@ -456,6 +457,10 @@ int mark_path_entry_invalid(struct path_list_head * head,
   if (head->list_size == 1) {
     head->state = PLS_DONE;
     head->list_size = 0;
+    d_mutex_lock(&stats_lock, "mark invalid stats");
+    stats_sets_dup_not[ROUND1]++;
+    d_mutex_unlock(&stats_lock);
+    LOG(L_TRACE, "Reduced list size to %d, state now DONE\n", head->list_size);
 
     struct path_list_entry * e = pb_get_first_entry(head);
     int good = 0;
@@ -471,7 +476,7 @@ int mark_path_entry_invalid(struct path_list_head * head,
       case FS_R1_BUFFER_FILLED:
         if (e->buffer == NULL) {
           printf("error: null buffer but FS_R1_BUFFER_FILLED\n");
-          dump_path_list("bad state", head->sizelist->size, head);
+          dump_path_list("bad state", head->sizelist->size, head, 0);
           exit(1);
         }
         free(e->buffer);
@@ -485,13 +490,13 @@ int mark_path_entry_invalid(struct path_list_head * head,
 
       case FS_R1_DONE:
         printf("error: unexpected state FS_R1_DONE in unfinished pathlist\n");
-        dump_path_list("bad state", head->sizelist->size, head);
+        dump_path_list("bad state", head->sizelist->size, head, 0);
         exit(1);
         break;
 
       default:
         printf("error: invalid state seen in mark_path_entry_invalid\n");
-        dump_path_list("bad state", head->sizelist->size, head);
+        dump_path_list("bad state", head->sizelist->size, head, 0);
         exit(1);
         break;
       }
@@ -501,7 +506,7 @@ int mark_path_entry_invalid(struct path_list_head * head,
 
     if (good != 1) {
       printf("error: mark_path_entry_invalid wrong count of good paths\n");
-      dump_path_list("bad state", head->sizelist->size, head);
+      dump_path_list("bad state", head->sizelist->size, head, 0);
       exit(1);
     }
   }

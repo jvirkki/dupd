@@ -26,6 +26,7 @@
 #include "copying.h"
 #include "filecompare.h"
 #include "hash.h"
+#include "hashlist.h"
 #include "main.h"
 #include "optgen.h"
 #include "paths.h"

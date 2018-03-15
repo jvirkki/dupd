@@ -170,8 +170,7 @@ void * round1_hasher(void * arg)
       if (entry->state != PLS_R1_BUFFERS_FULL) {
         printf("error: round1_hasher bad path list state %s\n",
                pls_state(entry->state));
-        log_level = L_TRACE;
-        dump_path_list("bad state", 0, entry);
+        dump_path_list("bad state", 0, entry, 1);
         exit(1);
       }
 

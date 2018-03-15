@@ -105,6 +105,32 @@ static char * inner_state_name(int state)
 
 
 /** ***************************************************************************
+ * Debug output, show the whole size list.
+ *
+ */
+static void dump_size_list()
+{
+  struct size_list * node = size_list_head;
+
+  printf("--- DUMP SIZE LIST\n");
+  while (node != NULL) {
+    printf("state         : %s\n", inner_state_name(node->state));
+    printf("size          : %jd\n", node->size);
+    printf("fully read    : %d\n", node->fully_read);
+    printf("buffers_filled: %" PRIu32 "\n", node->buffers_filled);
+    printf("bytes_read    : %jd\n", node->bytes_read);
+    printf("next          : %p\n", node->next);
+    printf("dnext         : %p\n", node->dnext);
+    printf("  == pathlist follows:\n");
+    dump_path_list("  == pathlist follows", node->size, node->path_list, 1);
+
+    node = node->next;
+  }
+  printf("--- END SIZE LIST\n");
+}
+
+
+/** ***************************************************************************
  * Print total sets processed.
  *
  */
@@ -682,7 +708,7 @@ static void process_round_2(sqlite3 * dbh)
     if (size_node->path_list->state != PLS_DONE) { remaining++; }
     if (size_node->path_list->state == PLS_NEW) {
         printf("error: path list in PLS_NEW state!\n");
-        dump_path_list("bad state", size_node->size, size_node->path_list);
+        dump_path_list("bad state", size_node->size, size_node->path_list, 0);
     }
     size_node->next = next_node;
     size_node = size_node->next;
@@ -1021,10 +1047,7 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
               (long)received, path, (long)size_node->bytes_read);
           free(buffer);
           dec_stats_read_buffers_allocated(size_node->bytes_read);
-          int remain = mark_path_entry_invalid(size_node->path_list, node);
-          if (remain == 0) {
-            stats_sets_dup_not[ROUND1]++;
-          }
+          mark_path_entry_invalid(size_node->path_list, node);
 
         } else {
           node->buffer = buffer;
@@ -1091,12 +1114,19 @@ static void submit_path_list(int thread,
 {
   struct size_list * sizelist = pathlist_head->sizelist;
   long size = (long)sizelist->size;
-  int count = pathlist_head->list_size;
   struct hasher_param * queue_info = NULL;
 
   LOG(L_THREADS, "Inserting set (%d files of size %ld) in state %s "
       "into hasher queue %d\n",
-      count, size, pls_state(pathlist_head->state), thread);
+      pathlist_head->list_size, size,
+      pls_state(pathlist_head->state), thread);
+
+  if (pathlist_head->list_size == 0) {
+    LOG(L_THREADS, "SKIP set (%d files of size %ld) in state %s ",
+        pathlist_head->list_size, size, pls_state(pathlist_head->state));
+    pathlist_head->state = PLS_DONE;
+    return;
+  }
 
   if (pathlist_head->state != PLS_R1_BUFFERS_FULL) {
     printf("error: pathlist not in correct state for going into queue\n");
@@ -1120,7 +1150,7 @@ static void submit_path_list(int thread,
   queue_info->queue_pos++;
   queue_info->queue[queue_info->queue_pos] = pathlist_head;
   LOG(L_MORE_THREADS, "Set (%d files of size %ld) now in queue %d pos %d\n",
-      count, size, thread, queue_info->queue_pos);
+      pathlist_head->list_size, size, thread, queue_info->queue_pos);
 
   // Signal the corresponding hasher thread so it'll pick up the pathlist
   d_cond_signal(&queue_info->queue_cond);
@@ -1206,7 +1236,6 @@ static void * read_list_reader(void * arg)
   ssize_t received;
   off_t max_to_read;
   off_t size;
-  uint32_t count;
   int rlpos = 0;
   int new_avg;
   int bfpct;
@@ -1252,7 +1281,6 @@ static void * read_list_reader(void * arg)
       max_to_read = hash_one_block_size;
     }
 
-    count = pathlist_head->list_size;
     build_path(pathlist_entry, path);
 
     if (path[0] == 0) {
@@ -1261,7 +1289,8 @@ static void * read_list_reader(void * arg)
     }
 
     LOG(L_MORE_THREADS, "Set (%d files of size %ld in state %s): read %s\n",
-        count, (long)size, file_state(pathlist_entry->state), path);
+        pathlist_head->list_size, (long)size,
+        file_state(pathlist_entry->state), path);
 
     buffer = (char *)malloc(max_to_read);
     inc_stats_read_buffers_allocated(max_to_read);
@@ -1275,10 +1304,7 @@ static void * read_list_reader(void * arg)
           (long)received, path, (long)max_to_read);
       free(buffer);
       dec_stats_read_buffers_allocated(max_to_read);
-      int remain = mark_path_entry_invalid(pathlist_head, pathlist_entry);
-      if (remain == 0) {
-        stats_sets_dup_not[ROUND1]++;
-      }
+      mark_path_entry_invalid(pathlist_head, pathlist_entry);
 
     } else {
       pathlist_entry->buffer = buffer;
@@ -1290,11 +1316,6 @@ static void * read_list_reader(void * arg)
 
       sizelist->buffers_filled++;
       pathlist_head->state = PLS_R1_IN_PROGRESS;
-      if (sizelist->buffers_filled == count) {
-        pathlist_head->state = PLS_R1_BUFFERS_FULL;
-        submit_path_list(next_queue, pathlist_head, hasher_info);
-        next_queue = (next_queue + 1) % HASHER_THREADS;
-      }
 
       read_count++;
       new_avg = avg_read_time + (took - avg_read_time) / read_count;
@@ -1302,6 +1323,16 @@ static void * read_list_reader(void * arg)
 
       LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
           took, read_count, avg_read_time);
+    }
+
+    // buffers_filles may have increased due to successful read, OR,
+    // list_size may have decreased due to read failure. Either way,
+    // if they are now equal we can hand off this path list.
+
+    if (sizelist->buffers_filled == pathlist_head->list_size) {
+      pathlist_head->state = PLS_R1_BUFFERS_FULL;
+      submit_path_list(next_queue, pathlist_head, hasher_info);
+      next_queue = (next_queue + 1) % HASHER_THREADS;
     }
 
     //    d_mutex_unlock(&sizelist->lock);
@@ -1404,7 +1435,7 @@ struct size_list * add_to_size_list(off_t size,
 {
   if (size < 0) {
     printf("add_to_size_list: bad size! %ld\n", (long)size); // LCOV_EXCL_START
-    dump_path_list("bad size", size, path_list);
+    dump_path_list("bad size", size, path_list, 0);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
@@ -1521,6 +1552,7 @@ void process_size_list(sqlite3 * dbh)
   if (stats_read_buffers_allocated != 0) {
     printf("error: after round1 complete, buffers: %" PRIu64 "\n",
            stats_read_buffers_allocated);
+    dump_size_list();
     exit(1);
   }
 
