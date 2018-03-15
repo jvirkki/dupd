@@ -990,6 +990,7 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
   char path[DUPD_PATH_MAX];
   char * buffer;
   ssize_t received;
+  int count = 0;
 
   node = pb_get_first_entry(size_node->path_list);
 
@@ -1003,37 +1004,43 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
 
   do {
     build_path(node, path);
+    count++;
+    LOG(L_MORE_THREADS, "reader_read_bytes: path %d state %s\n",
+        count, file_state(node->state));
 
-    // The path may be null if this particular path within this pathlist
-    // has been discarded as a potential duplicate already. If so, skip.
-    if (path[0] != 0) { // TODO
-      buffer = (char *)malloc(size_node->bytes_read);
-      received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
+    if (node->state == FS_NEW) {
+      // The path may be null if this particular path within this pathlist
+      // has been discarded as a potential duplicate already. If so, skip.
+      if (path[0] != 0) { // TODO
+        buffer = (char *)malloc(size_node->bytes_read);
+        inc_stats_read_buffers_allocated(size_node->bytes_read);
+        received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
 
-      if (received != size_node->bytes_read) {
-        LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
-            (long)received, path, (long)size_node->bytes_read);
-        { // TODO
-          char * fname = pb_get_filename(node);
-          fname[0] = 0;
+        if (received != size_node->bytes_read) {
+          LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
+              (long)received, path, (long)size_node->bytes_read);
+          free(buffer);
+          dec_stats_read_buffers_allocated(size_node->bytes_read);
+          int remain = mark_path_entry_invalid(size_node->path_list, node);
+          if (remain == 0) {
+            stats_sets_dup_not[ROUND1]++;
+          }
+
+        } else {
+          node->buffer = buffer;
+          node->state = FS_R1_BUFFER_FILLED;
         }
-        size_node->path_list->list_size--;
-        free(buffer);
+
+        LOG_TRACE {
+          if (received == size_node->bytes_read) {
+            LOG(L_TRACE,
+                "read %ld bytes from %s\n", (long)size_node->bytes_read,path);
+          }
+        }
 
       } else {
-        node->buffer = buffer;
-        node->state = FS_R1_BUFFER_FILLED;
+        if (node->buffer != NULL) { printf("\n\n**** TODO WHAT\n"); exit(1); }
       }
-
-      LOG_TRACE {
-        if (received == size_node->bytes_read) {
-          LOG(L_TRACE,
-              "read %ld bytes from %s\n", (long)size_node->bytes_read,path);
-        }
-      }
-
-    } else {
-      node->buffer = NULL;
     }
 
     node = node->next;
@@ -1091,6 +1098,11 @@ static void submit_path_list(int thread,
       "into hasher queue %d\n",
       count, size, pls_state(pathlist_head->state), thread);
 
+  if (pathlist_head->state != PLS_R1_BUFFERS_FULL) {
+    printf("error: pathlist not in correct state for going into queue\n");
+    exit(1);
+  }
+
   queue_info = &hasher_info[thread];
 
   d_mutex_lock(&queue_info->queue_lock, "adding to queue");
@@ -1117,6 +1129,65 @@ static void submit_path_list(int thread,
 
 
 /** ***************************************************************************
+ * Size list-based reader used to flush buffer usage down.
+ *
+ * This is called from HDD reader (read_list_reader) if the data buffer
+ * usage grows beyond desired limit. Here we'll read in size_list order
+ * filling missing buffers so they can be hashed and flushed.
+ *
+ * Parameters:
+ *    arg - Contains hasher_info array.
+ *
+ * Return: none
+ *
+ */
+static void * size_list_flusher(void * arg)
+{
+  struct size_list * size_node;
+  int sets;
+  int bfpct;
+  int next_queue = 0;
+  off_t max_to_read;
+  struct hasher_param * hasher_info = (struct hasher_param *)arg;
+
+  size_node = size_list_head;
+  sets = 0;
+  stats_flusher_active = 1;
+
+  do {
+    LOG(L_THREADS, "FL.SET %d size:%ld state:%s\n", ++sets,
+        (long)size_node->size, pls_state(size_node->path_list->state));
+
+    if (size_node->path_list->state == PLS_R1_IN_PROGRESS) {
+
+      if (size_node->size <= round1_max_bytes) {
+        max_to_read = round1_max_bytes;
+      } else {
+        max_to_read = hash_one_block_size;
+      }
+
+      reader_read_bytes(size_node, max_to_read);
+      size_node->path_list->state = PLS_R1_BUFFERS_FULL;
+      submit_path_list(next_queue, size_node->path_list, hasher_info);
+      next_queue = (next_queue + 1) % HASHER_THREADS;
+
+      bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
+      if (bfpct < 85) {
+        LOG(L_THREADS, "size_list_flusher returning at %d\n", bfpct);
+        stats_flusher_active = 0;
+        return NULL;
+      }
+    }
+
+    size_node = size_node->next;
+  } while (size_node != NULL);
+
+  stats_flusher_active = 0;
+  return NULL;
+}
+
+
+/** ***************************************************************************
  * Reader thread for HDD mode.
  *
  * This thread reads bytes from disk in readlist order (not by sizelist group)
@@ -1138,6 +1209,7 @@ static void * read_list_reader(void * arg)
   uint32_t count;
   int rlpos = 0;
   int new_avg;
+  int bfpct;
   long t1;
   long took;
   struct path_list_entry * pathlist_entry;
@@ -1165,13 +1237,7 @@ static void * read_list_reader(void * arg)
     pathlist_entry = rlentry->pathlist_self;
     sizelist = pathlist_head->sizelist;
 
-    // A path list may have been marked done earlier if it was down to one
-    // file. Also a path entry may have been marked invalid when removing
-    // duplicate hardlinks. In either case, nothing to do for this entry.
-
-    if (pathlist_entry->state == FS_INVALID ||
-        pathlist_head->state == PLS_DONE) {
-      pathlist_entry->state = FS_INVALID;
+    if (pathlist_entry->state != FS_NEW) {
       rlpos++;
       continue;
     }
@@ -1198,6 +1264,7 @@ static void * read_list_reader(void * arg)
         count, (long)size, file_state(pathlist_entry->state), path);
 
     buffer = (char *)malloc(max_to_read);
+    inc_stats_read_buffers_allocated(max_to_read);
     t1 = get_current_time_millis();
     received = read_file_bytes(path, buffer, max_to_read, 0);
     took = get_current_time_millis() - t1;
@@ -1206,17 +1273,11 @@ static void * read_list_reader(void * arg)
       // File may be unreadable or changed size, either way, ignore it.
       LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
           (long)received, path, (long)max_to_read);
-      pathlist_entry->state = FS_INVALID;
       free(buffer);
-      pathlist_head->list_size--;
-      // If this path list is down to 1 entry, there is no work
-      // remaining so mark it done.
-      if (pathlist_head->list_size <= 1) {
-        pathlist_head->state = PLS_DONE;
+      dec_stats_read_buffers_allocated(max_to_read);
+      int remain = mark_path_entry_invalid(pathlist_head, pathlist_entry);
+      if (remain == 0) {
         stats_sets_dup_not[ROUND1]++;
-        LOG(L_MORE_THREADS, "Set (%d files of size %ld): state now %s\n",
-            pathlist_head->list_size, (long)size,
-            pls_state(pathlist_head->state));
       }
 
     } else {
@@ -1228,6 +1289,7 @@ static void * read_list_reader(void * arg)
       }
 
       sizelist->buffers_filled++;
+      pathlist_head->state = PLS_R1_IN_PROGRESS;
       if (sizelist->buffers_filled == count) {
         pathlist_head->state = PLS_R1_BUFFERS_FULL;
         submit_path_list(next_queue, pathlist_head, hasher_info);
@@ -1245,6 +1307,12 @@ static void * read_list_reader(void * arg)
     //    d_mutex_unlock(&sizelist->lock);
     rlpos++;
 
+    bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
+    if (bfpct > 99) {
+      LOG(L_THREADS, "Buffer usage %d, flushing...\n", bfpct);
+      size_list_flusher(hasher_info);
+    }
+
   } while (rlpos < read_list_end);
 
   LOG(L_THREADS, "DONE\n");
@@ -1261,7 +1329,7 @@ static void * read_list_reader(void * arg)
  * in the path list.
  *
  * Parameters:
- *    arg - Not used.
+ *    arg - Contains hasher_param array.
  *
  * Return: none
  *
@@ -1283,7 +1351,7 @@ static void * size_list_reader(void * arg)
   sets = 0;
 
   do {
-    d_mutex_lock(&size_node->lock, "reader top");
+    //    d_mutex_lock(&size_node->lock, "reader top");
 
     LOG(L_MORE_THREADS, "SET %d size:%ld state:%s\n", ++sets,
         (long)size_node->size, pls_state(size_node->path_list->state));
@@ -1300,7 +1368,7 @@ static void * size_list_reader(void * arg)
     next_queue = (next_queue + 1) % HASHER_THREADS;
 
     size_node_next = size_node->next;
-    d_mutex_unlock(&size_node->lock);
+    //    d_mutex_unlock(&size_node->lock);
     size_node = size_node_next;
 
   } while (size_node != NULL);
@@ -1449,6 +1517,12 @@ void process_size_list(sqlite3 * dbh)
 
   long now = get_current_time_millis();
   stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
+
+  if (stats_read_buffers_allocated != 0) {
+    printf("error: after round1 complete, buffers: %" PRIu64 "\n",
+           stats_read_buffers_allocated);
+    exit(1);
+  }
 
   // Process any remaining entries in round 2.
   process_round_2(dbh);

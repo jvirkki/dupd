@@ -182,6 +182,15 @@ int cpu_cores();
 
 
 /** ***************************************************************************
+ * Return RAM available on system.
+ *
+ * Return: RAM available on system.
+ *
+ */
+uint64_t total_ram();
+
+
+/** ***************************************************************************
  * Dump memory region to stdout, for debugging.
  *
  * Parameters:

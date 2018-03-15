@@ -102,7 +102,7 @@ static void * scan_status(void * arg)
   const char * files =
     "Files: %8u                      %6u errors                 %12s";
   const char * sets =
-    "Sets : %8u/%8u %10uK (%7ldK/s) %4uq            %12s";
+    "Sets : %8u/%8u %10uK (%7ldK/s) %4uq %3d%%%c      %12s";
   const char * sets_done =
     "Round %d: %8u groups of duplicates confirmed                   %12s\n";
 
@@ -133,6 +133,8 @@ static void * scan_status(void * arg)
 
   int round = 0;
   int queued;
+  int bfpct;
+  char scantype = 'b';
 
   do {
     do {
@@ -147,8 +149,12 @@ static void * scan_status(void * arg)
         queued += stats_hasher_queue_len[q];
       }
       if (queued < 0) { queued = 0; }
+      bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
+      if (bfpct > 999) { bfpct = 999; } // Keep alignment if this spikes
+      if (stats_flusher_active) { scantype = 'B'; } else { scantype = 'b'; }
       c = snprintf(line, 100, sets, stats_size_list_done,
-                   stats_size_list_count, kread, ksec, queued, timebuf);
+                   stats_size_list_count, kread, ksec, queued,
+                   bfpct, scantype, timebuf);
       SHOW_LINE;
       status_wait();
 
@@ -358,6 +364,10 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
     }
     closedir(dir);
   }
+
+#ifdef USE_FIEMAP
+  free(fiemap);
+#endif
 }
 
 

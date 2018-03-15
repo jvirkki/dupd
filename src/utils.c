@@ -160,6 +160,16 @@ int cpu_cores()
  * Public function, see header file.
  *
  */
+uint64_t total_ram()
+{
+  return (uint64_t)sysconf (_SC_PHYS_PAGES) * (uint64_t)sysconf (_SC_PAGESIZE);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void memdump(char * text, char * ptr, int bytes)
 {
   int i;

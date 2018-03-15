@@ -407,6 +407,7 @@ const char * pls_state(int state)
 {
   switch(state) {
   case PLS_NEW:                      return "PLS_NEW";
+  case PLS_R1_IN_PROGRESS:           return "PLS_R1_IN_PROGRESS";
   case PLS_R1_BUFFERS_FULL:          return "PLS_R1_BUFFERS_FULL";
   case PLS_R2_NEEDED:                return "PLS_R2_NEEDED";
   case PLS_DONE:                     return "PLS_DONE";
@@ -427,8 +428,83 @@ const char * file_state(int state)
   case FS_NEW:                        return "FS_NEW";
   case FS_R1_BUFFER_FILLED:           return "FS_R1_BUFFER_FILLED";
   case FS_INVALID:                    return "FS_INVALID";
+  case FS_R1_DONE:                    return "FS_R1_DONE";
   default:
     printf("\nerror: unknown file_state %d\n", state);
     exit(1);
   }
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
+int mark_path_entry_invalid(struct path_list_head * head,
+                            struct path_list_entry * entry)
+{
+  entry->state = FS_INVALID;
+  head->list_size--;
+
+  { // TODO
+    char * fname = pb_get_filename(entry);
+    fname[0] = 0;
+  }
+
+  // If this path list is down to one file, nothing to see here.
+  // But need to find that remaining file to mark it invalid as well.
+  if (head->list_size == 1) {
+    head->state = PLS_DONE;
+    head->list_size = 0;
+
+    struct path_list_entry * e = pb_get_first_entry(head);
+    int good = 0;
+
+    while (e != NULL) {
+      switch (e->state) {
+
+      case FS_NEW:
+        e->state = FS_INVALID;
+        good++;
+        break;
+
+      case FS_R1_BUFFER_FILLED:
+        if (e->buffer == NULL) {
+          printf("error: null buffer but FS_R1_BUFFER_FILLED\n");
+          dump_path_list("bad state", head->sizelist->size, head);
+          exit(1);
+        }
+        free(e->buffer);
+        e->buffer = NULL;
+        dec_stats_read_buffers_allocated(head->sizelist->bytes_read);
+        good++;
+        break;
+
+      case FS_INVALID:
+        break;
+
+      case FS_R1_DONE:
+        printf("error: unexpected state FS_R1_DONE in unfinished pathlist\n");
+        dump_path_list("bad state", head->sizelist->size, head);
+        exit(1);
+        break;
+
+      default:
+        printf("error: invalid state seen in mark_path_entry_invalid\n");
+        dump_path_list("bad state", head->sizelist->size, head);
+        exit(1);
+        break;
+      }
+
+      e = e->next;
+    }
+
+    if (good != 1) {
+      printf("error: mark_path_entry_invalid wrong count of good paths\n");
+      dump_path_list("bad state", head->sizelist->size, head);
+      exit(1);
+    }
+  }
+
+  return head->list_size;
 }

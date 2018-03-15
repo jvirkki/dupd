@@ -21,6 +21,7 @@
 #define _DUPD_MAIN_H
 
 #include <pthread.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 #ifdef __APPLE__
@@ -351,10 +352,17 @@ extern int report_format;
 
 
 /** ***************************************************************************
- * Thread name used for logging (at L_THREADS and higher)
+ * Thread name used for logging (at L_THREADS and higher).
  *
  */
 extern pthread_key_t thread_name;
+
+
+/** ***************************************************************************
+ * Size limit (bytes) used for data buffers when reading files.
+ *
+ */
+extern uint64_t buffer_limit;
 
 
 /** ***************************************************************************

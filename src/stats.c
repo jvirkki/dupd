@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,6 +81,8 @@ int stats_hashlist_path_realloc = 0;
 int stats_hash_list_len_inc = 0;
 int scan_list_usage_max = 0;
 int scan_list_resizes = 0;
+uint64_t stats_read_buffers_allocated = 0;
+int stats_flusher_active = 0;
 
 
 /** ***************************************************************************
@@ -238,4 +241,28 @@ void save_stats()
   fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);
   fprintf(fp, "\n");
   fclose(fp);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void inc_stats_read_buffers_allocated(int bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_read_buffers_allocated += bytes;
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void dec_stats_read_buffers_allocated(int bytes)
+{
+  d_mutex_lock(&stats_lock, "decreasing buffers");
+  stats_read_buffers_allocated -= bytes;
+  d_mutex_unlock(&stats_lock);
 }

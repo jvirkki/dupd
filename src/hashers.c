@@ -63,6 +63,7 @@ static int build_hash_list_round(sqlite3 * dbh,
     if (node->state == FS_R1_BUFFER_FILLED) {
       add_hash_table_from_mem(hl, node, node->buffer, size_node->bytes_read);
       free(node->buffer);
+      dec_stats_read_buffers_allocated(size_node->bytes_read);
       node->buffer = NULL;
       node->state = FS_R1_DONE;
     }
@@ -167,7 +168,10 @@ void * round1_hasher(void * arg)
     if (entry != NULL) {
 
       if (entry->state != PLS_R1_BUFFERS_FULL) {
-        printf("error: round1_hasher bad path list state %d\n", entry->state);
+        printf("error: round1_hasher bad path list state %s\n",
+               pls_state(entry->state));
+        log_level = L_TRACE;
+        dump_path_list("bad state", 0, entry);
         exit(1);
       }
 

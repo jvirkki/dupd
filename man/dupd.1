@@ -83,6 +83,16 @@ mode is often faster even if the underlying files are stored on a HDD.
 .BR \-S ", " \-\-ssd
 Select SSD (solid state disk) scan mode.
 .TP
+.BR \-\-buflimit " " LIMIT
+Limit read buffer size. LIMIT may be an integer in bytes, or include a
+suffix of M for megabytes or G for gigabytes. The scan animation shows
+the percentage of buffer space in use (%b). Unless that value goes up
+to 100% or beyond during a scan there is no need to adjust this limit.
+Setting this limit to a low value will constrain dupd memory usage
+but possibly at a cost to performance (depends on the data set).
+Note that this limit applies only to the read buffers, it is not
+a cap on total memory usage by the process.
+.TP
 .BR \-\-hidden
 Include hidden files (and hidden directories) in the scan.
 By default these are not included.

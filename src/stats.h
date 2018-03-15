@@ -87,6 +87,8 @@ extern int stats_hashlist_path_realloc;
 extern int stats_hash_list_len_inc;
 extern int scan_list_usage_max;
 extern int scan_list_resizes;
+extern uint64_t stats_read_buffers_allocated;
+extern int stats_flusher_active;
 
 
 /** ***************************************************************************
@@ -116,6 +118,20 @@ void report_stats();
  *
  */
 void save_stats();
+
+
+/** ***************************************************************************
+ * Increment counter of read buffers allocated.
+ *
+ */
+void inc_stats_read_buffers_allocated(int bytes);
+
+
+/** ***************************************************************************
+ * Decrement counter of read buffers allocated.
+ *
+ */
+void dec_stats_read_buffers_allocated(int bytes);
 
 
 #endif

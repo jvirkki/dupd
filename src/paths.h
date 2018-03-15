@@ -63,9 +63,10 @@ struct path_list_head {
 
 // Path List State in path_list_head
 #define PLS_NEW 11
-#define PLS_R1_BUFFERS_FULL 12
-#define PLS_R2_NEEDED 13
-#define PLS_DONE 14
+#define PLS_R1_IN_PROGRESS 13
+#define PLS_R1_BUFFERS_FULL 14
+#define PLS_R2_NEEDED 15
+#define PLS_DONE 16
 
 
 /** ***************************************************************************
@@ -221,6 +222,22 @@ pl_entry_get_valid_node(struct path_list_entry * entry)
 
   return NULL;
 }
+
+
+/** ***************************************************************************
+ * Mark the given path list entry invalid. This is done if it wasn't possible
+ * to read from it. If this reduces the path list to one remaining file,
+ * mark the whole path list done and update file states to match.
+ *
+ * Parameters:
+ *    head  - Head of the path list containing entry.
+ *    entry - The entry to mark invalid.
+ *
+ * Return: remaining size of this path list (may be down to zero)
+ *
+ */
+int mark_path_entry_invalid(struct path_list_head * head,
+                            struct path_list_entry * entry);
 
 
 #endif

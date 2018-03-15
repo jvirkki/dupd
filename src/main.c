@@ -43,6 +43,10 @@
 #define START_PATH_NULL 0
 #define START_PATH_GIVEN 1
 #define START_PATH_ERROR 2
+#define MB1 (1024 * 1024)
+#define MB8 (1024 * 1024 * 8)
+#define MB16 (1024 * 1024 * 16)
+#define GB1 (1024 * 1024 * 1024)
 
 static int operation = -1;
 static int start_path_count = 0;
@@ -88,6 +92,7 @@ int report_format = REPORT_FORMAT_TEXT;
 pthread_key_t thread_name;
 pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 int sort_bypass = 0;
+uint64_t buffer_limit = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -246,6 +251,7 @@ static void free_start_paths()
 static int process_args(int argc, char * argv[])
 {
   char * options[COUNT_OPTIONS];
+  uint64_t user_ram_limit = 0;
 
   int rv = optgen_parse(argc, argv, &operation, options);
 
@@ -385,6 +391,26 @@ static int process_args(int argc, char * argv[])
     return 2;
   }
 
+  char * buflimstr = opt_string(options[OPT_buflimit], "0");
+  if (strcmp("0", buflimstr)) {
+    int len = strlen(buflimstr);
+    if (buflimstr[len-1] == 'M') {
+      user_ram_limit = MB1;
+      buflimstr[len-1] = 0;
+    } else if (buflimstr[len-1] == 'G') {
+      user_ram_limit = GB1;
+      buflimstr[len-1] = 0;
+    } else {
+      user_ram_limit = 1;
+    }
+    long c = atol(buflimstr);
+    user_ram_limit *= c;
+
+    if (user_ram_limit < MB8) {
+      user_ram_limit = MB8;
+    }
+  }
+
   if (hdd_mode) {
     opt_compare_two = 0;
     opt_compare_three = 0;
@@ -425,6 +451,25 @@ static int process_args(int argc, char * argv[])
     }
   }
 
+  uint64_t ram = total_ram();
+  if (user_ram_limit > 0) {
+    if (user_ram_limit > ram) {
+      buffer_limit = 0.9 * ram;
+    } else {
+      buffer_limit = user_ram_limit;
+    }
+  }
+
+  if (buffer_limit == 0) {
+    buffer_limit = 0.6 * ram;
+    if (x_small_buffers) {
+      buffer_limit = 4 * MB1;
+    }
+  }
+
+  int ramm = ram / (1024 * 1024);
+  int blim = buffer_limit / (1024 * 1024);
+  LOG(L_INFO, "Reported RAM: %dMB  buffer limit: %dMB\n", ramm, blim);
 
   return 0;
 }
