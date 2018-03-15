@@ -22,8 +22,8 @@ Some pre-built binaries and/or packages are available so you might
 not have to build from source. For pointers on these, see the project page:
 http://www.virkki.com/dupd/
 
-The Makefile specifically supports Linux, SunOS, Darwin (OS X) and OpenBSD.
-If you build on other platforms, let me know.
+The Makefile specifically supports Linux, SunOS, Darwin (OS X), OpenBSD
+and FreeBSD.  If you build on other platforms, let me know.
 
 The Makefile assumes GNU make. To build just run make (or gmake).
 
