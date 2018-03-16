@@ -914,7 +914,7 @@ static void process_round_2(sqlite3 * dbh)
       size_node = next_node_next;
 
     PR2_NEXT_NODE:
-      LOG(L_MORE_TRACE, "end of path loop");
+      LOG(L_MORE_TRACE, "end of path loop\n");
 
     } while (size_node != NULL);
 

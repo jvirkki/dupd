@@ -67,6 +67,7 @@
  *
  */
 extern int log_level;
+extern int log_only;
 extern char * log_level_name[];
 extern pthread_mutex_t logger_lock;
 
@@ -85,25 +86,37 @@ extern pthread_mutex_t logger_lock;
 #define L_MORE_TRACE 12
 #define L_MAX_LOG_LEVEL 12
 
-#define LOG(level, ...)  if (level <= log_level) {   \
-    pthread_mutex_lock(&logger_lock);                \
-    printf("%s", get_thread_name());                 \
-    printf(__VA_ARGS__);                             \
-    fflush(stdout);                                  \
-    pthread_mutex_unlock(&logger_lock);              \
+#define LOG(level, ...) if ( (log_only && level == log_level) ||        \
+                             (!log_only && level <= log_level )) {      \
+    pthread_mutex_lock(&logger_lock);                                   \
+    printf("%s", get_thread_name());                                    \
+    printf(__VA_ARGS__);                                                \
+    fflush(stdout);                                                     \
+    pthread_mutex_unlock(&logger_lock);                                 \
   }
 
-#define LOG_BASE if (log_level >= L_BASE)
-#define LOG_MORE if (log_level >= L_MORE)
-#define LOG_PROGRESS if (log_level >= L_PROGRESS)
-#define LOG_INFO if (log_level >= L_INFO)
-#define LOG_MORE_INFO if (log_level >= L_MORE_INFO)
-#define LOG_RESOURCES if (log_level >= L_RESOURCES)
-#define LOG_THREADS if (log_level >= L_THREADS)
-#define LOG_SKIPPED if (log_level >= L_SKIPPED)
-#define LOG_MORE_THREADS if (log_level >= L_MORE_THREADS)
-#define LOG_TRACE if (log_level >= L_TRACE)
-#define LOG_MORE_TRACE if (log_level >= L_MORE_TRACE)
+#define LOG_BASE if ( (log_only && log_level == L_BASE) ||      \
+                      (!log_only && log_level >= L_BASE) )
+#define LOG_MORE if ( (log_only && log_level == L_MORE) ||      \
+                      (!log_only && log_level >= L_MORE) )
+#define LOG_PROGRESS if ( (log_only && log_level == L_PROGRESS) ||      \
+                          (!log_only && log_level >= L_PROGRESS) )
+#define LOG_INFO if ( (log_only && log_level == L_INFO) ||      \
+                      (!log_only && log_level >= L_INFO) )
+#define LOG_MORE_INFO if ( (log_only && log_level == L_MORE_INFO) ||    \
+                           (!log_only && log_level >= L_MORE_INFO) )
+#define LOG_RESOURCES if ( (log_only && log_level == L_RESOURCES) ||    \
+                           (!log_only && log_level >= L_RESOURCES) )
+#define LOG_THREADS if ( (log_only && log_level == L_THREADS) ||        \
+                         (!log_only && log_level >= L_THREADS) )
+#define LOG_SKIPPED if ( (log_only && log_level == L_SKIPPED) ||        \
+                         (!log_only && log_level >= L_SKIPPED) )
+#define LOG_MORE_THREADS if ( (log_only && log_level == L_MORE_THREADS) || \
+                              (!log_only && log_level >= L_MORE_THREADS) )
+#define LOG_TRACE if ( (log_only && log_level == L_TRACE) ||    \
+                       (!log_only && log_level >= L_TRACE) )
+#define LOG_MORE_TRACE if ( (log_only && log_level == L_MORE_TRACE) ||  \
+                            (!log_only && log_level >= L_MORE_TRACE) )
 
 
 /** ***************************************************************************

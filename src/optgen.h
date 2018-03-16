@@ -44,7 +44,7 @@
 // ab..e.g.ijkl.no..rstu.w.yzABC.E.G..JK.MNOPQR.TU.WXYZ0123456789
 //
 
-#define COUNT_OPTIONS 40
+#define COUNT_OPTIONS 41
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -165,6 +165,9 @@
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
 #define OPT_x_testing 39
+
+// log_only (--log-only) : log only messages at chosen level
+#define OPT_log_only 40
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

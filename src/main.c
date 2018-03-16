@@ -51,6 +51,7 @@ static int start_path_state = 0;
 static int free_db_path = 0;
 static int free_file_path = 0;
 int log_level = 1;
+int log_only = 0;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
 int write_db = 1;
@@ -287,6 +288,8 @@ static int process_args(int argc, char * argv[])
   log_level += opt_count(options[OPT_verbose]);
   if (log_level < L_NONE) { log_level = L_NONE; }
   if (log_level > L_MAX_LOG_LEVEL) { log_level = L_MAX_LOG_LEVEL; }
+
+  if (options[OPT_log_only]) { log_only = 1; }
 
   path_separator = opt_char(options[OPT_pathsep], path_separator);
 

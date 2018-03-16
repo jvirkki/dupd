@@ -88,6 +88,7 @@ int option_help[] = { 16 };
 int option_no_unique[] = { 16 };
 int option_x_small_buffers[] = { 16 };
 int option_x_testing[] = { 16 };
+int option_log_only[] = { 16 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -1123,6 +1124,31 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'x_testing' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 10 && !strncmp("--log-only", argv[pos], 10))) {
+      if (options[40] == NULL) {
+        options[40] = numstring[0];
+      } else {
+        options[40] = numstring[atoi(options[40])];
+        if (!strcmp(options[40], "X")) {
+          printf("error: option %s repeated too many times!\n", argv[pos]);
+          exit(1);
+        }
+      }
+      pos++;
+      // strict_options: is log_only allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_log_only) / sizeof(option_log_only)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_log_only[cc] == *command) { ok = 1; }
+        if (option_log_only[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'log_only' not compatible with given command\n");
         exit(1);
       }
       continue;
