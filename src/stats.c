@@ -127,8 +127,6 @@ void report_stats()
 
     printf("Round two: hash list processed for %d size sets (%dms)\n",
            stats_sets_processed[ROUND2], stats_round_duration[ROUND2]);
-    printf("  Block size %d (%d max blocks)\n",
-           hash_block_size, intermediate_blocks);
     printf("  Reader loops: %d\n", stats_reader_loops[ROUND2]);
     printf("  Hasher loops:");
     for (int i = 0; i < MAX_HASHER_THREADS; i++) {
@@ -232,7 +230,6 @@ void save_stats()
   fprintf(fp, "hash_one_block_size %d\n", hash_one_block_size);
   fprintf(fp, "hash_one_max_blocks %d\n", hash_one_max_blocks);
   fprintf(fp, "hash_block_size %d\n", hash_block_size);
-  fprintf(fp, "intermediate_blocks %d\n", intermediate_blocks);
   fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
   fprintf(fp, "stats_hashlist_path_realloc %d\n", stats_hashlist_path_realloc);
   fprintf(fp, "stats_path_list_entries %" PRIu32 "\n",stats_path_list_entries);

@@ -64,7 +64,6 @@ int hash_one_max_blocks = 16;
 int hash_one_block_size = -1;
 int DEF_HDD_hash_one_block_size = 1024*64;
 int DEF_SSD_hash_one_block_size = 1024*16;
-int intermediate_blocks = 0;
 int hash_block_size = 8192;
 int filecmp_block_size = 131072;
 int opt_compare_two = 1;
@@ -330,8 +329,6 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_hidden]) { scan_hidden = 1; }
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }
-
-  intermediate_blocks = opt_int(options[OPT_intblocks], intermediate_blocks);
 
   hash_one_block_size = opt_int(options[OPT_firstblocksize],
                                 hash_one_block_size);
