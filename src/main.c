@@ -285,6 +285,8 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_quiet]) { log_level = -99; }
   log_level = opt_int(options[OPT_verbose_level], log_level);
   log_level += opt_count(options[OPT_verbose]);
+  if (log_level < L_NONE) { log_level = L_NONE; }
+  if (log_level > L_MAX_LOG_LEVEL) { log_level = L_MAX_LOG_LEVEL; }
 
   path_separator = opt_char(options[OPT_pathsep], path_separator);
 

@@ -83,6 +83,7 @@ extern pthread_mutex_t logger_lock;
 #define L_TRACE 10
 #define L_FILES 11
 #define L_MORE_TRACE 12
+#define L_MAX_LOG_LEVEL 12
 
 #define LOG(level, ...)  if (level <= log_level) {   \
     pthread_mutex_lock(&logger_lock);                \
