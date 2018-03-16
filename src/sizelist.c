@@ -1137,14 +1137,21 @@ static void submit_path_list(int thread,
 
   d_mutex_lock(&queue_info->queue_lock, "adding to queue");
 
-  if (queue_info->queue_pos == HASHER_QUEUE_SIZE - 1) {
-    // TODO resize
-    LOG(L_THREADS, "Hasher queue %d is full (pos=%d), waiting...\n",
+  if (queue_info->queue_pos == queue_info->size - 1) {
+    LOG(L_THREADS, "Hasher queue %d is full (pos=%d), increasing...\n",
         thread, queue_info->queue_pos);
-    printf("XXX hasher queue full, having to stall...\n");
-    while (queue_info->queue_pos > HASHER_QUEUE_SIZE - 2) {
-      d_cond_wait(&queue_info->queue_cond, &queue_info->queue_lock);
+
+    int oldend = queue_info->size;
+    int newend = queue_info->size * 2;
+    int newsize = sizeof(struct path_list_head *) * newend;
+    queue_info->queue =
+      (struct path_list_head **)realloc(queue_info->queue, newsize);
+    queue_info->size = newend;
+    for (int i = oldend; i < newend; i++) {
+      queue_info->queue[i] = NULL;
     }
+    LOG(L_RESOURCES, "Increased hasher queue(%d) to %d entries\n",
+        thread, queue_info->size);
   }
 
   queue_info->queue_pos++;
@@ -1498,10 +1505,13 @@ void process_size_list(sqlite3 * dbh)
 {
   pthread_t reader_thread;
   struct hasher_param hasher_info[HASHER_THREADS];
+  int initial_size = 50;
 
   if (size_list_head == NULL) {
     return;
   }
+
+  if (x_small_buffers) { initial_size = 2; }
 
   for (int n = 0; n < HASHER_THREADS; n++) {
     hasher_info[n].thread_num = n;
@@ -1510,7 +1520,11 @@ void process_size_list(sqlite3 * dbh)
     pthread_mutex_init(&hasher_info[n].queue_lock, NULL);
     pthread_cond_init(&hasher_info[n].queue_cond, NULL);
     hasher_info[n].queue_pos = -1;
-    for (int i = 0; i < HASHER_QUEUE_SIZE; i++) {
+    hasher_info[n].size = initial_size;
+    hasher_info[n].queue =
+      (struct path_list_head **)malloc(initial_size *
+                                      sizeof(struct path_list_head *));
+    for (int i = 0; i < initial_size; i++) {
       hasher_info[n].queue[i] = NULL;
     }
   }
@@ -1558,4 +1572,9 @@ void process_size_list(sqlite3 * dbh)
 
   // Process any remaining entries in round 2.
   process_round_2(dbh);
+
+  for (int n = 0; n < HASHER_THREADS; n++) {
+    free(hasher_info[n].queue);
+  }
+
 }

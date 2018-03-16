@@ -158,11 +158,6 @@ void * round1_hasher(void * arg)
       done = 1;
     }
 
-    // Send signal because the reader thread can sometimes wait if
-    // the queue became full, so need to wake it up in that case.
-    // TODO: remove because reader should now wait, realloc there.
-    d_cond_signal(&info->queue_cond);
-
     d_mutex_unlock(&info->queue_lock);
 
     if (entry != NULL) {

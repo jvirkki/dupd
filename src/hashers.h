@@ -23,8 +23,6 @@
 #include <pthread.h>
 #include <sqlite3.h>
 
-#define HASHER_QUEUE_SIZE 5000
-
 struct hasher_param {
   int thread_num;
   int done;
@@ -33,7 +31,8 @@ struct hasher_param {
   pthread_mutex_t queue_lock;
   pthread_cond_t queue_cond;
   int queue_pos;
-  struct path_list_head * queue[HASHER_QUEUE_SIZE];
+  int size;
+  struct path_list_head ** queue;
 };
 
 
