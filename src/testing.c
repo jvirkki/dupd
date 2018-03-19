@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,10 +26,28 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "dirtree.h"
+#include "main.h"
 #include "test_hashlist.h"
 #include "testing.h"
+
+
+static void test_dirtree()
+{
+  char buffer[1024];
+  LOG(L_PROGRESS, "=== dirtree ===\n");
+
+  init_path_block();
+  init_dirtree();
+  struct direntry * root = new_child_dir("/", NULL);
+  build_path_from_string("something", root, buffer);
+  assert(!strcmp("/something", buffer));
+  free_dirtree();
+}
+
 
 void testing()
 {
   test_hash_table();
+  test_dirtree();
 }

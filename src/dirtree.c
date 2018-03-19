@@ -130,9 +130,20 @@ struct direntry * new_child_dir(char * name, struct direntry * parent)
   struct direntry * entry = (struct direntry *)dirbuf_alloc(direntry_size);
 
   uint8_t len = (uint8_t)strlen(name);
-  entry->name_size = len;
-  entry->name = dirbuf_alloc(len);
-  memcpy(entry->name, name, len);
+
+  if (len == 1 && name[0] == '/') {
+    if (parent != NULL) {
+      printf("error: new_child_dir: / has non-null parent\n");
+      exit(1);
+    }
+    len = 0;
+    entry->name_size = 0;
+    entry->name = NULL;
+  } else {
+    entry->name_size = len;
+    entry->name = dirbuf_alloc(len);
+    memcpy(entry->name, name, len);
+  }
 
   entry->parent = parent;
 
@@ -170,9 +181,11 @@ static void internal_build_path(char * filename, int name_len,
 
   // Then walk up the tree filling parent directory name until done
   while (dir != NULL) {
-    pos -= dir->name_size;
-    memcpy(buffer + pos, dir->name, dir->name_size);
-    pos--;
+    if (dir->name_size > 0) {
+      pos -= dir->name_size;
+      memcpy(buffer + pos, dir->name, dir->name_size);
+      pos--;
+    }
     dir = dir->parent;
     if (dir != NULL) { buffer[pos] = '/'; }
   }
