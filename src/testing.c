@@ -30,6 +30,7 @@
 #include "main.h"
 #include "test_hashlist.h"
 #include "testing.h"
+#include "utils.h"
 
 
 static void test_dirtree()
