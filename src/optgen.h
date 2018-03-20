@@ -52,29 +52,29 @@
 // nodb (--nodb) : deprecated
 #define OPT_nodb 1
 
-// file_count (--file-count) NUM : max estimated number of files to scan
-#define OPT_file_count 2
-
 // stats_file (--stats-file) FILE : save stats to this file
-#define OPT_stats_file 3
+#define OPT_stats_file 2
 
 // minsize (-m,--minsize) SIZE : min size of files to scan
-#define OPT_minsize 4
+#define OPT_minsize 3
 
 // hidden (--hidden) : include hidden files and dirs in scan
-#define OPT_hidden 5
+#define OPT_hidden 4
 
 // hdd (-D,--hdd) : select HDD mode
-#define OPT_hdd 6
+#define OPT_hdd 5
 
 // ssd (-S,--ssd) : select SSD mode
-#define OPT_ssd 7
+#define OPT_ssd 6
 
 // buflimit (--buflimit) NAME : read buffer size cap
-#define OPT_buflimit 8
+#define OPT_buflimit 7
 
 // hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
-#define OPT_hardlink_is_unique 9
+#define OPT_hardlink_is_unique 8
+
+// file_count (--file-count) NUM : max estimated number of files to scan
+#define OPT_file_count 9
 
 // no_thread_scan (--no-thread-scan) : do scan phase in a single thread
 #define OPT_no_thread_scan 10

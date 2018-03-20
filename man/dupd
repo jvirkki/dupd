@@ -122,11 +122,6 @@ OPTIONS
               from the run.  These are the same stats as get displayed in ver‐
               bose mode but are more suitable for programmatic consumption.
 
-       --file-count COUNT
-              Estimated  maximum number of files to scan.  The default is five
-              million files.  This is only relevant if --hardlink-is-unique is
-              also given.
-
        report - Display the list of duplicates.
 
        --cut PATHSEG

@@ -216,13 +216,6 @@ extern int filecmp_block_size;
 
 
 /** ***************************************************************************
- * Expected total number of files to scan.
- *
- */
-extern long file_count;
-
-
-/** ***************************************************************************
  * HDD mode if true.
  *
  */

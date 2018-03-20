@@ -29,6 +29,8 @@
 #include "readlist.h"
 #include "utils.h"
 
+#define INITIAL_READ_LIST_SIZE 100000
+
 struct read_list_entry * read_list = NULL;
 long read_list_end;
 static long read_list_size;
@@ -71,7 +73,8 @@ static int rl_compare_b(const void * a, const void * b)
  */
 void init_read_list()
 {
-  read_list_size = file_count / 4;
+  read_list_size = INITIAL_READ_LIST_SIZE;
+
   if (x_small_buffers) { read_list_size = 8; }
 
   read_list_end = 0;

@@ -50,7 +50,6 @@ char * numstring[] = { "1","2","3","4","5","6","7","8","9","10","11","12","13","
 // For each option, list the commands which accept it
 int option_path[] = { 1, 5, 6, 7 };
 int option_nodb[] = { 1 };
-int option_file_count[] = { 1 };
 int option_stats_file[] = { 1 };
 int option_minsize[] = { 1, 3 };
 int option_hidden[] = { 1 };
@@ -58,6 +57,7 @@ int option_hdd[] = { 1 };
 int option_ssd[] = { 1 };
 int option_buflimit[] = { 1 };
 int option_hardlink_is_unique[] = { 1, 4, 5, 6, 7 };
+int option_file_count[] = { 1 };
 int option_no_thread_scan[] = { 1 };
 int option_pathsep[] = { 1 };
 int option_firstblocks[] = { 1 };
@@ -230,33 +230,12 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 12 && !strncmp("--file-count", argv[pos], 12))) {
-      if (argv[pos+1] == NULL) {
-        printf("error: no value for arg --file-count\n");
-        exit(1);
-      }
-      options[2] = argv[pos+1];
-      pos += 2;
-      // strict_options: is file_count allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_file_count) / sizeof(option_file_count)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_file_count[cc] == *command) { ok = 1; }
-        if (option_file_count[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'file_count' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
     if ((l == 12 && !strncmp("--stats-file", argv[pos], 12))) {
       if (argv[pos+1] == NULL) {
         printf("error: no value for arg --stats-file\n");
         exit(1);
       }
-      options[3] = argv[pos+1];
+      options[2] = argv[pos+1];
       pos += 2;
       // strict_options: is stats_file allowed?
       int ok = 0;
@@ -278,7 +257,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --minsize\n");
         exit(1);
       }
-      options[4] = argv[pos+1];
+      options[3] = argv[pos+1];
       pos += 2;
       // strict_options: is minsize allowed?
       int ok = 0;
@@ -295,11 +274,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 8 && !strncmp("--hidden", argv[pos], 8))) {
-      if (options[5] == NULL) {
-        options[5] = numstring[0];
+      if (options[4] == NULL) {
+        options[4] = numstring[0];
       } else {
-        options[5] = numstring[atoi(options[5])];
-        if (!strcmp(options[5], "X")) {
+        options[4] = numstring[atoi(options[4])];
+        if (!strcmp(options[4], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -321,11 +300,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 5 && !strncmp("--hdd", argv[pos], 5))||
         (l == 2 && !strncmp("-D", argv[pos], 2))) {
-      if (options[6] == NULL) {
-        options[6] = numstring[0];
+      if (options[5] == NULL) {
+        options[5] = numstring[0];
       } else {
-        options[6] = numstring[atoi(options[6])];
-        if (!strcmp(options[6], "X")) {
+        options[5] = numstring[atoi(options[5])];
+        if (!strcmp(options[5], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -347,11 +326,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 5 && !strncmp("--ssd", argv[pos], 5))||
         (l == 2 && !strncmp("-S", argv[pos], 2))) {
-      if (options[7] == NULL) {
-        options[7] = numstring[0];
+      if (options[6] == NULL) {
+        options[6] = numstring[0];
       } else {
-        options[7] = numstring[atoi(options[7])];
-        if (!strcmp(options[7], "X")) {
+        options[6] = numstring[atoi(options[6])];
+        if (!strcmp(options[6], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -376,7 +355,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --buflimit\n");
         exit(1);
       }
-      options[8] = argv[pos+1];
+      options[7] = argv[pos+1];
       pos += 2;
       // strict_options: is buflimit allowed?
       int ok = 0;
@@ -394,11 +373,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 20 && !strncmp("--hardlink-is-unique", argv[pos], 20))||
         (l == 2 && !strncmp("-I", argv[pos], 2))) {
-      if (options[9] == NULL) {
-        options[9] = numstring[0];
+      if (options[8] == NULL) {
+        options[8] = numstring[0];
       } else {
-        options[9] = numstring[atoi(options[9])];
-        if (!strcmp(options[9], "X")) {
+        options[8] = numstring[atoi(options[8])];
+        if (!strcmp(options[8], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -414,6 +393,27 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'hardlink_is_unique' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 12 && !strncmp("--file-count", argv[pos], 12))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --file-count\n");
+        exit(1);
+      }
+      options[9] = argv[pos+1];
+      pos += 2;
+      // strict_options: is file_count allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_file_count) / sizeof(option_file_count)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_file_count[cc] == *command) { ok = 1; }
+        if (option_file_count[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'file_count' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -1201,7 +1201,6 @@ void opt_show_help()
 {
   printf("scan      scan starting from the given path\n");
   printf("  -p --path PATH              path where scanning will start\n");
-  printf("     --file-count NUM         max estimated number of files to scan\n");
   printf("     --stats-file FILE        save stats to this file\n");
   printf("  -m --minsize SIZE           min size of files to scan\n");
   printf("     --hidden                 include hidden files and dirs in scan\n");
