@@ -118,4 +118,5 @@ void test_hash_table()
   init_dirtree();
   test_hash_table_basics();
   free_dirtree();
+  free_path_block();
 }
