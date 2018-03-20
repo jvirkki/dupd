@@ -9,7 +9,7 @@ dupd \- find duplicate files
 .B dupd
 scans all the files in the given path(s) to find files with duplicate content.
 .PP
-The sets of duplicate files are not (by default) displayed during a scan.
+The sets of duplicate files are not displayed during a scan.
 Instead, the duplicate info is saved into a database which can be queried
 with subsequent commands without having to scan all files again.
 .PP
@@ -81,7 +81,9 @@ filesystem exploration mode it was designed to support) then the SSD
 mode is often faster even if the underlying files are stored on a HDD.
 .TP
 .BR \-S ", " \-\-ssd
-Select SSD (solid state disk) scan mode.
+Select SSD (solid state disk) scan mode. The SSD mode uses less RAM and
+is often faster when reading from SSD or from file cache. However, this
+mode can be dramatically slower when reading from an actual HDD.
 .TP
 .BR \-\-buflimit " " LIMIT
 Limit read buffer size. LIMIT may be an integer in bytes, or include a
@@ -90,8 +92,8 @@ the percentage of buffer space in use (%b). Unless that value goes up
 to 100% or beyond during a scan there is no need to adjust this limit.
 Setting this limit to a low value will constrain dupd memory usage
 but possibly at a cost to performance (depends on the data set).
-Note that this limit applies only to the read buffers, it is not
-a cap on total memory usage by the process.
+Note that this limit applies only to the read buffers in HDD mode,
+it is not a cap on total memory usage by the process.
 .TP
 .BR \-\-hidden
 Include hidden files (and hidden directories) in the scan.
@@ -102,12 +104,6 @@ Override the default database file location.
 The default is \fB$HOME/.dupd_sqlite\fR.
 If you override the path during scan, remember to provide this argument and
 the path for subsequent operations so the database can be found.
-.TP
-.BR \-\-nodb
-Do not create a database file.
-Duplicate info is sent to stdout instead.
-Not recommended, as having the database is required for most of the subsequent
-commands documented below.
 .TP
 .BR \-I ", " \-\-hardlink-is-unique
 Consider hard links to the same file content as unique.
@@ -269,6 +265,9 @@ Quiet, suppress all output.
 Verbose mode.
 Can be repeated multiple times for ever increasing verbosity.
 .TP
+.BR \-V ", " \-\-verbose\-level " " N
+Set the logging verbosity level directly to N.
+.TP
 .BR \-h
 Show brief help summary.
 .TP
@@ -302,14 +301,8 @@ found:
 % dupd scan --path $HOME
 .PP
 % dupd report
+.PP
 .RE
-.PP
-Scan all files in the current directory which is on a HDD:
-.PP
-.RS
-% dupd scan --hdd
-.RE
-.PP
 Show duplicate status (duplicate or unique) for all files in docs subdirectory:
 .PP
 .RS
