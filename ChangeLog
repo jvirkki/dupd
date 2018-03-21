@@ -1,3 +1,22 @@
+2018-03-21  Jyri J. Virkki  <jyri@virkki.com>
+
+	* Version 1.6
+	* Made --hdd mode the default.
+	* Added an --ssd option to select SSD mode.
+	* Added xxHash as an hash function and made it the default.
+	* --hardlink-is-unique no longer forces --hdd mode.
+	* Support for limiting read buffer allocation during scan.
+	* Allow setting verbosity level directly with -V.
+	* Deprecated the --uniques option, it hasn't been useful.
+	* Deprecated the --nodb option, it goes against the dupd way.
+	* Deprecated the --intblocks option, no longer relevant.
+	* Deprecated the --file-count option, not needed.
+	* Various performance improvements.
+	* Minor stats and reporting cleanup.
+	* Add support for building on FreeBSD.
+	* Although not user-visible (ideally), this release contains
+	  substantial code refactoring of several subsystems. Test carefully.
+
 2017-12-12  Jyri J. Virkki  <jyri@virkki.com>
 
 	* Version 1.5
