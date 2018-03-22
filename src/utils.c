@@ -30,6 +30,18 @@
 #include "stats.h"
 #include "utils.h"
 
+#ifndef _SC_PHYS_PAGES
+#define DUPD_PAGES 0
+#else
+#define DUPD_PAGES (uint64_t)sysconf(_SC_PHYS_PAGES)
+#endif
+
+#ifndef _SC_PAGESIZE
+#define DUPD_PAGESIZE 0
+#else
+#define DUPD_PAGESIZE (uint64_t)sysconf(_SC_PAGESIZE)
+#endif
+
 
 /** ***************************************************************************
  * Public function, see header file.
@@ -162,7 +174,12 @@ int cpu_cores()
  */
 uint64_t total_ram()
 {
-  return (uint64_t)sysconf (_SC_PHYS_PAGES) * (uint64_t)sysconf (_SC_PAGESIZE);
+  uint64_t ram = DUPD_PAGES * DUPD_PAGESIZE;
+
+  // If not available, just pick something semi-reasonable.
+  if (ram == 0) { ram = 4L * GB1; }
+
+  return ram;
 }
 
 
