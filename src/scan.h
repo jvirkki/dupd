@@ -60,11 +60,14 @@ void free_scanlist();
  *    path         - The path to process. Must not be null or empty.
  *    dir_entry    - The dir tree entry for this directory.
  *                   Can be NULL when walk_dir used in non-scan operations.
+ *    device       - device of the initial path root. Used when the
+ *                   --one-file-system option is set to stay on that device.
  *    process_file - Function to call on each file as it is found.
  * Return: none
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
+              dev_t device,
               int (*process_file)(sqlite3 *, uint64_t, ino_t, off_t, char *,
                                   char *, struct direntry *));
 

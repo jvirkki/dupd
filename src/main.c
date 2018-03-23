@@ -89,6 +89,7 @@ pthread_key_t thread_name;
 pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 int sort_bypass = 0;
 uint64_t buffer_limit = 0;
+int one_file_system = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -328,6 +329,7 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_hidden]) { scan_hidden = 1; }
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }
+  if (options[OPT_one_file_system]) { one_file_system = 1; }
 
   hash_one_block_size = opt_int(options[OPT_firstblocksize],
                                 hash_one_block_size);

@@ -95,6 +95,11 @@ but possibly at a cost to performance (depends on the data set).
 Note that this limit applies only to the read buffers in HDD mode,
 it is not a cap on total memory usage by the process.
 .TP
+.BR \-X ", " \-\-one\-file\-system
+For each path scanned, do not cross over to a different filesystem.
+This is helpful, for example, if you want to scan / but want to avoid
+any other mounted filesystems such as NFS mounts or external drives.
+.TP
 .BR \-\-hidden
 Include hidden files (and hidden directories) in the scan.
 By default these are not included.

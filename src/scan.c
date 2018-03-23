@@ -205,6 +205,7 @@ void free_scanlist()
  *
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
+              dev_t device,
               int (*process_file)(sqlite3 *, uint64_t, ino_t, off_t, char *,
                                   char *, struct direntry *))
 {
@@ -316,6 +317,17 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
 
       case D_DIR:
         // If 'newpath' is a directory, save it in scan_list for later
+
+        // But first, if one_file_system, check whether this dir is
+        // on a different device. If so, ignore it.
+        if (one_file_system) {
+          get_file_info(newpath, &new_stat_info);
+          if (device > 0 && new_stat_info.st_dev != device) {
+            LOG(L_SKIPPED, "SKIP (--one-file-system) [%s]\n", newpath);
+            break;
+          }
+        }
+
         scan_list_pos++;
         if (scan_list_pos > scan_list_usage_max) {
           scan_list_usage_max = scan_list_pos;
@@ -415,9 +427,9 @@ void scan()
     } else {
       struct direntry * top = new_child_dir(start_path[i], NULL);
       if (threaded_sizetree) {
-        walk_dir(dbh, start_path[i], top, add_queue);
+        walk_dir(dbh, start_path[i], top, stat_info.st_dev, add_queue);
       } else {
-        walk_dir(dbh, start_path[i], top, add_file);
+        walk_dir(dbh, start_path[i], top, stat_info.st_dev, add_file);
       }
     }
   }

@@ -496,7 +496,7 @@ void operation_ls()
   init_get_known_duplicates();
   init_scanlist();
   init_dirtree();
-  walk_dir(dbh, start_path[0], NULL, file_callback);
+  walk_dir(dbh, start_path[0], NULL, 0, file_callback);
   close_database(dbh);
   free_get_known_duplicates();
 }
@@ -517,7 +517,7 @@ void operation_uniques()
   init_get_known_duplicates();
   init_scanlist();
   init_dirtree();
-  walk_dir(dbh, start_path[0], NULL, file_callback);
+  walk_dir(dbh, start_path[0], NULL, 0, file_callback);
   close_database(dbh);
   free_get_known_duplicates();
 }
@@ -538,7 +538,7 @@ void operation_dups()
   init_get_known_duplicates();
   init_scanlist();
   init_dirtree();
-  walk_dir(dbh, start_path[0], NULL, file_callback);
+  walk_dir(dbh, start_path[0], NULL, 0, file_callback);
   close_database(dbh);
   free_get_known_duplicates();
 }

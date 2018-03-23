@@ -369,6 +369,13 @@ extern uint64_t buffer_limit;
 
 
 /** ***************************************************************************
+ * If true, do not cross into a different filesystem while scanning.
+ *
+ */
+extern int one_file_system;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */
