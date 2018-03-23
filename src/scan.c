@@ -211,6 +211,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
 {
   STRUCT_STAT new_stat_info;
   int rv;
+  int curlen;
   struct dirent * entry;
   char newpath[DUPD_PATH_MAX];
   struct direntry * current_dir_entry;
@@ -246,6 +247,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
   // Process directories off the scan_list until none left
   while (scan_list_pos >= 0) {
 
+    curlen = strlen(scan_list[scan_list_pos].path);
     strlcpy(current, scan_list[scan_list_pos].path, DUPD_PATH_MAX);
     current_dir_entry = scan_list[scan_list_pos].dir_entry;
 
@@ -279,7 +281,11 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
         continue;
       }
 
-      snprintf(newpath, DUPD_PATH_MAX, "%s/%s", current, entry->d_name);
+      if (curlen == 1 && current[0] == '/') {
+        snprintf(newpath, DUPD_PATH_MAX, "/%s", entry->d_name);
+      } else {
+        snprintf(newpath, DUPD_PATH_MAX, "%s/%s", current, entry->d_name);
+      }
 
       // If DIRENT_HAS_TYPE, we can get the type of the file from entry->d_type
       // which means we can skip doing stat() on it here and instead let
