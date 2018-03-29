@@ -21,8 +21,14 @@ TOP:=$(shell  pwd)
 BUILD_OS:=$(shell uname)
 BUILD_MACHINE:=$(shell uname -m)
 VERSION:=$(shell cat version)
-GITHASH:=$(shell git rev-parse HEAD)
 OPTGEN:=$(shell which optgen | head -c1)
+
+# For -dev versions, record where in source history the binary came from.
+ifeq (dev,$(findstring dev,$(VERSION)))
+GITHASH:=$(shell git rev-parse HEAD)
+else
+GITHASH=$(VERSION)
+endif
 
 ifeq ($(LCOV_OUTPUT_DIR),)
 LCOV_OUTPUT_DIR=./lcov.out
