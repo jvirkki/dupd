@@ -53,6 +53,7 @@ OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
 
 ifeq ($(BUILD_OS),Linux)
 OBJCP=objcopy
+OBJCP_MAN=$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
 CFLAGS=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE -DUSE_FIEMAP
 USAGE=$(BUILD)/usage.o
 # On Linux, gcc by default compiles to the same bitness as the OS,
@@ -67,6 +68,7 @@ endif
 
 ifeq ($(BUILD_OS),OpenBSD)
 OBJCP=objcopy
+OBJCP_MAN=$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
 CFLAGS=-m64
 USAGE=$(BUILD)/usage.o
 USAGE_ARCH=-O elf64-x86-64 -B i386
@@ -75,16 +77,16 @@ endif
 ifeq ($(BUILD_OS),FreeBSD)
 INC+=-I/usr/local/include
 LIB+=-L/usr/local/lib
-OBJCP=objcopy
-CFLAGS=-m64 -DDIRENT_HAS_TYPE
+OBJCP_MAN=$(LD) -r -b binary -o $(BUILD)/usage.o man/dupd
+CFLAGS+=-DDIRENT_HAS_TYPE
 USAGE=$(BUILD)/usage.o
-USAGE_ARCH=-O elf64-x86-64 -B i386
 endif
 
 ifeq ($(BUILD_OS),SunOS)
 CC=gcc
 CFLAGS=-m64
 OBJCP=gobjcopy
+OBJCP_MAN=$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
 USAGE=$(BUILD)/usage.o
 USAGE_ARCH=-O elf64-x86-64 -B i386
 endif
@@ -113,7 +115,7 @@ $(BUILD)/%.o: src/%.c src/%.h
 		 -c $< -o $@
 
 $(BUILD)/usage.o: man/dupd
-	$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
+	$(OBJCP_MAN)
 
 clean:
 	rm -f dupd
