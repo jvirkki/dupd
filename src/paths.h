@@ -42,6 +42,7 @@ struct path_list_entry {
   uint8_t filename_size;
   struct direntry * dir;
   struct path_list_entry * next;
+  struct block_list * blocks;
   char * buffer;
   // filename follows, file_size bytes
 };
@@ -138,7 +139,6 @@ struct path_list_head * insert_first_path(char * filename,
  * Parameters:
  *    filename  - The filename of this file.
  *    dir_entry - Directory containing filename.
- *    block     - First physical block of file (zero if not used).
  *    inode     - The inode of this path.
  *    size      - The size of the files in this path list.
  *    head      - The head of this path list (from insert_first_path()).
@@ -147,8 +147,7 @@ struct path_list_head * insert_first_path(char * filename,
  *
  */
 void insert_end_path(char * filename, struct direntry * dir_entry,
-                     uint64_t block, ino_t inode, off_t size,
-                     struct path_list_head * head);
+                     ino_t inode, off_t size, struct path_list_head * head);
 
 
 /** ***************************************************************************

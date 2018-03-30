@@ -90,6 +90,7 @@ pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 int sort_bypass = 0;
 uint64_t buffer_limit = 0;
 int one_file_system = 0;
+int using_fiemap = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -249,6 +250,10 @@ static int process_args(int argc, char * argv[])
 {
   char * options[COUNT_OPTIONS];
   uint64_t user_ram_limit = 0;
+
+#ifdef USE_FIEMAP
+  using_fiemap = 1;
+#endif
 
   int rv = optgen_parse(argc, argv, &operation, options);
 
@@ -447,6 +452,15 @@ static int process_args(int argc, char * argv[])
       return 2;
     }
   }
+
+  if (!hdd_mode) { using_fiemap = 0; }
+  if (sort_bypass != 0 && sort_bypass != SORT_BY_BLOCK) {
+    using_fiemap = 0;
+  }
+
+  if (options[OPT_x_nofie]) { using_fiemap = 0; }
+
+  LOG(L_INFO, "Will be using_fiemap (if available): %d\n", using_fiemap);
 
   uint64_t ram = total_ram();
   if (user_ram_limit > 0) {

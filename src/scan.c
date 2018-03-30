@@ -206,7 +206,7 @@ void free_scanlist()
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
               dev_t device,
-              int (*process_file)(sqlite3 *, uint64_t, ino_t, off_t, char *,
+              int (*process_file)(sqlite3 *, ino_t, off_t, char *,
                                   char *, struct direntry *))
 {
   STRUCT_STAT new_stat_info;
@@ -218,21 +218,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
   char current[DUPD_PATH_MAX];
   ino_t inode;
   off_t size;
-  uint64_t block = 0;
   long type;
-
-#ifdef USE_FIEMAP
-  struct fiemap * fiemap;
-  int fiesize = sizeof(struct fiemap) + sizeof(struct fiemap_extent);
-
-  fiemap = (struct fiemap *)malloc(fiesize);
-  memset(fiemap, 0, fiesize);
-  fiemap->fm_start = 0;
-  fiemap->fm_length = hash_one_block_size * hash_one_max_blocks;
-  fiemap->fm_flags = 0;
-  fiemap->fm_extent_count = 1;
-  fiemap->fm_mapped_extents = 0;
-#endif
 
   if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
     printf("walk_dir called on null or empty path!\n");
@@ -358,14 +344,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
 
       case D_FILE:
         // If it is a file, just process it now
-#ifdef USE_FIEMAP
-        if (hdd_mode) {
-          if (sort_bypass != SORT_BY_NONE && sort_bypass != SORT_BY_INODE) {
-            block = get_first_block_open(newpath, fiemap);
-          }
-        }
-#endif
-        (*process_file)(dbh, block, inode, size, newpath,
+        (*process_file)(dbh, inode, size, newpath,
                         entry->d_name, current_dir_entry);
         break;
 
@@ -382,10 +361,6 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
     }
     closedir(dir);
   }
-
-#ifdef USE_FIEMAP
-  free(fiemap);
-#endif
 }
 
 
@@ -421,6 +396,29 @@ void scan()
       exit(1);
     }                                                        // LCOV_EXCL_STOP
     started_status_thread = 1;
+  }
+
+  // If we're hoping to use fiemap, do a sanity check first.
+
+  if (using_fiemap) {
+    struct block_list * bl;
+    void * fmap = fiemap_alloc();
+
+    for (int i=0; using_fiemap && start_path[i] != NULL; i++) {
+      int rv = get_file_info(start_path[i], &stat_info);
+      if (rv == 0) {
+        bl = get_block_info_from_path(start_path[i], stat_info.st_ino,
+                                      stat_info.st_size, fmap);
+        if (bl == NULL || bl->entry[0].block == 0) {
+          using_fiemap = 0;
+          LOG(L_PROGRESS, "Disabling use of fiemap (%s first block zero)\n",
+              start_path[i]);
+        }
+        if (bl != NULL) { free(bl); }
+      }
+    }
+    free(fmap);
+    LOG(L_INFO, "Still using_fiemap, sanity check ok\n");
   }
 
   // Scan phase - stat all files and build size tree, size list and path list

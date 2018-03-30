@@ -28,10 +28,7 @@
 struct read_list_entry {
   struct path_list_head * pathlist_head;
   struct path_list_entry * pathlist_self;
-#ifdef USE_FIEMAP
   uint64_t block;
-#endif
-  dev_t device;
   ino_t inode;
 };
 
@@ -65,17 +62,15 @@ void free_read_list();
  * Add a file to the read list.
  *
  * Parameters:
- *    block  - First physical block of file (zero if not used).
- *    inode  - The inode of this file.
  *    head   - Pointer to the head of the path list which contains this file.
  *    entry  - Pointer to path list entry corresponding to this file.
+ *    inode  - inode of this file.
  *
  * Return: none
  *
  */
-void add_to_read_list(uint64_t block, ino_t inode,
-                      struct path_list_head * head,
-                      struct path_list_entry * entry);
+void add_to_read_list(struct path_list_head * head,
+                      struct path_list_entry * entry, ino_t inode);
 
 
 /** ***************************************************************************
@@ -83,13 +78,12 @@ void add_to_read_list(uint64_t block, ino_t inode,
  *
  * If hardlink_is_unique, also removes duplicate inodes from the list.
  *
- * Parameters:
- *    use_block - Sort by block instead of inode (only relevant if USE_FIEMAP).
+ * Parameters: none
  *
  * Return: none
  *
  */
-void sort_read_list(int use_block);
+void sort_read_list();
 
 
 #endif

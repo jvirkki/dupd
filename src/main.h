@@ -336,6 +336,13 @@ extern int hash_bufsize;
 
 
 /** ***************************************************************************
+ * True if we'll be using fiemap info.
+ *
+ */
+extern int using_fiemap;
+
+
+/** ***************************************************************************
  * Forced sort bypass. Not used normally.
  *
  */
@@ -343,6 +350,7 @@ extern int sort_bypass;
 #define SORT_BY_NONE 11
 #define SORT_BY_BLOCK 13
 #define SORT_BY_INODE 15
+
 
 /** ***************************************************************************
  * Report output format.

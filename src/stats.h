@@ -89,6 +89,8 @@ extern int scan_list_usage_max;
 extern int scan_list_resizes;
 extern uint64_t stats_read_buffers_allocated;
 extern int stats_flusher_active;
+extern uint32_t stats_fiemap_total_blocks;
+extern uint32_t stats_fiemap_zero_blocks;
 
 
 /** ***************************************************************************

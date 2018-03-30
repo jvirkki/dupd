@@ -27,6 +27,7 @@
 #include "dirtree.h"
 #include "main.h"
 #include "readlist.h"
+#include "stats.h"
 #include "utils.h"
 
 #define INITIAL_READ_LIST_SIZE 100000
@@ -34,6 +35,27 @@
 struct read_list_entry * read_list = NULL;
 long read_list_end;
 static long read_list_size;
+
+struct read_list_entry * inode_read_list = NULL;
+static long inode_read_list_end;
+static long inode_read_list_size;
+
+
+/** ***************************************************************************
+ * Dump read list.
+ *
+ */
+static void dump_read_list(int with_path_list)
+{
+  printf("--- dumping read_list ---\n");
+  for (int i = 0; i < read_list_end; i++) {
+    printf("[%d] inode: %8ld  %" PRIu64 "\n",
+           i, (long)read_list[i].inode, read_list[i].block);
+    if (with_path_list) {
+      dump_path_list("---", 0, read_list[i].pathlist_head, 1);
+    }
+  }
+}
 
 
 /** ***************************************************************************
@@ -57,13 +79,10 @@ static int rl_compare_b(const void * a, const void * b)
 {
   struct read_list_entry * f = (struct read_list_entry *)a;
   struct read_list_entry * s = (struct read_list_entry *)b;
-#ifdef USE_FIEMAP
+
   if (f->block > s->block) { return 1; }
   if (f->block < s->block) { return -1; }
   return 0;
-#else
-  return f->inode - s->inode;
-#endif
 }
 
 
@@ -81,6 +100,15 @@ void init_read_list()
 
   read_list = (struct read_list_entry *)calloc(read_list_size,
                                                sizeof(struct read_list_entry));
+
+  if (hardlink_is_unique) {
+    inode_read_list_size = INITIAL_READ_LIST_SIZE;
+    if (x_small_buffers) { inode_read_list_size = 8; }
+    inode_read_list_end = 0;
+    inode_read_list =
+      (struct read_list_entry *)calloc(inode_read_list_size,
+                                       sizeof(struct read_list_entry));
+  }
 }
 
 
@@ -90,31 +118,42 @@ void init_read_list()
  */
 void free_read_list()
 {
-  if (read_list == NULL) {
-    return;
+  if (read_list != NULL) {
+    free(read_list);
+    read_list = NULL;
+    read_list_size = 0;
+    read_list_end = 0;
   }
-
-  free(read_list);
-  read_list = NULL;
-  read_list_size = 0;
-  read_list_end = 0;
 }
 
 
 /** ***************************************************************************
- * Public function, see readlist.h
+ * Free the inode_read_list.
  *
  */
-void add_to_read_list(uint64_t block, ino_t inode,
-                      struct path_list_head * head,
-                      struct path_list_entry * entry)
+static void free_inode_read_list()
 {
-#ifdef USE_FIEMAP
-  read_list[read_list_end].block = block;
-#endif
-  read_list[read_list_end].inode = inode;
+  if (inode_read_list != NULL) {
+    free(inode_read_list);
+    inode_read_list = NULL;
+    inode_read_list_size = 0;
+    inode_read_list_end = 0;
+  }
+}
+
+
+/** ***************************************************************************
+ * Add a single entry to the read list.
+ *
+ */
+static void add_one_to_read_list(struct path_list_head * head,
+                                 struct path_list_entry * entry,
+                                 ino_t inode, uint64_t block)
+{
   read_list[read_list_end].pathlist_head = head;
   read_list[read_list_end].pathlist_self = entry;
+  read_list[read_list_end].block = block;
+  read_list[read_list_end].inode = inode;
 
   read_list_end++;
   if (read_list_end == read_list_size) {
@@ -126,16 +165,68 @@ void add_to_read_list(uint64_t block, ino_t inode,
 
 
 /** ***************************************************************************
+ * Add a single entry to the inode read list.
+ *
+ */
+static void add_one_to_inode_read_list(struct path_list_head * head,
+                                       struct path_list_entry * entry,
+                                       ino_t inode)
+{
+  if (hardlink_is_unique) {
+    inode_read_list[inode_read_list_end].pathlist_head = head;
+    inode_read_list[inode_read_list_end].pathlist_self = entry;
+    inode_read_list[inode_read_list_end].block = inode;
+    inode_read_list[inode_read_list_end].inode = inode;
+
+    inode_read_list_end++;
+    if (inode_read_list_end == inode_read_list_size) {
+      inode_read_list_size *= 2;
+      inode_read_list = (struct read_list_entry *)
+        realloc(inode_read_list, sizeof(struct read_list_entry) *
+                inode_read_list_size);
+    }
+  }
+}
+
+
+/** ***************************************************************************
  * Public function, see readlist.h
  *
  */
-void sort_read_list(int use_block)
+void add_to_read_list(struct path_list_head * head,
+                      struct path_list_entry * entry, ino_t inode)
 {
-  int sort_blocks = 0;
-#ifdef USE_FIEMAP
-  sort_blocks = 1;
-#endif
+  if (entry->blocks == NULL) {
+    printf("error: add_to_read_list but no block(s)\n");
+    dump_path_list("block missing", 0, head, 1);
+    exit(1);
+  }
 
+  // If using_fiemap, may add multiple entries for the same file, one for
+  // each block. If not, there is only one "block", the inode.
+
+  for (int b = 0; b < entry->blocks->count; b++) {
+    add_one_to_read_list(head, entry, inode, entry->blocks->entry[b].block);
+  }
+
+  // When hardlink_is_unique, keep a separate inode_read_list which can
+  // only have one entry per file. It might seem we can filter out
+  // hardlinks by looking at blocks and that is usually true. However
+  // (see get_block_info_from_path()) sometimes block can be zero even
+  // if it isn't, so this may fail. Easiest reliable way is to keep this
+  // separate inode list.
+  if (hardlink_is_unique) {
+    add_one_to_inode_read_list(head, entry, inode);
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see readlist.h
+ *
+ */
+void sort_read_list()
+{
   switch (sort_bypass) {
   case SORT_BY_NONE:
     return;
@@ -144,48 +235,70 @@ void sort_read_list(int use_block)
           sizeof(struct read_list_entry), rl_compare_i);
     return;
   case SORT_BY_BLOCK:
-    if (sort_blocks) {
-      qsort(read_list, read_list_end,
-            sizeof(struct read_list_entry), rl_compare_b);
-    }
+    qsort(read_list, read_list_end,
+          sizeof(struct read_list_entry), rl_compare_b);
     return;
   }
 
-  if (!use_block) { sort_blocks = 0; }
-  if (!hdd_mode) { sort_blocks = 0; }
-
   if (hardlink_is_unique) {
 
-    // Have to sort by inode to purge duplicates
-    qsort(read_list, read_list_end,
+    qsort(inode_read_list, inode_read_list_end,
           sizeof(struct read_list_entry), rl_compare_i);
 
-    // Now that the read_list is ordered by inode, remove any paths
-    // which are duplicate inodes given that we don't care about them.
+    // Now that the inode_read_list is ordered, remove any paths which
+    // are duplicate inode given that we don't care about them.
+
+    char path[DUPD_PATH_MAX];
     long i;
-    ino_t prev = 0;
-    for (i = 0; i < read_list_end; i++) {
-      if (read_list[i].inode == prev) {
-        char path[DUPD_PATH_MAX];
-        build_path(read_list[i].pathlist_self, path);
-        LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.", path);
-        read_list[i].pathlist_head->list_size--;
-        read_list[i].pathlist_self->state = FS_INVALID;
-#ifdef USE_FIEMAP
-        read_list[i].block = 0;
-#endif
+    ino_t p_inode = 0;
+
+    for (i = 0; i < inode_read_list_end; i++) {
+
+      if (inode_read_list[i].inode == p_inode) {
+
+        build_path(inode_read_list[i].pathlist_self, path);
+        LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.\n", path);
+
+        inode_read_list[i].pathlist_self->state = FS_INVALID;
+        inode_read_list[i].pathlist_head->list_size--;
+
+        if (inode_read_list[i].pathlist_head->list_size == 0) {
+          inode_read_list[i].pathlist_head->state = PLS_DONE;
+          stats_sets_dup_not[ROUND1]++;
+        }
+
+        { // XXX TODO - elsewhere, respect the FS_INVALID so no need to zero
+          char * fnxxx = pb_get_filename(inode_read_list[i].pathlist_self);
+          fnxxx[0] = 0;
+        }
       }
-      prev = read_list[i].inode;
+      p_inode = inode_read_list[i].inode;
+    }
+
+    free_inode_read_list();
+  }
+
+  // If we ran into a substantial number of files where the physical block(s)
+  // were reported as zero, give up on using fiemap ordering.
+
+  if (using_fiemap) {
+    int zeropct = (100 * stats_fiemap_zero_blocks) / stats_fiemap_total_blocks;
+    if (zeropct > 5 && stats_files_count > 100) {
+      using_fiemap = 0;
+      LOG(L_PROGRESS, "Turning off using_fiemap, %d%% zero blocks\n", zeropct);
     }
   }
 
-  if (!hardlink_is_unique && !sort_blocks && hdd_mode) {
+  if (using_fiemap) {
+    qsort(read_list, read_list_end,
+          sizeof(struct read_list_entry), rl_compare_b);
+  } else {
     qsort(read_list, read_list_end,
           sizeof(struct read_list_entry), rl_compare_i);
   }
 
-  if (sort_blocks) {
-    qsort(read_list, read_list_end,
-          sizeof(struct read_list_entry), rl_compare_b);
+  LOG_MORE_TRACE {
+    printf("read_list after final sort\n");
+    dump_read_list(0);
   }
 }

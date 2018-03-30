@@ -68,7 +68,7 @@ void free_scanlist();
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
               dev_t device,
-              int (*process_file)(sqlite3 *, uint64_t, ino_t, off_t, char *,
+              int (*process_file)(sqlite3 *, ino_t, off_t, char *,
                                   char *, struct direntry *));
 
 

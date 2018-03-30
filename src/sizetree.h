@@ -30,7 +30,6 @@
  *
  * Parameters:
  *    dbh       - sqlite3 database handle (not used, set to NULL).
- *    block     - First physical block of this file (or zero).
  *    inode     - The inode of this file (or SCAN_INODE_UNKNOWN).
  *    size      - Size of this file (or SCAN_SIZE_UNKNOWN).
  *    path      - Path of this file.
@@ -41,7 +40,7 @@
  *
  */
 int add_file(sqlite3 * dbh,
-             uint64_t block, ino_t inode, off_t size,  char * path,
+             ino_t inode, off_t size,  char * path,
              char * filename, struct direntry * dir_entry);
 
 
@@ -53,7 +52,6 @@ int add_file(sqlite3 * dbh,
  *
  * Parameters:
  *    dbh       - sqlite3 database handle (not used, set to NULL).
- *    block     - First physical block of this file (or zero).
  *    inode     - The inode of this file (or SCAN_INODE_UNKNOWN).
  *    size      - Size of this file (or SCAN_SIZE_UNKNOWN).
  *    path      - Path of this file.
@@ -64,7 +62,7 @@ int add_file(sqlite3 * dbh,
  *
  */
 int add_queue(sqlite3 * dbh,
-              uint64_t block, ino_t inode, off_t size, char * path,
+              ino_t inode, off_t size, char * path,
               char * filename, struct direntry * dir_entry);
 
 

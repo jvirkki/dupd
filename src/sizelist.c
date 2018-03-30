@@ -708,7 +708,7 @@ static void process_round_2(sqlite3 * dbh)
     if (size_node->path_list->state != PLS_DONE) { remaining++; }
     if (size_node->path_list->state == PLS_NEW) {
         printf("error: path list in PLS_NEW state!\n");
-        dump_path_list("bad state", size_node->size, size_node->path_list, 0);
+        dump_path_list("bad state", size_node->size, size_node->path_list, 1);
     }
     size_node->next = next_node;
     size_node = size_node->next;

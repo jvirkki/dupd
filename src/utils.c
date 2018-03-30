@@ -239,50 +239,144 @@ size_t linux_strlcpy(char *dst, const char *src, size_t dstsize)
 
 
 /** ***************************************************************************
- * Public function, see header file.
+ * Create a block_list containing only one block, where "block" is inode.
  *
  */
-#ifdef USE_FIEMAP
-uint64_t get_first_block_open(char * path, struct fiemap * fiemap)
+static struct block_list * block_list_inode_only(ino_t inode, uint64_t size)
 {
-  uint64_t rv;
-  int fd = open(path, O_RDONLY);
-
-  if (fd > 0) {
-    rv = get_first_block(fd, fiemap);
-    close(fd);
-    return rv;
-  }
-
-  return 0;
+  struct block_list * bl = NULL;
+  bl = (struct block_list *)malloc(sizeof(struct block_list) +
+                                   sizeof(struct block_list_entry));
+  bl->count = 1;
+  bl->entry[0].start_pos = 0;
+  bl->entry[0].len = size;
+  bl->entry[0].block = (uint64_t)inode;
+  return bl;
 }
-#endif
 
 
 /** ***************************************************************************
  * Public function, see header file.
  *
  */
-#ifdef USE_FIEMAP
-uint64_t get_first_block(int fd, struct fiemap * fiemap)
+void dump_block_list(const char * prefix, struct block_list * bl)
 {
-  int rv;
+  if (bl == NULL) { return; }
 
-  fiemap->fm_mapped_extents = 0;
-  fiemap->fm_extent_count = 1;
-
-  rv = ioctl(fd, FS_IOC_FIEMAP, fiemap);
-  if (rv < 0) {
-    LOG(L_SKIPPED, "FS_IOC_FIEMAP error, ignoring...\n");
-    fiemap->fm_mapped_extents = 0;
-    fiemap->fm_extents[0].fe_physical = 0;
-    return 0;
+  printf("%sBLOCK LIST: count=%d\n", prefix, bl->count);
+  for (int n = 0; n < bl->count; n++) {
+    printf("%s[%d] "
+           "start_pos: %" PRIu64 " ,  len: %" PRIu64 " , block: %" PRIu64"\n",
+           prefix, n,
+           bl->entry[n].start_pos, bl->entry[n].len, bl->entry[n].block);
   }
-
-  if (fiemap->fm_mapped_extents == 1) {
-    return fiemap->fm_extents[0].fe_physical;
-  }
-
-  return 0;
 }
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+struct block_list * get_block_info_from_path(char * path, ino_t inode,
+                                             uint64_t size, void * map)
+{
+  struct block_list * bl = NULL;
+
+  if (using_fiemap && map == NULL) {
+    printf("error: get_block_info_from_path: using_fiemap but no map\n");
+    exit(1);
+  }
+
+  if (!using_fiemap) {
+    return block_list_inode_only(inode, size);
+  }
+
+#ifdef USE_FIEMAP
+  int rv;
+  struct fiemap * fmap = (struct fiemap *)map;
+
+  int fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    LOG(L_PROGRESS, "Unable to open [%s]\n", path);
+    return block_list_inode_only(0, size);
+  }
+
+  fmap->fm_start = 0;
+  fmap->fm_length = size;
+  fmap->fm_flags = 0;
+  fmap->fm_mapped_extents = 0;
+  fmap->fm_extent_count = 255;
+
+  rv = ioctl(fd, FS_IOC_FIEMAP, fmap);
+  if (rv < 0) {
+    LOG(L_SKIPPED, "%s: FS_IOC_FIEMAP error, ignoring...\n", path);
+    return block_list_inode_only(0, size);
+  }
+  close(fd);
+
+  if (fmap->fm_mapped_extents == 0) {
+    LOG(L_SKIPPED, "%s: FS_IOC_FIEMAP returned no blocks...\n", path);
+    return block_list_inode_only(0, size);
+  }
+
+  uint8_t count = 0;
+  if (fmap->fm_mapped_extents < 255) {
+    count = fmap->fm_mapped_extents;
+  } else {
+    count = 255;
+  }
+
+  bl = (struct block_list *)malloc(sizeof(struct block_list) +
+                                   count * sizeof(struct block_list_entry));
+  bl->count = count;
+  for (int i = 0; i < count; i++) {
+    bl->entry[i].start_pos = fmap->fm_extents[i].fe_logical;
+    bl->entry[i].len = fmap->fm_extents[i].fe_length;
+    bl->entry[i].block = fmap->fm_extents[i].fe_physical;
+
+    // Files created recently may report back fe_physical as zero.
+    // Querying the same file a bit later returns the correct block.
+    // Speculating, it may be caused by the file not having been written
+    // to disk yet, so it does not have any physical block yet.
+    // In any case, it means we may see some fe_physical=0 even when
+    // all is well. Keep track of how many.
+    stats_fiemap_total_blocks++;
+    if (bl->entry[i].block == 0) { stats_fiemap_zero_blocks++; }
+
+    // Presumably should never see this many blocks?? but if so, fake the
+    // final block to be the rest of the file.
+    if (i == 254) {
+      bl->entry[i].len = size - bl->entry[i].start_pos;
+    }
+  }
+
+  return bl;
 #endif
+
+  return NULL;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void * fiemap_alloc()
+{
+#ifdef USE_FIEMAP
+  struct fiemap * fiemap;
+  int fiesize = sizeof(struct fiemap) + 255 * sizeof(struct fiemap_extent);
+
+  fiemap = (struct fiemap *)malloc(fiesize);
+  memset(fiemap, 0, fiesize);
+  fiemap->fm_start = 0;
+  fiemap->fm_length = 0;
+  fiemap->fm_flags = 0;
+  fiemap->fm_extent_count = 255;
+  fiemap->fm_mapped_extents = 0;
+
+  return (void *)fiemap;
+#else
+  return NULL;
+#endif
+}

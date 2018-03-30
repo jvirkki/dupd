@@ -62,6 +62,17 @@
 #define LSTAT lstat
 #endif
 
+struct block_list_entry {
+  uint64_t start_pos;
+  uint64_t len;
+  uint64_t block;
+};
+
+struct block_list {
+  uint8_t count;
+  struct block_list_entry entry[];
+};
+
 
 /** ***************************************************************************
  * Convenience function to check if a given path exists and is a regular file.
@@ -349,33 +360,50 @@ static inline void d_join(pthread_t thread, void **retval)
 
 
 /** ***************************************************************************
- * Return first storage block for a path.
+ * Allocate memory structure to use with get_block_info_from_path.
  *
- * Parameters:
- *    path   - file path
- *    fiemap - fiemap struct with space for at least one extent.
+ * This returns a void * in order to avoid using 'struct fiemap *' everywhere
+ * which would require lots of ifdefs so the build can work on non-Linux
+ * platforms. On other platforms, this just returns NULL.
  *
- * Return: zero on any errors, otherwise first storage block.
+ * Parameters: none
+ *
+ * Return: Pointer to memory structure. Caller must free when done.
  *
  */
-#ifdef USE_FIEMAP
-uint64_t get_first_block_open(char * path, struct fiemap * fiemap);
-#endif
+void * fiemap_alloc();
 
 
 /** ***************************************************************************
- * Return first storage block for an open file descriptor.
+ * Return block_list with either all the blocks used by path (if using_fiemap)
+ * or otherwise a block_list with a single block, where "block" == inode.
+ *
+ * Caller must free the block_list.
  *
  * Parameters:
- *    fd     - open file descriptor.
- *    fiemap - fiemap struct with space for at least one extent.
+ *    path  - path to query
+ *    inode - inode of this file, used if fiemap not used or not available
+ *    size  - size of the file
+ *    map   - as allocated by fiemap_alloc
  *
- * Return: zero on any errors, otherwise first storage block.
+ * Return: block_list with one or more blocks, must be free'd by caller
  *
  */
-#ifdef USE_FIEMAP
-uint64_t get_first_block(int fd, struct fiemap * fiemap);
-#endif
+struct block_list * get_block_info_from_path(char * path, ino_t inode,
+                                             uint64_t size, void * map);
+
+
+/** ***************************************************************************
+ * Debug function, dump the block_list.
+ *
+ * Parameters:
+ *    prefix - Print this prefix before each line.
+ *    bl     - block_list to print
+ *
+ * Return: none
+ *
+ */
+void dump_block_list(const char * prefix, struct block_list * bl);
 
 
 #endif

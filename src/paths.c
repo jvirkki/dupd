@@ -45,10 +45,7 @@ static char * next_entry;
 static char * path_block_end;
 static long space_used;
 static long space_allocated;
-
-#ifdef USE_FIEMAP
-struct fiemap * fiemap = NULL;
-#endif
+void * fiemap = NULL;
 
 
 /** ***************************************************************************
@@ -91,6 +88,8 @@ void dump_path_list(const char * line, off_t size,
       printf("   dir: %p\n", entry->dir);
       printf("   next: %p\n", entry->next);
       printf("   buffer: %p\n", entry->buffer);
+      printf("   blocks: %p\n", entry->blocks);
+      dump_block_list("      ", entry->blocks);
 
       filename = pb_get_filename(entry);
       if (filename[0] != 0) { // TODO
@@ -195,18 +194,9 @@ void init_path_block()
   space_used = 0;
   space_allocated = bsize;
 
-#ifdef USE_FIEMAP
-  int fiesize = sizeof(struct fiemap) + sizeof(struct fiemap_extent);
-
-  fiemap = (struct fiemap *)malloc(fiesize);
-  memset(fiemap, 0, fiesize);
-  fiemap->fm_start = 0;
-  fiemap->fm_length = hash_one_block_size * hash_one_max_blocks;
-  fiemap->fm_flags = 0;
-  fiemap->fm_extent_count = 1;
-  fiemap->fm_mapped_extents = 0;
-#endif
-
+  if (using_fiemap) {
+    fiemap = fiemap_alloc();
+  }
 }
 
 
@@ -229,11 +219,9 @@ void free_path_block()
   first_path_block = NULL;
   last_path_block = NULL;
 
-#ifdef USE_FIEMAP
   if (fiemap != NULL) {
     free(fiemap);
   }
-#endif
 }
 
 
@@ -281,6 +269,7 @@ struct path_list_head * insert_first_path(char * filename,
   first_entry->state = FS_NEW;
   first_entry->filename_size = (uint8_t)filename_len;
   first_entry->dir = dir_entry;
+  first_entry->blocks = NULL;
   first_entry->next = NULL;
   first_entry->buffer = NULL;
   memcpy(filebuf, filename, filename_len);
@@ -300,9 +289,11 @@ struct path_list_head * insert_first_path(char * filename,
  *
  */
 void insert_end_path(char * filename, struct direntry * dir_entry,
-                     uint64_t block, ino_t inode, off_t size,
-                     struct path_list_head * head)
+                     ino_t inode, off_t size, struct path_list_head * head)
 {
+  char pathbuf[DUPD_PATH_MAX];
+  struct block_list * block_list = NULL;
+
   int filename_len = strlen(filename);
   int space_needed = sizeof(struct path_list_entry) + filename_len;
   check_space(space_needed);
@@ -333,6 +324,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   entry->dir = dir_entry;
   entry->next = NULL;
   entry->buffer = NULL;
+  entry->blocks = NULL;
   memcpy(filebuf, filename, filename_len);
 
   // If there are now two entries in this path list, it means we have
@@ -340,37 +332,35 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   // processing later, so add it to the size list now.
 
   if (head->list_size == 2) {
-
     struct size_list * new_szl = add_to_size_list(size, head);
     head->sizelist = new_szl;
 
     if (hdd_mode) {
+      STRUCT_STAT info;
+
       // Add the first entry to the read list. It wasn't added earlier
       // because we didn't know it needed to be there but now we do.
       // We'll need to re-stat() it to get info. This should be fast
       // because it should be in the cache already. (Alternatively,
       // could keep this info in the path list head.)
 
-      uint64_t prevblock = 0;
-      char first_path[DUPD_PATH_MAX];
-      build_path(prior, first_path);
-#ifdef USE_FIEMAP
-      if (sort_bypass != SORT_BY_NONE && sort_bypass != SORT_BY_INODE) {
-        prevblock = get_first_block_open(first_path, fiemap);
-      }
-#endif
-      STRUCT_STAT info;
-      if (get_file_info(first_path, &info)) {                // LCOV_EXCL_START
-        printf("error: unable to stat %s\n", first_path);
+      build_path(prior, pathbuf);
+      if (get_file_info(pathbuf, &info)) {                   // LCOV_EXCL_START
+        printf("error: unable to stat %s\n", pathbuf);
         exit(1);
       }                                                      // LCOV_EXCL_STOP
-      add_to_read_list(prevblock, info.st_ino, head, prior);
+
+      block_list = get_block_info_from_path(pathbuf, info.st_ino, size,fiemap);
+      prior->blocks = block_list;
+      add_to_read_list(head, prior, info.st_ino);
     }
   }
 
   if (hdd_mode) {
-    // Then add the current path to the read list as well.
-    add_to_read_list(block, inode, head, entry);
+    build_path_from_string(filename, dir_entry, pathbuf);
+    block_list = get_block_info_from_path(pathbuf, inode, size, fiemap);
+    entry->blocks = block_list;
+    add_to_read_list(head, entry, inode);
   }
 
   LOG_TRACE {

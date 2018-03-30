@@ -83,6 +83,8 @@ int scan_list_usage_max = 0;
 int scan_list_resizes = 0;
 uint64_t stats_read_buffers_allocated = 0;
 int stats_flusher_active = 0;
+uint32_t stats_fiemap_total_blocks = 0;
+uint32_t stats_fiemap_zero_blocks = 0;
 
 
 /** ***************************************************************************
@@ -191,51 +193,52 @@ void report_stats()
 void save_stats()
 {
   FILE * fp = fopen(stats_file, "a");
-  fprintf(fp, "stats_total_bytes %" PRIu64 "\n", stats_total_bytes);
-  fprintf(fp, "stats_total_bytes_read %" PRIu64 "\n", stats_total_bytes_read);
-  fprintf(fp, "stats_total_bytes_hashed %" PRIu64 "\n",
+  fprintf(fp, "total_bytes %" PRIu64 "\n", stats_total_bytes);
+  fprintf(fp, "total_bytes_read %" PRIu64 "\n", stats_total_bytes_read);
+  fprintf(fp, "total_bytes_hashed %" PRIu64 "\n",
           stats_total_bytes_hashed);
-  fprintf(fp, "stats_comparison_bytes_read %" PRIu64 "\n",
+  fprintf(fp, "comparison_bytes_read %" PRIu64 "\n",
           stats_comparison_bytes_read);
-  fprintf(fp, "stats_duplicate_files %d\n", stats_duplicate_files);
+  fprintf(fp, "duplicate_files %d\n", stats_duplicate_files);
   int total_groups = stats_duplicate_groups[ROUND1] +
     stats_duplicate_groups[ROUND2];
-  fprintf(fp, "stats_duplicate_groups %d\n", total_groups);
-  fprintf(fp, "stats_duplicate_groups_1 %d\n", stats_duplicate_groups[ROUND1]);
-  fprintf(fp, "stats_duplicate_groups_2 %d\n", stats_duplicate_groups[ROUND2]);
-  fprintf(fp, "stats_full_hash_first %d\n", stats_full_hash_first);
-  fprintf(fp, "stats_full_hash_second %d\n", stats_full_hash_second);
-  fprintf(fp, "stats_partial_hash_second %d\n", stats_partial_hash_second);
-  fprintf(fp, "stats_one_block_hash_first %d\n", stats_one_block_hash_first);
-  fprintf(fp, "stats_set_dups_done_round_one %d\n",
-          stats_sets_dup_done[ROUND1]);
-  fprintf(fp, "stats_set_dups_done_round_two %d\n",
-          stats_sets_dup_done[ROUND2]);
-  fprintf(fp, "stats_set_no_dups_round_one %d\n", stats_sets_dup_not[ROUND1]);
-  fprintf(fp, "stats_set_no_dups_round_two %d\n", stats_sets_dup_not[ROUND2]);
-  fprintf(fp, "stats_set_round_one %d\n", stats_sets_processed[ROUND1]);
-  fprintf(fp, "stats_set_round_two %d\n", stats_sets_processed[ROUND2]);
-  fprintf(fp, "stats_size_list_count %d\n", stats_size_list_count);
-  fprintf(fp, "stats_three_file_compare %d\n", stats_three_file_compare);
-  fprintf(fp, "stats_two_file_compare %d\n", stats_two_file_compare);
-  fprintf(fp, "stats_uniques_saved %d\n", stats_uniques_saved);
-  fprintf(fp, "stats_size_list_avg %ld\n", stats_size_list_avg);
-  fprintf(fp, "stats_files_count %" PRIu32 "\n", stats_files_count);
-  fprintf(fp, "stats_files_ignored %d\n", stats_files_ignored);
-  fprintf(fp, "stats_files_error %d\n", stats_files_error);
-  fprintf(fp, "stats_avg_file_size %ld\n", stats_avg_file_size);
-  fprintf(fp, "stats_time_scan %ld\n", stats_time_scan);
-  fprintf(fp, "stats_time_process %ld\n", stats_time_process);
-  fprintf(fp, "stats_time_total %ld\n", stats_time_total);
+  fprintf(fp, "duplicate_groups %d\n", total_groups);
+  fprintf(fp, "duplicate_groups_1 %d\n", stats_duplicate_groups[ROUND1]);
+  fprintf(fp, "duplicate_groups_2 %d\n", stats_duplicate_groups[ROUND2]);
+  fprintf(fp, "full_hash_first %d\n", stats_full_hash_first);
+  fprintf(fp, "full_hash_second %d\n", stats_full_hash_second);
+  fprintf(fp, "partial_hash_second %d\n", stats_partial_hash_second);
+  fprintf(fp, "one_block_hash_first %d\n", stats_one_block_hash_first);
+  fprintf(fp, "set_dups_done_round_one %d\n", stats_sets_dup_done[ROUND1]);
+  fprintf(fp, "set_dups_done_round_two %d\n", stats_sets_dup_done[ROUND2]);
+  fprintf(fp, "set_no_dups_round_one %d\n", stats_sets_dup_not[ROUND1]);
+  fprintf(fp, "set_no_dups_round_two %d\n", stats_sets_dup_not[ROUND2]);
+  fprintf(fp, "set_round_one %d\n", stats_sets_processed[ROUND1]);
+  fprintf(fp, "set_round_two %d\n", stats_sets_processed[ROUND2]);
+  fprintf(fp, "size_list_count %d\n", stats_size_list_count);
+  fprintf(fp, "three_file_compare %d\n", stats_three_file_compare);
+  fprintf(fp, "two_file_compare %d\n", stats_two_file_compare);
+  fprintf(fp, "uniques_saved %d\n", stats_uniques_saved);
+  fprintf(fp, "size_list_avg %ld\n", stats_size_list_avg);
+  fprintf(fp, "files_count %" PRIu32 "\n", stats_files_count);
+  fprintf(fp, "files_ignored %d\n", stats_files_ignored);
+  fprintf(fp, "files_error %d\n", stats_files_error);
+  fprintf(fp, "avg_file_size %ld\n", stats_avg_file_size);
+  fprintf(fp, "time_scan %ld\n", stats_time_scan);
+  fprintf(fp, "time_process %ld\n", stats_time_process);
+  fprintf(fp, "time_total %ld\n", stats_time_total);
   fprintf(fp, "hash_one_block_size %d\n", hash_one_block_size);
   fprintf(fp, "hash_one_max_blocks %d\n", hash_one_max_blocks);
   fprintf(fp, "hash_block_size %d\n", hash_block_size);
   fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
   fprintf(fp, "stats_hashlist_path_realloc %d\n", stats_hashlist_path_realloc);
-  fprintf(fp, "stats_path_list_entries %" PRIu32 "\n",stats_path_list_entries);
-  fprintf(fp, "stats_hash_list_len_inc %d\n", stats_hash_list_len_inc);
+  fprintf(fp, "path_list_entries %" PRIu32 "\n",stats_path_list_entries);
+  fprintf(fp, "hash_list_len_inc %d\n", stats_hash_list_len_inc);
   fprintf(fp, "scan_list_usage_max %d\n", scan_list_usage_max);
   fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);
+  fprintf(fp, "using_fiemap %d\n", using_fiemap);
+  fprintf(fp, "fiemap_total_blocks %" PRIu32 "\n", stats_fiemap_total_blocks);
+  fprintf(fp, "fiemap_zero_blocks %" PRIu32 "\n", stats_fiemap_zero_blocks);
   fprintf(fp, "\n");
   fclose(fp);
 }

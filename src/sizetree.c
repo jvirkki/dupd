@@ -153,7 +153,7 @@ static struct size_node * new_node(off_t size, char * filename,
  * Return: none
  *
  */
-static void add_below(struct size_node * node, uint64_t block, ino_t inode,
+static void add_below(struct size_node * node, ino_t inode,
                       off_t size, char * filename, struct direntry * dir_entry)
 {
   struct size_node * p = node;
@@ -175,7 +175,7 @@ static void add_below(struct size_node * node, uint64_t block, ino_t inode,
         p->filename = NULL;
       }
 
-      insert_end_path(filename, dir_entry, block, inode, size, p->paths);
+      insert_end_path(filename, dir_entry, inode, size, p->paths);
 
       return;
     }
@@ -298,7 +298,7 @@ static void * worker_main(void * arg)
         done = 1;
 
       } else {
-        add_file(NULL, worker_next->block, worker_next->inode,
+        add_file(NULL, worker_next->inode,
                  worker_next->size, worker_next->path,
                  worker_next->filename, worker_next->dir_entry);
         queue_removed[current_worker_queue]++;
@@ -361,7 +361,7 @@ static void free_node(struct size_node * node)
  *
  */
 int add_file(sqlite3 * dbh,
-             uint64_t block, ino_t inode, off_t size,  char * path,
+             ino_t inode, off_t size,  char * path,
              char * filename, struct direntry * dir_entry)
 {
   (void)dbh;                    /* not used */
@@ -417,7 +417,7 @@ int add_file(sqlite3 * dbh,
     return(-2);
   }
 
-  add_below(tip, block, inode, size, filename, dir_entry);
+  add_below(tip, inode, size, filename, dir_entry);
 
   return(-2);
 }
@@ -428,7 +428,7 @@ int add_file(sqlite3 * dbh,
  *
  */
 int add_queue(sqlite3 * dbh,
-              uint64_t block, ino_t inode, off_t size, char * path,
+              ino_t inode, off_t size, char * path,
               char * filename, struct direntry * dir_entry)
 {
   (void)dbh;                    /* not used */
@@ -437,7 +437,6 @@ int add_queue(sqlite3 * dbh,
 
   // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;
-  producer_next->block = block;
   producer_next->inode = inode;
   strlcpy(producer_next->filename, filename, DUPD_FILENAME_MAX);
   producer_next->dir_entry = dir_entry;

@@ -9,8 +9,8 @@ $DUPD_CMD scan --path `pwd`/files -q --hdd --stats-file stx
 checkrv $?
 
 rm -f nreport report
-grep stats_duplicate_files stx > nreport
-grep 'stats_duplicate_groups ' stx >> nreport
+grep duplicate_files stx > nreport
+grep 'duplicate_groups ' stx >> nreport
 
 check_nreport output.80
 
