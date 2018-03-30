@@ -52,18 +52,9 @@ SRCS:=$(wildcard src/*.c)
 OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
 
 ifeq ($(BUILD_OS),Linux)
-OBJCP=objcopy
-OBJCP_MAN=$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
-CFLAGS=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE -DUSE_FIEMAP
+OBJCP_MAN=$(LD) -r -b binary -o $(BUILD)/usage.o man/dupd
+CFLAGS+=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE -DUSE_FIEMAP
 USAGE=$(BUILD)/usage.o
-# On Linux, gcc by default compiles to the same bitness as the OS,
-# so need to set the flags to objcopy accordingly.
-GCCBITS := $(shell getconf LONG_BIT)
-ifeq ($(GCCBITS),64)
-USAGE_ARCH=-O elf64-x86-64 -B i386
-else
-USAGE_ARCH=-O elf32-i386 -B i386
-endif
 endif
 
 ifeq ($(BUILD_OS),OpenBSD)
