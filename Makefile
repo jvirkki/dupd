@@ -92,7 +92,7 @@ endif
 ifeq ($(BUILD_OS),Darwin)
 OBJCP=
 USAGE=
-CFLAGS=-DDIRENT_HAS_TYPE -m64
+CFLAGS+=-DDIRENT_HAS_TYPE
 endif
 
 ifeq ($(DEBUG),1)
