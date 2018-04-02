@@ -58,19 +58,17 @@ USAGE=$(BUILD)/usage.o
 endif
 
 ifeq ($(BUILD_OS),OpenBSD)
-OBJCP=objcopy
-OBJCP_MAN=$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
-CFLAGS=-m64
+OBJCP_MAN=$(LD) -r -b binary -o $(BUILD)/usage.o man/dupd
 USAGE=$(BUILD)/usage.o
-USAGE_ARCH=-O elf64-x86-64 -B i386
+CFLAGS+=-DDIRENT_HAS_TYPE
 endif
 
 ifeq ($(BUILD_OS),FreeBSD)
 INC+=-I/usr/local/include
 LIB+=-L/usr/local/lib
 OBJCP_MAN=$(LD) -r -b binary -o $(BUILD)/usage.o man/dupd
-CFLAGS+=-DDIRENT_HAS_TYPE
 USAGE=$(BUILD)/usage.o
+CFLAGS+=-DDIRENT_HAS_TYPE
 endif
 
 ifeq ($(BUILD_OS),SunOS)
