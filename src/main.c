@@ -28,6 +28,7 @@
 #include "hash.h"
 #include "hashlist.h"
 #include "main.h"
+#include "man.h"
 #include "optgen.h"
 #include "paths.h"
 #include "readlist.h"
@@ -138,24 +139,16 @@ static void show_help()
 
 /** ***************************************************************************
  * Show built-in documentation and exit.
- * Content is compiled into the binary from the USAGE file.
+ * Content is compiled into the binary from the manpage.
  *
  */
 static void show_usage()
 {
   show_banner();
 
-#ifndef __APPLE__
-  char * p = &_binary_man_dupd_start;
-  while (p != &_binary_man_dupd_end) {
-    putchar(*p++);
+  for (unsigned int c = 0; c < man_dupd_len; c++) {
+    putchar((char)man_dupd[c]);
   }
-#else
-  printf("Usage documentation not available on Darwin!\n");
-  printf("\n");
-  printf("Alternatively, refer to the document here:\n");
-  printf("https://github.com/jvirkki/dupd\n");
-#endif
 }
 
 

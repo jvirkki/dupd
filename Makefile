@@ -52,37 +52,25 @@ SRCS:=$(wildcard src/*.c)
 OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
 
 ifeq ($(BUILD_OS),Linux)
-OBJCP_MAN=$(LD) -r -b binary -o $(BUILD)/usage.o man/dupd
 CFLAGS+=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE -DUSE_FIEMAP
-USAGE=$(BUILD)/usage.o
 endif
 
 ifeq ($(BUILD_OS),OpenBSD)
-OBJCP_MAN=$(LD) -r -b binary -o $(BUILD)/usage.o man/dupd
-USAGE=$(BUILD)/usage.o
 CFLAGS+=-DDIRENT_HAS_TYPE
 endif
 
 ifeq ($(BUILD_OS),FreeBSD)
 INC+=-I/usr/local/include
 LIB+=-L/usr/local/lib
-OBJCP_MAN=$(LD) -r -b binary -o $(BUILD)/usage.o man/dupd
-USAGE=$(BUILD)/usage.o
 CFLAGS+=-DDIRENT_HAS_TYPE
 endif
 
 ifeq ($(BUILD_OS),SunOS)
 CC=gcc
 CFLAGS=-m64
-OBJCP=gobjcopy
-OBJCP_MAN=$(OBJCP) -I binary $(USAGE_ARCH) man/dupd $(BUILD)/usage.o
-USAGE=$(BUILD)/usage.o
-USAGE_ARCH=-O elf64-x86-64 -B i386
 endif
 
 ifeq ($(BUILD_OS),Darwin)
-OBJCP=
-USAGE=
 CFLAGS+=-DDIRENT_HAS_TYPE
 endif
 
@@ -93,8 +81,8 @@ OPT=-O3
 endif
 
 
-dupd: src/optgen.c src/optgen.h $(OBJS) $(USAGE)
-	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(USAGE) $(LIB) \
+dupd: src/optgen.c src/optgen.h $(OBJS)
+	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(LIB) \
 	    -lsqlite3 -lcrypto -lpthread -lm -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
@@ -102,9 +90,6 @@ $(BUILD)/%.o: src/%.c src/%.h
 	$(CCC) $(INC) $(CFLAGS) \
 		-DDUPD_VERSION=\"$(VERSION)\" -DGITHASH=\"$(GITHASH)\" \
 		 -c $< -o $@
-
-$(BUILD)/usage.o: man/dupd
-	$(OBJCP_MAN)
 
 clean:
 	rm -f dupd
@@ -158,6 +143,7 @@ endif
 .PHONY: man
 man:
 	MANWIDTH=80 man -l man/dupd.1 > man/dupd
+	xxd -i man/dupd > src/man.h
 
 release:
 	$(MAKE) clean
