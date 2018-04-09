@@ -45,10 +45,7 @@ checkrv $?
 
 check_nreport output.40
 
-rm -f files3/tmp.*
-
-# On OS X bash can't handle the rm above. As a backup, remove tmp
-# files individually now.
-find files3 -name "tmp.*" -exec rm {} \;
+# Clean out all the tmp test files
+find files3 -name "tmp.*" | xargs rm -f
 
 tdone
