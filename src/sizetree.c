@@ -160,9 +160,8 @@ static void add_below(struct size_node * node, ino_t inode,
   struct size_node * p = node;
 
   while (1) {
-    uint64_t s = size - p->size;
 
-    if (!s) {
+    if (size == p->size) {
       // The first file of this size is kept in the size_node itself,
       // waiting to see if another file of the same size is found.
       // If we reached a size_node which exists but paths is NULL that
@@ -181,7 +180,7 @@ static void add_below(struct size_node * node, ino_t inode,
       return;
     }
 
-    if (s > 0) {
+    if (size > p->size) {
       if (p->left == NULL) {
         p->left = new_node(size, filename, dir_entry);
         return;
