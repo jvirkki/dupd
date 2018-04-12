@@ -35,7 +35,7 @@
 #include "utils.h"
 
 struct size_node {
-  off_t size;
+  uint64_t size;
   struct path_list_head * paths;
   struct size_node * left;
   struct size_node * right;
@@ -50,7 +50,7 @@ struct stat_queue {
   int end;
   dev_t device;
   ino_t inode;
-  off_t size;
+  uint64_t size;
   struct direntry * dir_entry;
   char filename[DUPD_FILENAME_MAX];
   char path[DUPD_PATH_MAX];
@@ -125,7 +125,7 @@ static char * queue_state(int s)
  * Return: ptr to the node created
  *
  */
-static struct size_node * new_node(off_t size, char * filename,
+static struct size_node * new_node(uint64_t size, char * filename,
                                    struct direntry * dir_entry)
 {
   struct size_node * n = (struct size_node *)malloc(sizeof(struct size_node));
@@ -154,12 +154,13 @@ static struct size_node * new_node(off_t size, char * filename,
  *
  */
 static void add_below(struct size_node * node, ino_t inode,
-                      off_t size, char * filename, struct direntry * dir_entry)
+                      uint64_t size, char * filename,
+                      struct direntry * dir_entry)
 {
   struct size_node * p = node;
 
   while (1) {
-    off_t s = size - p->size;
+    uint64_t s = size - p->size;
 
     if (!s) {
       // The first file of this size is kept in the size_node itself,
@@ -361,7 +362,7 @@ static void free_node(struct size_node * node)
  *
  */
 int add_file(sqlite3 * dbh,
-             ino_t inode, off_t size,  char * path,
+             ino_t inode, uint64_t size,  char * path,
              char * filename, struct direntry * dir_entry)
 {
   (void)dbh;                    /* not used */
@@ -404,11 +405,7 @@ int add_file(sqlite3 * dbh,
     }
 
   } else {
-    LOG(L_TRACE, "SKIP (too small: %lld): [%s]\n", (long long)size, path);
-    if (size < 0) {                                          // LCOV_EXCL_START
-      printf("Bad size! %lld: [%s]\n", (long long)size, path);
-      exit(1);
-    }                                                        // LCOV_EXCL_STOP
+    LOG(L_TRACE, "SKIP (too small: %" PRIu64 "): [%s]\n", size, path);
     return(-2);
   }
 
@@ -428,7 +425,7 @@ int add_file(sqlite3 * dbh,
  *
  */
 int add_queue(sqlite3 * dbh,
-              ino_t inode, off_t size, char * path,
+              ino_t inode, uint64_t size, char * path,
               char * filename, struct direntry * dir_entry)
 {
   (void)dbh;                    /* not used */

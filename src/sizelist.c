@@ -43,7 +43,7 @@
 #include "stats.h"
 #include "utils.h"
 
-static int round1_max_bytes;
+static uint32_t round1_max_bytes;
 static struct size_list * size_list_head;
 static struct size_list * size_list_tail;
 static struct size_list * deleted_list_head;
@@ -66,7 +66,7 @@ static pthread_mutex_t deleted_list_lock = PTHREAD_MUTEX_INITIALIZER;
 struct round2_info {
   int state;
   int fd;
-  off_t read_from;
+  uint64_t read_from;
   size_t read_count;
   void * hash_ctx;
   char hash_result[HASH_MAX_BUFSIZE];
@@ -115,10 +115,10 @@ static void dump_size_list()
   printf("--- DUMP SIZE LIST\n");
   while (node != NULL) {
     printf("state         : %s\n", inner_state_name(node->state));
-    printf("size          : %jd\n", node->size);
+    printf("size          : %" PRIu64 "\n", node->size);
     printf("fully read    : %d\n", node->fully_read);
     printf("buffers_filled: %" PRIu32 "\n", node->buffers_filled);
-    printf("bytes_read    : %jd\n", node->bytes_read);
+    printf("bytes_read    : %" PRIu64 "\n", node->bytes_read);
     printf("next          : %p\n", node->next);
     printf("dnext         : %p\n", node->dnext);
     printf("  == pathlist follows:\n");
@@ -131,27 +131,16 @@ static void dump_size_list()
 
 
 /** ***************************************************************************
- * Print total sets processed.
- *
- */
-static inline void show_processed_done(int total)
-{
-  LOG(L_PROGRESS,
-      "Done processing %d sets                             \n", total);
-}
-
-
-/** ***************************************************************************
  * Public function, see header file.
  *
  */
-void show_processed(int total, int files, long size)
+void show_processed(int total, int files, uint64_t size)
 {
   d_mutex_lock(&show_processed_lock, "show_processed");
 
   stats_size_list_done++;
 
-  LOG(L_PROGRESS, "Processed %d/%d (%d files of size %ld)\n",
+  LOG(L_PROGRESS, "Processed %d/%d (%d files of size %" PRIu64 ")\n",
       stats_size_list_done, total, files, size);
 
   if (stats_size_list_done > total) {                        // LCOV_EXCL_START
@@ -182,8 +171,8 @@ static void unlink_size_list_entry(struct size_list * entry,
   d_mutex_lock(&entry->next->lock, "unlink entry, lock next");
 
   if (pthread_mutex_trylock(&previous->lock)) {
-    LOG(L_THREADS, "While removing entry size %ld, unable to lock previous, "
-        "giving up\n", entry->size);
+    LOG(L_THREADS, "While removing entry size %" PRIu64
+        ", unable to lock previous, giving up\n", entry->size);
     d_mutex_unlock(&entry->next->lock);
     d_mutex_unlock(&entry->lock);
     return;
@@ -192,7 +181,8 @@ static void unlink_size_list_entry(struct size_list * entry,
   // Now have lock on previous, entry, next
 
   if (entry->next->state == SLS_DELETED) {
-    LOG(L_THREADS, "While removing entry (size %ld), next node (size %ld) "
+    LOG(L_THREADS, "While removing entry (size %" PRIu64
+        "), next node (size %" PRIu64 ") "
         "is SLS_DELETED, giving up\n", entry->size, entry->next->size);
     d_mutex_unlock(&previous->lock);
     d_mutex_unlock(&entry->next->lock);
@@ -201,7 +191,8 @@ static void unlink_size_list_entry(struct size_list * entry,
   }
 
   if (previous->next != entry) {
-    LOG(L_THREADS, "While removing entry (size %ld), previous (size %ld) "
+    LOG(L_THREADS, "While removing entry (size %" PRIu64
+        "), previous (size %" PRIu64 ") "
         "does not point to me, giving up\n", entry->size, previous->size);
     d_mutex_unlock(&previous->lock);
     d_mutex_unlock(&entry->next->lock);
@@ -209,9 +200,9 @@ static void unlink_size_list_entry(struct size_list * entry,
     return;
   }
 
-  LOG(L_MORE_THREADS, "Removed size list entry of size %ld. "
-      "Entry size=%ld now has next entry size=%ld\n",
-      (long)entry->size, (long)previous->size, (long)entry->next->size);
+  LOG(L_MORE_THREADS, "Removed size list entry of size %" PRIu64 ". "
+      "Entry size=%" PRIu64 " now has next entry size=%" PRIu64 "\n",
+      entry->size, previous->size, entry->next->size);
 
   previous->next = entry->next;
 
@@ -360,13 +351,13 @@ static void * round2_hasher(void * arg)
       }
 
       status = NULL;
-      off_t size = size_node->size;
+      uint64_t size = size_node->size;
 
       LOG_THREADS {
         int count = size_node->path_list->list_size;
         LOG(L_THREADS,
-            "SET %d (%d files of size %ld) (loop %d) state: %s\n",
-            set_count++, count, (long)size, loops,
+            "SET %d (%d files of size %" PRIu64 ") (loop %d) state: %s\n",
+            set_count++, count, size, loops,
             pls_state(size_node->path_list->state));
       }
 
@@ -750,10 +741,10 @@ static void process_round_2(sqlite3 * dbh)
       path_count = size_node->path_list->list_size;
 
       LOG_THREADS {
-        off_t size = size_node->size;
+        uint64_t size = size_node->size;
         LOG(L_THREADS,
-            "SET %d (%d files of size %ld) (loop %d) state: %s\n",
-            set_count++, path_count, (long)size, loops,
+            "SET %d (%d files of size %" PRIu64 ") (loop %d) state: %s\n",
+            set_count++, path_count, size, loops,
             pls_state(size_node->path_list->state));
       }
 
@@ -974,7 +965,7 @@ static void process_round_2(sqlite3 * dbh)
  * Return: An intialized/allocated size list node.
  *
  */
-static struct size_list * new_size_list_entry(off_t size,
+static struct size_list * new_size_list_entry(uint64_t size,
                                               struct path_list_head *path_list)
 {
   struct size_list * e = (struct size_list *)malloc(sizeof(struct size_list));
@@ -1010,12 +1001,13 @@ static struct size_list * new_size_list_entry(off_t size,
  * Return: none
  *
  */
-static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
+static void reader_read_bytes(struct size_list * size_node,
+                              uint32_t max_to_read)
 {
   struct path_list_entry * node;
   char path[DUPD_PATH_MAX];
   char * buffer;
-  ssize_t received;
+  uint64_t received;
   int count = 0;
 
   node = pb_get_first_entry(size_node->path_list);
@@ -1040,11 +1032,12 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
       if (path[0] != 0) { // TODO
         buffer = (char *)malloc(size_node->bytes_read);
         inc_stats_read_buffers_allocated(size_node->bytes_read);
-        received = read_file_bytes(path, buffer, size_node->bytes_read, 0);
+        read_file_bytes(path, buffer, size_node->bytes_read, 0, &received);
 
         if (received != size_node->bytes_read) {
-          LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
-              (long)received, path, (long)size_node->bytes_read);
+          LOG(L_PROGRESS, "error: read %" PRIu64
+              " bytes from [%s] but wanted %" PRIu64 "\n",
+              received, path, size_node->bytes_read);
           free(buffer);
           dec_stats_read_buffers_allocated(size_node->bytes_read);
           mark_path_entry_invalid(size_node->path_list, node);
@@ -1057,7 +1050,7 @@ static void reader_read_bytes(struct size_list * size_node, off_t max_to_read)
         LOG_TRACE {
           if (received == size_node->bytes_read) {
             LOG(L_TRACE,
-                "read %ld bytes from %s\n", (long)size_node->bytes_read,path);
+                "read %" PRIu64 " bytes from %s\n",size_node->bytes_read,path);
           }
         }
 
@@ -1113,16 +1106,16 @@ static void submit_path_list(int thread,
                              struct hasher_param * hasher_info)
 {
   struct size_list * sizelist = pathlist_head->sizelist;
-  long size = (long)sizelist->size;
+  uint64_t size = sizelist->size;
   struct hasher_param * queue_info = NULL;
 
-  LOG(L_THREADS, "Inserting set (%d files of size %ld) in state %s "
+  LOG(L_THREADS, "Inserting set (%d files of size %" PRIu64 ") in state %s "
       "into hasher queue %d\n",
       pathlist_head->list_size, size,
       pls_state(pathlist_head->state), thread);
 
   if (pathlist_head->list_size == 0) {
-    LOG(L_THREADS, "SKIP set (%d files of size %ld) in state %s ",
+    LOG(L_THREADS, "SKIP set (%d files of size %" PRIu64 ") in state %s ",
         pathlist_head->list_size, size, pls_state(pathlist_head->state));
     pathlist_head->state = PLS_DONE;
     return;
@@ -1156,7 +1149,8 @@ static void submit_path_list(int thread,
 
   queue_info->queue_pos++;
   queue_info->queue[queue_info->queue_pos] = pathlist_head;
-  LOG(L_MORE_THREADS, "Set (%d files of size %ld) now in queue %d pos %d\n",
+  LOG(L_MORE_THREADS, "Set (%d files of size %" PRIu64
+      ") now in queue %d pos %d\n",
       pathlist_head->list_size, size, thread, queue_info->queue_pos);
 
   // Signal the corresponding hasher thread so it'll pick up the pathlist
@@ -1184,7 +1178,7 @@ static void * size_list_flusher(void * arg)
   int sets;
   int bfpct;
   int next_queue = 0;
-  off_t max_to_read;
+  uint32_t max_to_read;
   struct hasher_param * hasher_info = (struct hasher_param *)arg;
 
   size_node = size_list_head;
@@ -1240,9 +1234,9 @@ static void * read_list_reader(void * arg)
   char * self = "                                        [RL-reader] ";
   struct size_list * sizelist;
   struct read_list_entry * rlentry;
-  ssize_t received;
-  off_t max_to_read;
-  off_t size;
+  uint64_t received;
+  uint32_t max_to_read;
+  uint64_t size;
   int rlpos = 0;
   int new_avg;
   int bfpct;
@@ -1295,20 +1289,22 @@ static void * read_list_reader(void * arg)
       exit(1);
     }
 
-    LOG(L_MORE_THREADS, "Set (%d files of size %ld in state %s): read %s\n",
-        pathlist_head->list_size, (long)size,
+    LOG(L_MORE_THREADS, "Set (%d files of size %" PRIu64
+        " in state %s): read %s\n",
+        pathlist_head->list_size, size,
         file_state(pathlist_entry->state), path);
 
     buffer = (char *)malloc(max_to_read);
     inc_stats_read_buffers_allocated(max_to_read);
     t1 = get_current_time_millis();
-    received = read_file_bytes(path, buffer, max_to_read, 0);
+    read_file_bytes(path, buffer, max_to_read, 0, &received);
     took = get_current_time_millis() - t1;
 
     if (received != max_to_read) {
       // File may be unreadable or changed size, either way, ignore it.
-      LOG(L_PROGRESS, "error: read %ld bytes from [%s] but wanted %ld\n",
-          (long)received, path, (long)max_to_read);
+      LOG(L_PROGRESS, "error: read %" PRIu64 " bytes from [%s] but wanted %"
+          PRIu32 "\n",
+          received, path, max_to_read);
       free(buffer);
       dec_stats_read_buffers_allocated(max_to_read);
       mark_path_entry_invalid(pathlist_head, pathlist_entry);
@@ -1379,7 +1375,7 @@ static void * size_list_reader(void * arg)
   struct size_list * size_node_next;
   int sets;
   int next_queue = 0;
-  off_t max_to_read;
+  uint64_t max_to_read;
   struct hasher_param * hasher_info = (struct hasher_param *)arg;
 
   pthread_setspecific(thread_name, self);
@@ -1437,15 +1433,9 @@ void init_size_list()
  * Public function, see header file.
  *
  */
-struct size_list * add_to_size_list(off_t size,
+struct size_list * add_to_size_list(uint64_t size,
                                     struct path_list_head * path_list)
 {
-  if (size < 0) {
-    printf("add_to_size_list: bad size! %ld\n", (long)size); // LCOV_EXCL_START
-    dump_path_list("bad size", size, path_list, 0);
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
-
   stats_size_list_avg = stats_size_list_avg +
     ( (size - stats_size_list_avg) / (stats_size_list_count + 1) );
 

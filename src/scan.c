@@ -206,7 +206,7 @@ void free_scanlist()
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
               dev_t device,
-              int (*process_file)(sqlite3 *, ino_t, off_t, char *,
+              int (*process_file)(sqlite3 *, ino_t, uint64_t, char *,
                                   char *, struct direntry *))
 {
   STRUCT_STAT new_stat_info;
@@ -217,7 +217,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
   struct direntry * current_dir_entry;
   char current[DUPD_PATH_MAX];
   ino_t inode;
-  off_t size;
+  uint64_t size;
   long type;
 
   if (path == NULL || path[0] == 0) {                        // LCOV_EXCL_START
@@ -294,7 +294,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
 #endif
       if (type == D_OTHER) {
         rv = get_file_info(newpath, &new_stat_info);
-        size = new_stat_info.st_size;
+        size = (uint64_t)new_stat_info.st_size;
         inode = new_stat_info.st_ino;
         if (rv != 0) {
           type = D_ERROR;
@@ -461,12 +461,12 @@ void scan()
   }
 
   LOG_PROGRESS {
-    printf("Average file size: %ld\n", stats_avg_file_size);
+    printf("Average file size: %" PRIu64 "\n", stats_avg_file_size);
     printf("Special files ignored: %d\n", stats_files_ignored);
     printf("Files with stat errors: %d\n", stats_files_error);
     printf("File scan completed in %ldms\n", stats_time_scan);
     report_size_list();
-    printf("Longest path list %d (file size: %ld)\n",
+    printf("Longest path list %d (file size: %" PRIu64 ")\n",
            stats_max_pathlist, stats_max_pathlist_size);
   }
 

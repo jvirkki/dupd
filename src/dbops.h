@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2014,2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -21,6 +21,7 @@
 #define _DUPD_DBOPS_H
 
 #include <sqlite3.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 
@@ -104,7 +105,7 @@ void rvchk(int rv, int code, char * line, sqlite3 * dbh);
  * Return: none.
  *
  */
-void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths);
+void duplicate_to_db(sqlite3 * dbh, int count, uint64_t size, char * paths);
 
 
 /** ***************************************************************************

@@ -168,7 +168,7 @@ extern int exclude_path_len;
  * This minimum_file_size is the smallest size handled by scan or report.
  *
  */
-extern off_t minimum_file_size;
+extern uint32_t minimum_file_size;
 
 
 /** ***************************************************************************

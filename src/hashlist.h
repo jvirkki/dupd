@@ -115,7 +115,7 @@ void add_to_hash_table(struct hash_table * hl,
  *
  */
 void add_hash_table(struct hash_table * hl, struct path_list_entry * file,
-                    uint64_t blocks, int bsize, off_t skip);
+                    uint64_t blocks, int bsize, uint64_t skip);
 
 
 /** ***************************************************************************
@@ -134,7 +134,7 @@ void add_hash_table(struct hash_table * hl, struct path_list_entry * file,
  */
 void add_hash_table_from_mem(struct hash_table * hl,
                              struct path_list_entry * file,
-                             const char * buffer, off_t bufsize);
+                             const char * buffer, uint32_t bufsize);
 
 
 /** ***************************************************************************
@@ -156,7 +156,7 @@ void add_hash_table_from_mem(struct hash_table * hl,
  *
  */
 void publish_duplicate_hash_table(sqlite3 * dbh, struct hash_table * hl,
-                                  off_t size, int round);
+                                  uint64_t size, int round);
 
 
 /** ***************************************************************************

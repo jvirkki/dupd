@@ -318,7 +318,7 @@ void operation_report()
     }                                                        // LCOV_EXCL_STOP
 
     path_list = (char *)sqlite3_column_text(statement, 0);
-    off_t total = sqlite3_column_int64(statement, 1);
+    uint64_t total = sqlite3_column_int64(statement, 1);
 
     if (total >= minimum_file_size) {
 
@@ -329,10 +329,10 @@ void operation_report()
 
       switch (report_format) {
       case REPORT_FORMAT_TEXT:
-        printf("%lu total bytes used by duplicates:\n", (unsigned long)total);
+        printf("%" PRIu64" total bytes used by duplicates:\n", total);
         break;
-      case REPORT_FORMAT_CSV:  printf("%lu,", (unsigned long)total); break;
-      case REPORT_FORMAT_JSON: printf("[ %lu,", (unsigned long)total); break;
+      case REPORT_FORMAT_CSV:  printf("%" PRIu64 ",", total); break;
+      case REPORT_FORMAT_JSON: printf("[ %" PRIu64 ",", total); break;
       }
 
       used += (uint64_t)total;
@@ -361,12 +361,12 @@ void operation_report()
   }
 
   if (report_format == REPORT_FORMAT_TEXT) {
-    unsigned long long kb = used / 1024;
-    unsigned long mb = kb / 1024;
-    unsigned long gb = mb / 1024;
+    uint64_t kb = used / 1024;
+    uint64_t mb = kb / 1024;
+    uint64_t gb = mb / 1024;
 
-    printf("Total used: %" PRIu64 " bytes (%llu KiB, %lu MiB, %lu GiB)\n",
-           used, kb, mb, gb);
+    printf("Total used: %" PRIu64 " bytes (%" PRIu64" KiB, %" PRIu64
+           " MiB, %" PRIu64 " GiB)\n", used, kb, mb, gb);
   }
 
   if (report_format == REPORT_FORMAT_JSON) {
@@ -392,8 +392,9 @@ void operation_report()
  *
  */
 static int file_callback(sqlite3 * dbh,
-                         ino_t inode, off_t size,
-                         char * path, char * filename, struct direntry * dir_entry)
+                         ino_t inode, uint64_t size,
+                         char * path, char * filename,
+                         struct direntry * dir_entry)
 {
   (void)size;
   (void)inode;

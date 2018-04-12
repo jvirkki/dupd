@@ -40,7 +40,7 @@
  *
  */
 int add_file(sqlite3 * dbh,
-             ino_t inode, off_t size,  char * path,
+             ino_t inode, uint64_t size,  char * path,
              char * filename, struct direntry * dir_entry);
 
 
@@ -62,7 +62,7 @@ int add_file(sqlite3 * dbh,
  *
  */
 int add_queue(sqlite3 * dbh,
-              ino_t inode, off_t size, char * path,
+              ino_t inode, uint64_t size, char * path,
               char * filename, struct direntry * dir_entry);
 
 

@@ -255,11 +255,8 @@ void free_hashlist()
  *
  */
 void add_hash_table(struct hash_table * hl, struct path_list_entry * file,
-                    uint64_t blocks, int bsize, off_t skip)
+                    uint64_t blocks, int bsize, uint64_t skip)
 {
-  assert(hl != NULL);                                        // LCOV_EXCL_LINE
-  assert(file != NULL);                                      // LCOV_EXCL_LINE
-
   char hash_out[HASH_MAX_BUFSIZE];
   char path[DUPD_PATH_MAX];
 
@@ -281,11 +278,8 @@ void add_hash_table(struct hash_table * hl, struct path_list_entry * file,
  */
 void add_hash_table_from_mem(struct hash_table * hl,
                              struct path_list_entry * file,
-                             const char * buffer, off_t bufsize)
+                             const char * buffer, uint32_t bufsize)
 {
-  assert(hl != NULL);                                        // LCOV_EXCL_LINE
-  assert(file != NULL);                                      // LCOV_EXCL_LINE
-
   char hash_out[HASH_MAX_BUFSIZE];
   hash_fn_buf(buffer, bufsize, hash_out);
   add_to_hash_table(hl, file, hash_out);
@@ -298,7 +292,7 @@ void add_hash_table_from_mem(struct hash_table * hl,
  */
 static void publish_duplicate_hash_list(sqlite3 * dbh,
                                         struct hash_list * hl,
-                                        off_t size, int round)
+                                        uint64_t size, int round)
 {
   struct hash_list * p = hl;
   struct path_list_entry * entry;
@@ -362,7 +356,7 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
  */
 void publish_duplicate_hash_table(sqlite3 * dbh,
                                   struct hash_table * hl,
-                                  off_t size, int round)
+                                  uint64_t size, int round)
 {
   for (int n = 0; n <= 255; n++) {
     if (hl->table[n] != NULL) {

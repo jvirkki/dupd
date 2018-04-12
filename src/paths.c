@@ -52,7 +52,7 @@ void * fiemap = NULL;
  * Debug function. Dumps the path list for a given size starting from head.
  *
  */
-void dump_path_list(const char * line, off_t size,
+void dump_path_list(const char * line, uint64_t size,
                     struct path_list_head * head, int dump_all)
 {
   printf("----- dump path block list for size %ld -----\n", (long)size);
@@ -289,7 +289,7 @@ struct path_list_head * insert_first_path(char * filename,
  *
  */
 void insert_end_path(char * filename, struct direntry * dir_entry,
-                     ino_t inode, off_t size, struct path_list_head * head)
+                     ino_t inode, uint64_t size, struct path_list_head * head)
 {
   char pathbuf[DUPD_PATH_MAX];
   struct block_list * block_list = NULL;

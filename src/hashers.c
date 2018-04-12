@@ -54,7 +54,7 @@ static int build_hash_list_round(sqlite3 * dbh,
   else { stats_sets_part_read[1]++; }
   d_mutex_unlock(&stats_lock);
 
-  LOG(L_TRACE, "Building hash list for size %ld\n", size_node->size);
+  LOG(L_TRACE, "Building hash list for size %" PRIu64 "\n", size_node->size);
 
   // Build hash list for all files which have a buffer filled.
   // That's the usual case but some files may be in other states such as

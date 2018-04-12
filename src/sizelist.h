@@ -25,12 +25,12 @@
 #include <sys/types.h>
 
 struct size_list {
-  off_t size;
+  uint64_t size;
   struct path_list_head * path_list;
   int state;
   int fully_read;
   uint32_t buffers_filled;
-  off_t bytes_read;
+  uint64_t bytes_read;
   pthread_mutex_t lock;
   struct size_list * next;
   struct size_list * dnext;
@@ -63,7 +63,7 @@ struct size_list {
  * Return: none
  *
  */
-void show_processed(int total, int files, long size);
+void show_processed(int total, int files, uint64_t size);
 
 
 /** ***************************************************************************
@@ -98,7 +98,7 @@ void free_size_list();
  * Return: An intialized/allocated size list node.
  *
  */
-struct size_list * add_to_size_list(off_t size,
+struct size_list * add_to_size_list(uint64_t size,
                                     struct path_list_head * path_list);
 
 

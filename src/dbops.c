@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -113,7 +113,7 @@ static void initialize_database(sqlite3 * dbh)
   rv = sqlite3_bind_text(stmt, 3, DUPD_VERSION, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind version: %s\n", dbh);
 
-  long now = get_current_time_millis();
+  uint64_t now = get_current_time_millis();
   rv = sqlite3_bind_int64(stmt, 4, now);
   rvchk(rv, SQLITE_OK, "Can't bind current dbtime: %s\n", dbh);
 
@@ -236,14 +236,14 @@ sqlite3 * open_database(char * path, int newdb)
     printf("\n\n");
   }                                                          // LCOV_EXCL_STOP
 
-  long db_create_time = sqlite3_column_int64(statement, 3);
-  LOG(L_PROGRESS, "database create time %ld\n", db_create_time);
+  uint64_t db_create_time = (uint64_t)sqlite3_column_int64(statement, 3);
+  LOG(L_PROGRESS, "database create time %" PRIu64 "\n", db_create_time);
 
-  long expiration = db_create_time + 1000L * db_warn_age_seconds;
-  long now = get_current_time_millis();
+  uint64_t expiration = db_create_time + 1000L * db_warn_age_seconds;
+  uint64_t now = get_current_time_millis();
   if (now > expiration) {
-    long age =(now - db_create_time) / 1000 / 60 / 60;
-    printf("WARNING: database is %ld hours old, data may be stale!\n", age);
+    uint64_t age = (now - db_create_time) / 1000 / 60 / 60;
+    printf("WARNING: database is %" PRIu64" hours old, may be stale!\n", age);
   }
 
   // If opening an existing db which was created with hardlinks=ignore,
@@ -342,7 +342,7 @@ void rvchk(int rv, int code, char * line, sqlite3 * dbh)
  * Public function, see header file.
  *
  */
-void duplicate_to_db(sqlite3 * dbh, int count, off_t size, char * paths)
+void duplicate_to_db(sqlite3 * dbh, int count, uint64_t size, char * paths)
 {
   const char * sql = "INSERT INTO duplicates (count, each_size, paths) "
                      "VALUES(?, ?, ?)";

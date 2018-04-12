@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -21,6 +21,7 @@
 #define _DUPD_FILECOMPARE_H
 
 #include <sqlite3.h>
+#include <stdint.h>
 
 
 /** ***************************************************************************
@@ -36,8 +37,8 @@
  * Return: none.
  *
  */
-void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size,
-                       int round);
+void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
+                       uint64_t size, int round);
 
 
 /** ***************************************************************************
@@ -55,8 +56,8 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size,
  *
  */
 void compare_three_files(sqlite3 * dbh,
-                         char * path1, char * path2, char * path3, off_t size,
-                         int round);
+                         char * path1, char * path2, char * path3,
+                         uint64_t size, int round);
 
 
 /** ***************************************************************************

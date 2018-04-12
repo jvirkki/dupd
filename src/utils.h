@@ -111,7 +111,7 @@ int get_file_info(const char * path, STRUCT_STAT * info);
  * Return: time in milliseconds
  *
  */
-long get_current_time_millis();
+uint64_t get_current_time_millis();
 
 
 /** ***************************************************************************
@@ -171,16 +171,17 @@ static inline int dupd_memcmp(const char * b1, const char * b2, size_t n)
  * Read data from disk.
  *
  * Parameters:
- *    path   - Path to file to read.
- *    output - Caller-provided buffer to store the data read from disk.
- *    bytes  - Read this many bytes.
- *    skip   - Skip this many bytes (start reading file from byte skip+1).
+ *    path       - Path to file to read.
+ *    output     - Caller-provided buffer to store the data read from disk.
+ *    bytes      - Read this many bytes.
+ *    skip       - Skip this many bytes (start reading file from byte skip+1).
+ *    bytes_read - Returns number of bytes actually read.
  *
- * Return: number of bytes read (might be less than 'bytes' requested).
+ * Return: 0 on success
  *
  */
-ssize_t read_file_bytes(char * path, char * output,
-                        uint64_t bytes, uint64_t skip);
+int read_file_bytes(char * path, char * output,
+                    uint64_t bytes, uint64_t skip, uint64_t * bytes_read);
 
 
 /** ***************************************************************************

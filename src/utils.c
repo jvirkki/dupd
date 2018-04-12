@@ -87,7 +87,7 @@ int get_file_info(const char * path, STRUCT_STAT * info)
  * Public function, see header file.
  *
  */
-long get_current_time_millis()
+uint64_t get_current_time_millis()
 {
   struct timeval tp;
   gettimeofday(&tp, NULL);
@@ -134,9 +134,11 @@ long slow_down(int prob, int max_delay_ms)
  * Public function, see header file.
  *
  */
-ssize_t read_file_bytes(char * path, char * output,
-                        uint64_t bytes, uint64_t skip)
+int read_file_bytes(char * path, char * output,
+                    uint64_t bytes, uint64_t skip, uint64_t * bytes_read)
 {
+  *bytes_read = 0;
+
   int file = open(path, O_RDONLY);
   if (file < 0) {                                            // LCOV_EXCL_START
     LOG(L_PROGRESS, "Error opening [%s]\n", path);
@@ -151,10 +153,10 @@ ssize_t read_file_bytes(char * path, char * output,
     }                                                        // LCOV_EXCL_STOP
   }
 
-  ssize_t got = read(file, output, bytes);
-  stats_total_bytes_read += got;
+  *bytes_read = read(file, output, bytes);
+  stats_total_bytes_read += *bytes_read;
   close(file);
-  return got;
+  return 0;
 }
 
 
@@ -177,7 +179,7 @@ uint64_t total_ram()
   uint64_t ram = DUPD_PAGES * DUPD_PAGESIZE;
 
   // If not available, just pick something semi-reasonable.
-  if (ram == 0) { ram = 4L * GB1; }
+  if (ram == 0) { ram = UINT64_C(4) * GB1; }
 
   return ram;
 }
@@ -280,10 +282,8 @@ void dump_block_list(const char * prefix, struct block_list * bl)
 struct block_list * get_block_info_from_path(char * path, ino_t inode,
                                              uint64_t size, void * map)
 {
-  struct block_list * bl = NULL;
-
   if (using_fiemap && map == NULL) {
-    printf("error: get_block_info_from_path: using_fiemap but no map\n");
+    printf("error: using_fiemap but no map [%s]\n", path);
     exit(1);
   }
 
@@ -294,6 +294,7 @@ struct block_list * get_block_info_from_path(char * path, ino_t inode,
 #ifdef USE_FIEMAP
   int rv;
   struct fiemap * fmap = (struct fiemap *)map;
+  struct block_list * bl = NULL;
 
   int fd = open(path, O_RDONLY);
   if (fd < 0) {

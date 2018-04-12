@@ -22,7 +22,7 @@
 
 #include "dirtree.h"
 
-#define SCAN_SIZE_UNKNOWN -42
+#define SCAN_SIZE_UNKNOWN 0
 #define SCAN_INODE_UNKNOWN 0
 #define SCAN_DEV_UNKNOWN -1
 
@@ -68,7 +68,7 @@ void free_scanlist();
  */
 void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
               dev_t device,
-              int (*process_file)(sqlite3 *, ino_t, off_t, char *,
+              int (*process_file)(sqlite3 *, ino_t, uint64_t, char *,
                                   char *, struct direntry *));
 
 

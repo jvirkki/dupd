@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -44,7 +44,7 @@ static char paths[DUPD_PATH_MAX * 3];
 static void compare_two_open_files(sqlite3 * dbh,
                                    char * path1, int file1,
                                    char * path2, int file2,
-                                   off_t size, int sofar, int round)
+                                   uint64_t size, int sofar, int round)
 {
   int bread = sofar;
   ssize_t bytes1;
@@ -95,8 +95,8 @@ static void compare_two_open_files(sqlite3 * dbh,
  * Public function, see header file.
  *
  */
-void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size,
-                       int round)
+void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
+                       uint64_t size, int round)
 {
   LOG(L_TRACE, "compare_two_files: [%s] vs [%s]\n", path1, path2);
 
@@ -122,8 +122,8 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2, off_t size,
  *
  */
 void compare_three_files(sqlite3 * dbh,
-                         char * path1, char * path2, char * path3, off_t size,
-                         int round)
+                         char * path1, char * path2, char * path3,
+                         uint64_t size, int round)
 {
   LOG(L_TRACE, "compare_three_files: [%s],[%s],[%s]\n",
       path1, path2, path3);

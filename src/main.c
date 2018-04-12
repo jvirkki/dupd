@@ -60,7 +60,7 @@ char * db_path = NULL;
 char * cut_path = NULL;
 char * exclude_path = NULL;
 int exclude_path_len = 0;
-off_t minimum_file_size = 1;
+uint32_t minimum_file_size = 1;
 int hash_one_max_blocks = 16;
 int hash_one_block_size = -1;
 int DEF_HDD_hash_one_block_size = 1024*64;
@@ -349,6 +349,7 @@ static int process_args(int argc, char * argv[])
   stats_file = options[OPT_stats_file];
 
   minimum_file_size = opt_int(options[OPT_minsize], minimum_file_size);
+  if (minimum_file_size < 1) { minimum_file_size = 1; }
 
   if (save_uniques && !write_db) {
     printf("error: --uniques and --nodb are incompatible\n");

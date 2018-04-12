@@ -42,7 +42,7 @@ void operation_refresh()
 
   int entry_id;
   int entry_count;
-  off_t entry_each_size;
+  uint64_t entry_each_size;
   char * entry_path_list;
   char * pos;
 
