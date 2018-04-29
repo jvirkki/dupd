@@ -357,12 +357,6 @@ struct block_list * get_block_info_from_path(char * path, ino_t inode,
     // all is well. Keep track of how many.
     stats_fiemap_total_blocks++;
     if (bl->entry[i].block == 0) { stats_fiemap_zero_blocks++; }
-
-    // Presumably should never see this many blocks?? but if so, fake the
-    // final block to be the rest of the file.
-    //    if (i == 254) {
-    //      bl->entry[i].len = size - bl->entry[i].start_pos;
-    //    }
   }
 
   // Correct the final block lenght so it doesn't go beyond end of file
