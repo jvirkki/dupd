@@ -153,10 +153,24 @@ int read_file_bytes(char * path, char * output,
     }                                                        // LCOV_EXCL_STOP
   }
 
-  *bytes_read = read(file, output, bytes);
-  stats_total_bytes_read += *bytes_read;
+  if (bytes == 0) {
+    printf("error: requested zero bytes from [%s] (skip=%" PRIu64 ")\n",
+           path, skip);
+    exit(1);
+  }
+
+  int rv = 0;
+  ssize_t got = read(file, output, bytes);
+
+  if (got >= 0) {
+    *bytes_read = got;
+    stats_total_bytes_read += *bytes_read;
+  } else {
+    rv = -1;
+  }
+
   close(file);
-  return 0;
+  return rv;
 }
 
 
@@ -346,10 +360,13 @@ struct block_list * get_block_info_from_path(char * path, ino_t inode,
 
     // Presumably should never see this many blocks?? but if so, fake the
     // final block to be the rest of the file.
-    if (i == 254) {
-      bl->entry[i].len = size - bl->entry[i].start_pos;
-    }
+    //    if (i == 254) {
+    //      bl->entry[i].len = size - bl->entry[i].start_pos;
+    //    }
   }
+
+  // Correct the final block lenght so it doesn't go beyond end of file
+  bl->entry[count-1].len = size - bl->entry[count-1].start_pos;
 
   return bl;
 #endif
