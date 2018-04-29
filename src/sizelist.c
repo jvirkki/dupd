@@ -43,7 +43,6 @@
 #include "stats.h"
 #include "utils.h"
 
-static uint32_t round1_max_bytes;
 static struct size_list * size_list_head;
 static struct size_list * size_list_tail;
 static struct size_list * deleted_list_head;
@@ -84,14 +83,14 @@ struct round2_info {
 static char * inner_state_name(int state)
 {
   switch(state) {
-    /* TODO remove
+    /* TODO remove */
   case SLS_NEED_BYTES_ROUND_1: return "SLS_NEED_BYTES_ROUND_1";
   case SLS_READY_1: return "SLS_READY_1";
   case SLS_NEED_BYTES_ROUND_2: return "SLS_NEED_BYTES_ROUND_2";
   case SLS_READY_2: return "SLS_READY_2";
-  case SLS_NEEDS_ROUND_3: return "SLS_NEEDS_ROUND_3";
   case SLS_DONE: return "SLS_DONE";
-    */
+
+
   case SLS_R2_HASH_ME: return "SLS_R2_HASH_ME";
   case SLS_R2_HASH_ME_FINAL: return "SLS_R2_HASH_ME_FINAL";
   case SLS_R2_HASH_DONE: return "SLS_R2_HASH_DONE";
@@ -498,7 +497,7 @@ static void * round2_hasher(void * arg)
           }
 
           if (save_uniques) {
-            skim_uniques(dbh, ht, save_uniques);
+            skim_uniques(dbh, size_node->path_list, ht, save_uniques);
           }
 
           // If no potential dups after this round, we're done!
@@ -1121,7 +1120,7 @@ static void submit_path_list(int thread,
     return;
   }
 
-  if (pathlist_head->state != PLS_R1_BUFFERS_FULL) {
+  if (pathlist_head->state != PLS_ALL_BUFFERS_READY) {
     printf("error: pathlist not in correct state for going into queue\n");
     exit(1);
   }
@@ -1191,12 +1190,7 @@ static void * size_list_flusher(void * arg)
 
     if (size_node->path_list->state == PLS_R1_IN_PROGRESS) {
 
-      if (size_node->size <= round1_max_bytes) {
-        max_to_read = round1_max_bytes;
-      } else {
-        max_to_read = hash_one_block_size;
-      }
-
+      max_to_read = size_node->path_list->wanted_bufsize;
       reader_read_bytes(size_node, max_to_read);
       size_node->path_list->state = PLS_R1_BUFFERS_FULL;
       submit_path_list(next_queue, size_node->path_list, hasher_info);
@@ -1219,6 +1213,171 @@ static void * size_list_flusher(void * arg)
 
 
 /** ***************************************************************************
+ * Fill one block (of hash block size being used) for 'entry' if possible.
+ * Reads from the current block (next_read_block) until either the desired
+ * amount of data has been read or the block is fully read.
+ *
+ * Also needs to handle if file has gaps on disk.
+ *
+ * Incoming state: entry is in FS_NEED_DATA.
+ *
+ * Outgoing state:
+ *     If disk block didn't fill the hash block:
+ *       - still in FS_NEED_DATA
+ *       - next_read_block updated, next_read_byte updated
+ *     If hash block filled or file fully read:
+ *       - becomes FS_BUFFER_READY (head possibly PLS_ALL_BUFFERS_READY)
+ *       - next_read_block updated, next_read_byte updated
+ *     If unable to read expected bytes:
+ *       - entry marked invalid (which might make head PLS_DONE)
+ *
+ */
+static void fill_data_block(struct path_list_head * head,
+                            struct path_list_entry * entry,
+                            char * path)
+{
+  uint64_t filesize = head->sizelist->size;
+
+  // If we haven't been here before for this entry (or if we had to
+  // free it), we'll need a buffer.
+
+  if (entry->buffer == NULL) {
+    entry->bufsize = head->wanted_bufsize;
+    entry->buffer = (char *)malloc(entry->bufsize);
+    entry->next_buffer_pos = 0;
+    inc_stats_read_buffers_allocated(entry->bufsize);
+  }
+
+  struct block_list_entry * bl = &entry->blocks->entry[entry->next_read_block];
+  uint64_t current_file_pos = entry->next_read_byte;
+  uint64_t current_disk_block_start = bl->start_pos;
+  uint64_t current_disk_block_end = bl->start_pos + bl->len;
+
+  // If there is a gap until next available bytes, fill with zeroes as needed
+  if (current_file_pos < current_disk_block_start) {
+    uint32_t gap_size = current_disk_block_start - current_file_pos;
+    uint32_t buf_space = entry->bufsize - entry->next_buffer_pos;
+    uint32_t zeroes = gap_size;
+    int filling_buffer = 0;
+    if (buf_space < zeroes) {
+      zeroes = buf_space;
+      filling_buffer = 1;
+    }
+    LOG(L_TRACE, "Gap before in [%s]: gap_size: %" PRIu32 ", buf_space: %"
+        PRIu32 ", zeroes: %" PRIu32 "\n", path, gap_size, buf_space, zeroes);
+    memset(entry->buffer + entry->next_buffer_pos, 0, zeroes);
+    entry->next_buffer_pos += zeroes;
+    entry->next_read_byte += zeroes;
+    if (filling_buffer) { return; }
+    current_file_pos = entry->next_read_byte;
+  }
+
+  if (current_file_pos < current_disk_block_start ||
+      current_file_pos > current_disk_block_end) {
+    printf("error: current_file_pos: %" PRIu64 ", current_disk_block_start: %"
+           PRIu64 ", current_disk_block_end: %" PRIu64 "\n",
+           current_file_pos, current_disk_block_start, current_disk_block_end);
+    dump_path_list("", filesize, head, 1);
+    exit(1);
+  }
+
+  // How much can we read now? Limited either by how much left to read in
+  // current disk block or by how much needed to fill memory buffer.
+
+  uint64_t current_disk_block_available =
+    current_disk_block_end - current_file_pos;
+  uint32_t buffer_available = entry->bufsize - entry->next_buffer_pos;
+  uint32_t want_bytes = buffer_available;
+  int filling_buffer = 1;
+  int consumed_block = 0;
+  if (want_bytes >= current_disk_block_available) {
+    want_bytes = current_disk_block_available;
+    consumed_block = 1;
+  }
+  if (want_bytes < buffer_available) {
+    filling_buffer = 0;
+  }
+
+  LOG(L_TRACE, "fill_data_block: [%s] current_file_pos: %" PRIu64
+      ", current_disk_block_start: %" PRIu64
+      ", current_disk_block_end: %" PRIu64
+      ", current_disk_block_available: %" PRIu64
+      ", buffer_available: %" PRIu32 ", want_bytes: %" PRIu32
+      ", filling_buffer: %d\n",
+      path, current_file_pos, current_disk_block_start, current_disk_block_end,
+      current_disk_block_available, buffer_available, want_bytes,
+      filling_buffer);
+
+  uint64_t bytes_read = 0;
+  uint64_t t1 = get_current_time_millis();
+  read_file_bytes(path, entry->buffer + entry->next_buffer_pos,
+                  want_bytes, current_file_pos, &bytes_read);
+  uint64_t took = get_current_time_millis() - t1;
+
+  if (bytes_read != want_bytes) {
+    // File may be unreadable or changed size, either way, ignore it.
+    LOG(L_PROGRESS, "error: read %" PRIu64 " bytes from [%s] but wanted %"
+        PRIu32 "\n", bytes_read, path, want_bytes);
+    mark_path_entry_invalid(head, entry);
+
+  } else {
+
+    entry->next_read_byte += bytes_read;
+    entry->next_buffer_pos += bytes_read;
+
+    if (consumed_block) {
+      entry->next_read_block++;
+
+      if (entry->next_read_block < entry->blocks->count) {
+
+        uint64_t next_available_byte =
+          entry->blocks->entry[entry->next_read_block].start_pos;
+
+        // If file has a gap after current position, fill with zeroes as needed
+        if (next_available_byte > entry->next_read_byte) {
+          LOG(L_TRACE, "GAP next_available_byte: %" PRIu64
+              ", entry->next_read_byte: %" PRIu64 "\n",
+              next_available_byte, entry->next_read_byte);
+          uint32_t gap_size = next_available_byte - entry->next_read_byte;
+          uint32_t buf_space = entry->bufsize - entry->next_buffer_pos;
+          uint32_t zeroes = gap_size;
+          if (buf_space < zeroes) {
+            zeroes = buf_space;
+            filling_buffer = 1;
+          }
+          LOG(L_TRACE, "Gap after in [%s]: gap_size: %" PRIu32 ", buf_space: %"
+              PRIu32 ", zeroes: %" PRIu32 "\n",
+              path, gap_size, buf_space, zeroes);
+          memset(entry->buffer + entry->next_buffer_pos, 0, zeroes);
+          entry->next_buffer_pos += zeroes;
+          entry->next_read_byte += zeroes;
+        }
+      } else {
+        LOG(L_TRACE, "File completed [%s]\n", path);
+      }
+    }
+
+    if (entry->next_read_byte >= filesize) {
+      mark_path_entry_ready(head, entry);
+      entry->data_in_buffer = entry->next_buffer_pos;
+      head->sizelist->fully_read = 1;
+
+    } else if (filling_buffer) {
+      mark_path_entry_ready(head, entry);
+      entry->data_in_buffer = entry->bufsize;
+    }
+
+    read_count++;
+    int new_avg = avg_read_time + (took - avg_read_time) / read_count;
+    avg_read_time = new_avg;
+
+    LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
+        took, read_count, avg_read_time);
+  }
+}
+
+
+/** ***************************************************************************
  * Reader thread for HDD mode.
  *
  * This thread reads bytes from disk in readlist order (not by sizelist group)
@@ -1234,20 +1393,21 @@ static void * read_list_reader(void * arg)
   char * self = "                                        [RL-reader] ";
   struct size_list * sizelist;
   struct read_list_entry * rlentry;
-  uint64_t received;
-  uint32_t max_to_read;
   uint64_t size;
   int rlpos = 0;
-  int new_avg;
-  int bfpct;
-  long t1;
-  long took;
+  int needy;
+  int done_files = 0;
+  int waiting_hash;
+  int loop = 0;
+  int submit_this_one;
+  int invalid;
+  int did_something;
   struct path_list_entry * pathlist_entry;
   struct path_list_head * pathlist_head;
   char path[DUPD_PATH_MAX];
-  char * buffer;
   struct hasher_param * hasher_info = (struct hasher_param *)arg;
   int next_queue = 0;
+  uint8_t block;
 
   pthread_setspecific(thread_name, self);
   LOG(L_THREADS, "Thread created\n");
@@ -1257,97 +1417,102 @@ static void * read_list_reader(void * arg)
     return NULL;
   }                                                          // LCOV_EXCL_STOP
 
-  rlpos = 0;
-  LOG(L_THREADS, "Starting HDD read list\n");
-
   do {
+    rlpos = 0;
+    needy = 0;
+    done_files = 0;
+    waiting_hash = 0;
+    invalid = 0;
+    did_something = 0;
 
-    rlentry = &read_list[rlpos];
-    pathlist_head = rlentry->pathlist_head;
-    pathlist_entry = rlentry->pathlist_self;
-    sizelist = pathlist_head->sizelist;
+    LOG(L_THREADS, "Starting HDD read list loop %d\n", ++loop);
 
-    if (pathlist_entry->state != FS_NEW) {
-      rlpos++;
-      continue;
-    }
+    do {
 
-    //    d_mutex_lock(&sizelist->lock, "process_readlist");
+      rlentry = &read_list[rlpos];
+      pathlist_head = rlentry->pathlist_head;
+      pathlist_entry = rlentry->pathlist_self;
+      sizelist = pathlist_head->sizelist;
+      submit_this_one = 0;
 
-    size = sizelist->size;
+      d_mutex_lock(&sizelist->lock, "process_readlist");
 
-    if (size <= round1_max_bytes) {
-      max_to_read = size;
-    } else {
-      max_to_read = hash_one_block_size;
-    }
+      switch (pathlist_entry->state) {
 
-    build_path(pathlist_entry, path);
+      case FS_NEED_DATA:
+        needy++;
 
-    if (path[0] == 0) {
-      printf("error: path zero len\n");
-      exit(1);
-    }
+        // Is this read list entry the block this path wants to read?
+        block = pathlist_entry->next_read_block;
+        if (pathlist_entry->blocks->entry[block].block == rlentry->block) {
 
-    LOG(L_MORE_THREADS, "Set (%d files of size %" PRIu64
-        " in state %s): read %s\n",
-        pathlist_head->list_size, size,
-        file_state(pathlist_entry->state), path);
+          build_path(pathlist_entry, path);
 
-    buffer = (char *)malloc(max_to_read);
-    inc_stats_read_buffers_allocated(max_to_read);
-    t1 = get_current_time_millis();
-    read_file_bytes(path, buffer, max_to_read, 0, &received);
-    took = get_current_time_millis() - t1;
+          if (path[0] == 0) {
+            printf("error: path zero len\n");
+            exit(1);
+          }
 
-    if (received != max_to_read) {
-      // File may be unreadable or changed size, either way, ignore it.
-      LOG(L_PROGRESS, "error: read %" PRIu64 " bytes from [%s] but wanted %"
-          PRIu32 "\n",
-          received, path, max_to_read);
-      free(buffer);
-      dec_stats_read_buffers_allocated(max_to_read);
-      mark_path_entry_invalid(pathlist_head, pathlist_entry);
+          size = sizelist->size;
 
-    } else {
-      pathlist_entry->buffer = buffer;
-      pathlist_entry->state = FS_R1_BUFFER_FILLED;
-      sizelist->bytes_read = received;
-      if (received == size) {
-        sizelist->fully_read = 1;
+          LOG(L_MORE_THREADS, "[%d] Entry %d (%d files of size %" PRIu64
+              " in state %s): (reading pos %" PRIu64 " block %d) %s\n",
+              loop, rlpos, pathlist_head->list_size, size,
+              file_state(pathlist_entry->state),
+              pathlist_entry->next_read_byte, block, path);
+
+          fill_data_block(pathlist_head, pathlist_entry, path);
+          did_something++;
+
+          if (pathlist_head->state == PLS_ALL_BUFFERS_READY) {
+            submit_this_one = 1;
+          }
+        }
+        break;
+
+      case FS_DONE:
+        done_files++;
+        break;
+
+      case FS_BUFFER_READY:
+        waiting_hash++;
+        break;
+
+      case FS_INVALID:
+        done_files++;
+        invalid++;
+        break;
+
+      default:
+        dump_path_list("read list reader, unexpected state",
+                       pathlist_head->sizelist->size, pathlist_head, 1);
+        exit(1);
       }
 
-      sizelist->buffers_filled++;
-      pathlist_head->state = PLS_R1_IN_PROGRESS;
+      d_mutex_unlock(&sizelist->lock);
 
-      read_count++;
-      new_avg = avg_read_time + (took - avg_read_time) / read_count;
-      avg_read_time = new_avg;
+      if (submit_this_one) {
+        submit_path_list(next_queue, pathlist_head, hasher_info);
+        next_queue = (next_queue + 1) % HASHER_THREADS;
+      }
 
-      LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
-          took, read_count, avg_read_time);
-    }
+      rlpos++;
 
-    // buffers_filles may have increased due to successful read, OR,
-    // list_size may have decreased due to read failure. Either way,
-    // if they are now equal we can hand off this path list.
+      /* TODO this needs to be aware of the new way
+         bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
+         if (bfpct > 99) {
+         LOG(L_THREADS, "Buffer usage %d, flushing...\n", bfpct);
+         size_list_flusher(hasher_info);
+         }
+      */
 
-    if (sizelist->buffers_filled == pathlist_head->list_size) {
-      pathlist_head->state = PLS_R1_BUFFERS_FULL;
-      submit_path_list(next_queue, pathlist_head, hasher_info);
-      next_queue = (next_queue + 1) % HASHER_THREADS;
-    }
+    } while (rlpos < read_list_end);
 
-    //    d_mutex_unlock(&sizelist->lock);
-    rlpos++;
+    LOG(L_THREADS, "Completed loop %d: list size: %d worked: %d "
+        "(NEED_DATA %d, NEED_HASH %d, INVALID %d, DONE %d)\n",
+        loop, rlpos, did_something, needy, waiting_hash, invalid, done_files);
 
-    bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
-    if (bfpct > 99) {
-      LOG(L_THREADS, "Buffer usage %d, flushing...\n", bfpct);
-      size_list_flusher(hasher_info);
-    }
-
-  } while (rlpos < read_list_end);
+  } while (done_files < rlpos);
 
   LOG(L_THREADS, "DONE\n");
 
@@ -1390,14 +1555,9 @@ static void * size_list_reader(void * arg)
     LOG(L_MORE_THREADS, "SET %d size:%ld state:%s\n", ++sets,
         (long)size_node->size, pls_state(size_node->path_list->state));
 
-    if (size_node->size <= round1_max_bytes) {
-      max_to_read = round1_max_bytes;
-    } else {
-      max_to_read = hash_one_block_size;
-    }
-
+    max_to_read = size_node->path_list->wanted_bufsize;
     reader_read_bytes(size_node, max_to_read);
-    size_node->path_list->state = PLS_R1_BUFFERS_FULL;
+    size_node->path_list->state = PLS_ALL_BUFFERS_READY;
     submit_path_list(next_queue, size_node->path_list, hasher_info);
     next_queue = (next_queue + 1) % HASHER_THREADS;
 
@@ -1425,7 +1585,6 @@ void init_size_list()
   deleted_list_tail = NULL;
   stats_size_list_count = 0;
   stats_size_list_avg = 0;
-  round1_max_bytes = hash_one_block_size * hash_one_max_blocks;
 }
 
 

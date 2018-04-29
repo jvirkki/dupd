@@ -62,9 +62,10 @@ char * exclude_path = NULL;
 int exclude_path_len = 0;
 uint32_t minimum_file_size = 1;
 int hash_one_max_blocks = 16;
-int hash_one_block_size = -1;
-int DEF_HDD_hash_one_block_size = 1024*64;
-int DEF_SSD_hash_one_block_size = 1024*16;
+uint32_t hash_one_block_size = 0;
+uint32_t round1_max_bytes = 0;
+uint32_t DEF_HDD_hash_one_block_size = 1024*64;
+uint32_t DEF_SSD_hash_one_block_size = 1024*16;
 int hash_block_size = 8192;
 int filecmp_block_size = 131072;
 int opt_compare_two = 1;
@@ -418,13 +419,15 @@ static int process_args(int argc, char * argv[])
     }
   }
 
-  if (hash_one_block_size == -1) {
+  if (hash_one_block_size == 0) {
     if (hdd_mode) {
       hash_one_block_size = DEF_HDD_hash_one_block_size;
     } else {
       hash_one_block_size = DEF_SSD_hash_one_block_size;
     }
   }
+
+  round1_max_bytes = hash_one_block_size * hash_one_max_blocks;
 
   if (options[OPT_ssd] && options[OPT_hdd]) {
     printf("error: SSD mode and HDD mode are mutually exclusive\n");

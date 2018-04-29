@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include "dirtree.h"
+#include "hash.h"
 #include "main.h"
 #include "paths.h"
 #include "readlist.h"
@@ -61,6 +62,8 @@ void dump_path_list(const char * line, uint64_t size,
   printf("  head: %p\n", head);
   printf("  last_elem: %p\n", head->last_entry);
   printf("  list_size: %d\n", head->list_size);
+  printf("  wanted_bufsize: %" PRIu32 "\n", head->wanted_bufsize);
+  printf("  buffer_ready: %d\n", head->buffer_ready);
   printf("  state: %s\n", pls_state(head->state));
   printf("  sizelist back ptr: %p\n", head->sizelist);
 
@@ -88,7 +91,13 @@ void dump_path_list(const char * line, uint64_t size,
       printf("   dir: %p\n", entry->dir);
       printf("   next: %p\n", entry->next);
       printf("   buffer: %p\n", entry->buffer);
+      printf("   bufsize: %" PRIu32 "\n", entry->bufsize);
+      printf("   data_in_buffer: %" PRIu32 "\n", entry->data_in_buffer);
+      printf("   next_read_byte: %" PRIu64 "\n", entry->next_read_byte);
+      printf("   next_buffer_pos: %" PRIu32 "\n", entry->next_buffer_pos);
+      printf("   next_read_block: %d\n", entry->next_read_block);
       printf("   blocks: %p\n", entry->blocks);
+      printf("   hash_ctx: %p\n", entry->hash_ctx);
       dump_block_list("      ", entry->blocks);
 
       filename = pb_get_filename(entry);
@@ -229,6 +238,31 @@ void free_path_block()
  * Public function, see paths.h
  *
  */
+void free_path_entry(struct path_list_entry * entry)
+{
+  if (entry->buffer != NULL) {
+    free(entry->buffer);
+    entry->buffer = NULL;
+    dec_stats_read_buffers_allocated(entry->bufsize);
+    entry->bufsize = 0;
+  }
+
+  if (entry->hash_ctx != NULL) {
+    hash_fn_buf_free(entry->hash_ctx);
+    entry->hash_ctx = NULL;
+  }
+
+  if (entry->blocks != NULL) {
+    free(entry->blocks);
+    entry->blocks = NULL;
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
 struct path_list_head * insert_first_path(char * filename,
                                           struct direntry * dir_entry)
 {
@@ -262,16 +296,25 @@ struct path_list_head * insert_first_path(char * filename,
   // Initialize list size to 1
   head->list_size = 1;
 
+  // Haven't read anything yet
+  head->buffer_ready = 0;
+
   // New path list
-  head->state = PLS_NEW;
+  head->state = PLS_NEED_DATA;
 
   // Initialize the first entry
-  first_entry->state = FS_NEW;
+  first_entry->state = FS_NEED_DATA;
   first_entry->filename_size = (uint8_t)filename_len;
   first_entry->dir = dir_entry;
   first_entry->blocks = NULL;
+  first_entry->hash_ctx = NULL;
+  first_entry->next_read_byte = 0;
+  first_entry->next_buffer_pos = 0;
+  first_entry->next_read_block = 0;
   first_entry->next = NULL;
   first_entry->buffer = NULL;
+  first_entry->bufsize = 0;
+  first_entry->data_in_buffer = 0;
   memcpy(filebuf, filename, filename_len);
 
   LOG_TRACE {
@@ -319,12 +362,18 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   head->list_size++;
 
   // Initialize this new entry
-  entry->state = FS_NEW;
+  entry->state = FS_NEED_DATA;
   entry->filename_size = (uint8_t)filename_len;
   entry->dir = dir_entry;
   entry->next = NULL;
   entry->buffer = NULL;
+  entry->hash_ctx = NULL;
+  entry->bufsize = 0;
+  entry->data_in_buffer = 0;
   entry->blocks = NULL;
+  entry->next_read_byte = 0;
+  entry->next_buffer_pos = 0;
+  entry->next_read_block = 0;
   memcpy(filebuf, filename, filename_len);
 
   // If there are now two entries in this path list, it means we have
@@ -334,6 +383,12 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   if (head->list_size == 2) {
     struct size_list * new_szl = add_to_size_list(size, head);
     head->sizelist = new_szl;
+
+    if (size <= round1_max_bytes) {
+      head->wanted_bufsize = size;
+    } else {
+      head->wanted_bufsize = hash_one_block_size;
+    }
 
     if (hdd_mode) {
       STRUCT_STAT info;
@@ -398,7 +453,9 @@ const char * pls_state(int state)
   switch(state) {
   case PLS_NEW:                      return "PLS_NEW";
   case PLS_R1_IN_PROGRESS:           return "PLS_R1_IN_PROGRESS";
+  case PLS_NEED_DATA:                return "PLS_NEED_DATA";
   case PLS_R1_BUFFERS_FULL:          return "PLS_R1_BUFFERS_FULL";
+  case PLS_ALL_BUFFERS_READY:        return "PLS_ALL_BUFFERS_READY";
   case PLS_R2_NEEDED:                return "PLS_R2_NEEDED";
   case PLS_DONE:                     return "PLS_DONE";
   default:
@@ -416,9 +473,12 @@ const char * file_state(int state)
 {
   switch(state) {
   case FS_NEW:                        return "FS_NEW";
+  case FS_NEED_DATA:                  return "FS_NEED_DATA";
   case FS_R1_BUFFER_FILLED:           return "FS_R1_BUFFER_FILLED";
+  case FS_BUFFER_READY:               return "FS_BUFFER_READY";
   case FS_INVALID:                    return "FS_INVALID";
   case FS_R1_DONE:                    return "FS_R1_DONE";
+  case FS_DONE:                       return "FS_DONE";
   default:
     printf("\nerror: unknown file_state %d\n", state);
     exit(1);
@@ -433,9 +493,29 @@ const char * file_state(int state)
 int mark_path_entry_invalid(struct path_list_head * head,
                             struct path_list_entry * entry)
 {
-  entry->state = FS_INVALID;
-  head->list_size--;
-  LOG(L_TRACE, "Reduced list size to %d\n", head->list_size);
+  if (entry->state != FS_INVALID) {
+
+    if (head->list_size == 0) {
+      printf("error: called to invalidate entry (not already invalid) "
+             "but list size is zero!!\n");
+      dump_path_list("bad state", head->sizelist->size, head, 1);
+      exit(1);
+    }
+
+    entry->state = FS_INVALID;
+    head->list_size--;
+    LOG(L_TRACE, "Reduced list size to %d\n", head->list_size);
+  } else {
+    LOG(L_TRACE, "Entry already FS_INVALID, list size still %d\n",
+        head->list_size);
+  }
+
+  if (entry->buffer != NULL) {
+    free(entry->buffer);
+    entry->buffer = NULL;
+    dec_stats_read_buffers_allocated(entry->bufsize);
+    entry->bufsize = 0;
+  }
 
   { // TODO
     char * fname = pb_get_filename(entry);
@@ -458,35 +538,24 @@ int mark_path_entry_invalid(struct path_list_head * head,
     while (e != NULL) {
       switch (e->state) {
 
-      case FS_NEW:
-        e->state = FS_INVALID;
-        good++;
-        break;
-
-      case FS_R1_BUFFER_FILLED:
-        if (e->buffer == NULL) {
-          printf("error: null buffer but FS_R1_BUFFER_FILLED\n");
-          dump_path_list("bad state", head->sizelist->size, head, 0);
-          exit(1);
+      case FS_NEED_DATA:
+      case FS_BUFFER_READY:
+        if (e->buffer != NULL) {
+          free(e->buffer);
+          e->buffer = NULL;
+          dec_stats_read_buffers_allocated(e->bufsize);
+          e->bufsize = 0;
         }
-        free(e->buffer);
-        e->buffer = NULL;
-        dec_stats_read_buffers_allocated(head->sizelist->bytes_read);
         good++;
+        e->state = FS_INVALID;
         break;
 
       case FS_INVALID:
         break;
 
-      case FS_R1_DONE:
-        printf("error: unexpected state FS_R1_DONE in unfinished pathlist\n");
-        dump_path_list("bad state", head->sizelist->size, head, 0);
-        exit(1);
-        break;
-
       default:
         printf("error: invalid state seen in mark_path_entry_invalid\n");
-        dump_path_list("bad state", head->sizelist->size, head, 0);
+        dump_path_list("bad state", head->sizelist->size, head, 1);
         exit(1);
         break;
       }
@@ -496,10 +565,55 @@ int mark_path_entry_invalid(struct path_list_head * head,
 
     if (good != 1) {
       printf("error: mark_path_entry_invalid wrong count of good paths\n");
-      dump_path_list("bad state", head->sizelist->size, head, 0);
+      dump_path_list("bad state", head->sizelist->size, head, 1);
       exit(1);
     }
   }
 
   return head->list_size;
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
+void mark_path_entry_ready(struct path_list_head * head,
+                           struct path_list_entry * entry)
+{
+
+  if (head->state != PLS_NEED_DATA) {
+    printf("error: mark_path_entry_ready: head->state != PLS_NEED_DATA\n");
+    dump_path_list("", head->sizelist->size, head, 1);
+    exit(1);
+  }
+
+  if (entry->state != FS_NEED_DATA) {
+    printf("error: mark_path_entry_ready: entry->state != FS_NEED_DATA\n");
+    dump_path_list("", head->sizelist->size, head, 1);
+    exit(1);
+  }
+
+  entry->state = FS_BUFFER_READY;
+  head->buffer_ready++;
+
+  if (head->buffer_ready == head->list_size) {
+    head->state = PLS_ALL_BUFFERS_READY;
+
+    LOG_INFO {
+      struct path_list_entry * pe = pb_get_first_entry(head);
+      int ready = 0;
+      while (pe != NULL) {
+        if (pe->state == FS_BUFFER_READY) { ready++; }
+        pe = pe->next;
+      }
+      if (ready != head->list_size) {
+        printf("error: ready=%d but list_size=%d\n", ready, head->list_size);
+        dump_path_list("mark_path_entry_ready", head->sizelist->size, head, 1);
+        exit(1);
+      }
+    }
+
+  }
+
 }

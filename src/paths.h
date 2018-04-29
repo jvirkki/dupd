@@ -43,7 +43,13 @@ struct path_list_entry {
   struct direntry * dir;
   struct path_list_entry * next;
   struct block_list * blocks;
+  uint64_t next_read_byte;
+  uint32_t next_buffer_pos;
+  uint8_t next_read_block;
+  uint32_t bufsize;
+  uint32_t data_in_buffer;
   char * buffer;
+  void * hash_ctx;
   // filename follows, file_size bytes
 };
 
@@ -51,23 +57,30 @@ struct path_list_head {
   struct size_list * sizelist;
   struct path_list_entry * last_entry;
   uint16_t list_size;
+  uint16_t buffer_ready;
+  uint32_t wanted_bufsize;
   uint8_t state;
   // first_entry follows
 };
 
 
 // File State used in path_list_entry
-#define FS_NEW 51
-#define FS_R1_BUFFER_FILLED 52
-#define FS_INVALID 53
-#define FS_R1_DONE 54
+#define FS_NEW 50
+#define FS_NEED_DATA 51
+#define FS_R1_BUFFER_FILLED 52  /* TODO remove */
+#define FS_BUFFER_READY 53
+#define FS_INVALID 55
+#define FS_R1_DONE 56
+#define FS_DONE 57
 
 // Path List State in path_list_head
 #define PLS_NEW 11
-#define PLS_R1_IN_PROGRESS 13
-#define PLS_R1_BUFFERS_FULL 14
-#define PLS_R2_NEEDED 15
-#define PLS_DONE 16
+#define PLS_R1_IN_PROGRESS 13   /* TODO remove */
+#define PLS_NEED_DATA 14
+#define PLS_R1_BUFFERS_FULL 16  /* TODO remove */
+#define PLS_ALL_BUFFERS_READY 18
+#define PLS_R2_NEEDED 19
+#define PLS_DONE 21
 
 
 /** ***************************************************************************
@@ -112,6 +125,18 @@ void init_path_block();
  *
  */
 void free_path_block();
+
+
+/** ***************************************************************************
+ * Free buffers related to one path entry.
+ *
+ * Parameters:
+ *     entry - The path list entry.
+ *
+ * Return: none
+ *
+ */
+void free_path_entry(struct path_list_entry * entry);
 
 
 /** ***************************************************************************
@@ -237,6 +262,21 @@ pl_entry_get_valid_node(struct path_list_entry * entry)
  */
 int mark_path_entry_invalid(struct path_list_head * head,
                             struct path_list_entry * entry);
+
+
+/** ***************************************************************************
+ * Mark the given path list entry ready for hashing.
+ * If all entries in this path list are now ready, mark the path list ready.
+ *
+ * Parameters:
+ *    head  - Head of the path list containing entry.
+ *    entry - The entry to mark invalid.
+ *
+ * Return: none
+ *
+ */
+void mark_path_entry_ready(struct path_list_head * head,
+                           struct path_list_entry * entry);
 
 
 #endif

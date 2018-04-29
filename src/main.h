@@ -198,7 +198,14 @@ extern int hash_one_max_blocks;
  * Size of blocks to read from disk during first pass.
  *
  */
-extern int hash_one_block_size;
+extern uint32_t hash_one_block_size;
+
+
+/** ***************************************************************************
+ * Max bytes to read into first buffer read.
+ *
+ */
+extern uint32_t round1_max_bytes;
 
 
 /** ***************************************************************************

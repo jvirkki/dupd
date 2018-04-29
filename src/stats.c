@@ -172,6 +172,9 @@ void report_stats()
     }
   }
 
+
+  /* TODO round counts make no sense anymore
+
   // Some sanity checking
   int totals_from_rounds =
     stats_sets_dup_not[ROUND1] + stats_sets_dup_done[ROUND1] +
@@ -183,6 +186,7 @@ void report_stats()
            stats_size_list_count, totals_from_rounds);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
+  */
 }
 
 

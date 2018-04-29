@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "hash.h"
 #include "hashers.h"
 #include "hashlist.h"
 #include "main.h"
@@ -24,6 +25,28 @@
 #include "sizelist.h"
 #include "stats.h"
 #include "utils.h"
+
+
+/** ***************************************************************************
+ * Update hash with new data in buffer.
+ *
+ * Parameters:
+ *    entry    - Compute hash of this entry given its latest data.
+ *    hash_out - Return hash in this buffer.
+ *
+ * Return: none
+ *
+ */
+static void update_node_hash(struct path_list_entry * node, char * hash_out)
+{
+  // If this is the first block of data being hashed, need to initialize
+  if (node->hash_ctx == NULL) {
+    node->hash_ctx =  hash_fn_buf_init();
+  }
+
+  hash_fn_buf_update(node->hash_ctx, node->buffer, node->data_in_buffer);
+  hash_fn_get_partial(node->hash_ctx, hash_out);
+}
 
 
 /** ***************************************************************************
@@ -43,16 +66,12 @@ static int build_hash_list_round(sqlite3 * dbh,
                                  struct size_list * size_node,
                                  struct hash_table * hl)
 {
+  char hash_out[HASH_MAX_BUFSIZE];
   struct path_list_entry * node;
   int completed = 0;
+  uint32_t prev_buffer = 0;
 
   node = pb_get_first_entry(size_node->path_list);
-
-  // For small files, they may have been fully read already
-  d_mutex_lock(&stats_lock, "build hash list stats");
-  if (size_node->fully_read) { stats_sets_full_read[1]++; }
-  else { stats_sets_part_read[1]++; }
-  d_mutex_unlock(&stats_lock);
 
   LOG(L_TRACE, "Building hash list for size %" PRIu64 "\n", size_node->size);
 
@@ -60,15 +79,28 @@ static int build_hash_list_round(sqlite3 * dbh,
   // That's the usual case but some files may be in other states such as
   // FS_INVALID if they have been previously discarded.
   do {
-    if (node->state == FS_R1_BUFFER_FILLED) {
-      add_hash_table_from_mem(hl, node, node->buffer, size_node->bytes_read);
-      free(node->buffer);
-      dec_stats_read_buffers_allocated(size_node->bytes_read);
-      node->buffer = NULL;
-      node->state = FS_R1_DONE;
+
+    if (node->state == FS_BUFFER_READY) {
+      update_node_hash(node, hash_out);
+      add_to_hash_table(hl, node, hash_out);
+      node->state = FS_NEED_DATA;
+
+      if (prev_buffer > 0 && node->data_in_buffer != prev_buffer) {
+        printf("error: inconsistent amount of data in buffers\n");
+        dump_path_list("bad state", size_node->size, size_node->path_list, 1);
+        exit(1);
+      }
+
+      prev_buffer = node->data_in_buffer;
+      node->data_in_buffer = 0;
+      node->next_buffer_pos = 0;
     }
+
     node = node->next;
   } while (node != NULL);
+
+  size_node->path_list->state = PLS_NEED_DATA;
+  size_node->path_list->buffer_ready = 0;
 
   LOG_TRACE {
     LOG(L_TRACE, "Contents of hash list hl:\n");
@@ -76,19 +108,13 @@ static int build_hash_list_round(sqlite3 * dbh,
   }
 
   // Remove the uniques seen
-  int skimmed = skim_uniques(dbh, hl, save_uniques);
-  if (skimmed) {
-    size_node->path_list->list_size -= skimmed;
-  }
+  skim_uniques(dbh, size_node->path_list, hl, save_uniques);
 
   // If no potential dups after this round, we're done!
   if (!hash_table_has_dups(hl)) {
     LOG(L_TRACE, "No potential dups left, done!\n");
     size_node->path_list->state = PLS_DONE;
     completed = 1;
-    d_mutex_lock(&stats_lock, "build hash list stats");
-    stats_sets_dup_not[ROUND1]++;
-    d_mutex_unlock(&stats_lock);
 
   } else {
     // If by now we already have a full hash, publish and we're done!
@@ -97,13 +123,19 @@ static int build_hash_list_round(sqlite3 * dbh,
       publish_duplicate_hash_table(dbh, hl, size_node->size, ROUND1);
       size_node->path_list->state = PLS_DONE;
       completed = 1;
-      d_mutex_lock(&stats_lock, "build hash list stats");
-      stats_sets_dup_done[ROUND1]++;
-      d_mutex_unlock(&stats_lock);
     }
   }
 
   size_node->buffers_filled = 0;
+
+  if (completed) {
+    node = pb_get_first_entry(size_node->path_list);
+    while (node != NULL) {
+      node->state = FS_DONE;
+      free_path_entry(node);
+      node = node->next;
+    }
+  }
 
   return completed;
 }
@@ -119,7 +151,6 @@ void * round1_hasher(void * arg)
   struct path_list_head * entry = NULL;
   struct size_list * size_node;
   sqlite3 * dbh = info->dbh;
-  int set = 0;
   int set_completed;
   int path_count;
   int done = 0;
@@ -162,40 +193,30 @@ void * round1_hasher(void * arg)
 
     if (entry != NULL) {
 
-      if (entry->state != PLS_R1_BUFFERS_FULL) {
+      size_node = entry->sizelist;
+      d_mutex_lock(&size_node->lock, "hasher");
+
+      if (entry->state != PLS_ALL_BUFFERS_READY) {
         printf("error: round1_hasher bad path list state %s\n",
                pls_state(entry->state));
         dump_path_list("bad state", 0, entry, 1);
         exit(1);
       }
 
-      size_node = entry->sizelist;
       LOG_THREADS {
-        set++;
-        LOG(L_THREADS, "SET %d size:%ld state:%s\n", set,
-            (long)size_node->size, pls_state(entry->state));
+        LOG(L_THREADS, "Set (%d files of size %" PRIu64 ")\n",
+            size_node->path_list->list_size, size_node->size);
       }
 
       reset_hash_table(ht);
-      stats_sets_processed[ROUND1]++;
       set_completed = build_hash_list_round(dbh, size_node, ht);
 
-      if (!size_node->fully_read) {
-        stats_one_block_hash_first++;
-      }
-
-      if (!set_completed) {
-        entry->state = PLS_R2_NEEDED;
-        size_node->state = SLS_NEEDS_ROUND_2; // TODO remove sizenode state
-
-      } else {
-        if (size_node->fully_read) {
-          stats_full_hash_first++;
-        }
-
+      if (set_completed) {
         path_count = size_node->path_list->list_size;
         show_processed(stats_size_list_count, path_count, size_node->size);
       }
+
+      d_mutex_unlock(&size_node->lock);
 
     } // if entry != NULL
   } while (!done);

@@ -104,8 +104,7 @@ void add_to_hash_table(struct hash_table * hl,
   LOG_MORE_TRACE {
     char buffer[DUPD_PATH_MAX];
     build_path(file, buffer);
-    LOG(L_MORE_TRACE, "Adding path %s to hash list which contains:\n", buffer);
-    print_hash_table(hl);
+    LOG(L_MORE_TRACE, "Adding path %s to hash list\n", buffer);
   }
 
   index = hash[hash_bufsize-1];
@@ -338,6 +337,19 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
           } else{
             sprintf(path_buffer + pos, "%s%c", file, 0);
           }
+
+          LOG_INFO {
+            int hsize = hash_get_bufsize(hash_function);
+            char hash_out[HASH_MAX_BUFSIZE];
+            hash_fn(file, hash_out, 0, 0, 0);
+            if (memcmp(hash_out, p->hash, hsize)) {
+              printf("file [%s] ", file);
+              memdump("hash", p->hash, hsize);
+              printf("error: computed hash differs from hash! [%s]\n", file);
+              memdump("hash", hash_out, hsize);
+              exit(1);
+            }
+          }
         }
 
         // go publish to db
@@ -402,8 +414,8 @@ void print_hash_table(struct hash_table * src)
       src, src->has_dups);
 
   for (int n = 0; n < 256; n++) {
-    LOG(L_TRACE, "  ---[ %d ]\n", n);
     if (src->table[n] != NULL) {
+      LOG(L_TRACE, "  ---[ %d ]\n", n);
       print_hash_list_entry(src->table[n]);
     }
   }
@@ -414,7 +426,8 @@ void print_hash_table(struct hash_table * src)
  * Public function, see header file.
  *
  */
-int skim_uniques(sqlite3 * dbh, struct hash_table * src, int record_in_db)
+int skim_uniques(sqlite3 * dbh, struct path_list_head * head,
+                 struct hash_table * src, int record_in_db)
 {
   char file[DUPD_PATH_MAX];
   struct path_list_entry * entry;
@@ -431,13 +444,15 @@ int skim_uniques(sqlite3 * dbh, struct hash_table * src, int record_in_db)
         // If this list has only one entry, it was unique.
         if (p->next_index == 1) {
           entry = *(p->entries);
-          entry->state = FS_INVALID;
-          skimmed++;
+          LOG(L_TRACE, "skim_uniques: marking a single entry list invalid\n");
 
           if (record_in_db) {
             build_path(entry, file);
             unique_to_db(dbh, file, "hashlist");
           }
+
+          mark_path_entry_invalid(head, entry);
+          skimmed++;
         }
         p = p->next;
       }
