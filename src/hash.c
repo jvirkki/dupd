@@ -429,6 +429,49 @@ int hash_fn_buf_update(void * ctx, const char * buffer, int bufsize)
  * Public function, see hash.h
  *
  */
+int hash_fn_get_partial(void * ctx, char * output)
+{
+  switch(hash_function) {
+
+  case HASH_FN_MD5: {
+    MD5_CTX tmp;
+    memcpy(&tmp, (MD5_CTX *)ctx, sizeof(MD5_CTX));
+    MD5_Final((unsigned char *)output, &tmp);
+    break;
+  }
+
+  case HASH_FN_SHA1: {
+    SHA_CTX tmp;
+    memcpy(&tmp, (SHA_CTX *)ctx, sizeof(SHA_CTX));
+    SHA1_Final((unsigned char *)output, &tmp);
+    break;
+  }
+
+  case HASH_FN_SHA512: {
+    SHA512_CTX tmp;
+    memcpy(&tmp, (SHA512_CTX *)ctx, sizeof(SHA512_CTX));
+    SHA512_Final((unsigned char *)output, &tmp);
+    break;
+  }
+
+  case HASH_FN_XXHASH: {
+    XXH64_state_t * tmp_state = XXH64_createState();
+    XXH64_copyState(tmp_state, (XXH64_state_t *)ctx);
+    XXH64_hash_t result = XXH64_digest(tmp_state);
+    memcpy(output, &result, 8);
+    XXH64_freeState(tmp_state);
+    break;
+  }
+  }
+
+  return 0;
+}
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
 int hash_fn_buf_final(void * ctx, const char * buffer, int bufsize,
                       char * output)
 {
@@ -465,4 +508,31 @@ int hash_fn_buf_final(void * ctx, const char * buffer, int bufsize,
   }                                                          // LCOV_EXCL_STOP
 
   return 0;
+}
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+void hash_fn_buf_free(void * ctx)
+{
+  switch(hash_function) {
+
+  case HASH_FN_MD5:
+    free(ctx);
+    break;
+
+  case HASH_FN_SHA1:
+    free(ctx);
+    break;
+
+  case HASH_FN_SHA512:
+    free(ctx);
+    break;
+
+  case HASH_FN_XXHASH:
+    XXH64_freeState((XXH64_state_t *)ctx);
+    break;
+  }
 }

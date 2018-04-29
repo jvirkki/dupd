@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -109,7 +109,21 @@ int hash_fn_buf_update(void * ctx, const char * buffer, int bufsize);
 
 
 /** ***************************************************************************
- * Process final block of data and return the hash.
+ * Retrieve hash computed so far but keep ctx active.
+ *
+ * Parameters:
+ *    ctx     - Algorith-specific context for this hash operation.
+ *    output  - Buffer where output will be stored.
+ *
+ * Return:
+ *    0 - On success
+ *
+ */
+int hash_fn_get_partial(void * ctx, char * output);
+
+
+/** ***************************************************************************
+ * Process final block of data and return the hash. Context is free'd.
  *
  * Parameters:
  *    ctx     - Algorith-specific context for this hash operation.
@@ -123,6 +137,18 @@ int hash_fn_buf_update(void * ctx, const char * buffer, int bufsize);
  */
 int hash_fn_buf_final(void * ctx, const char * buffer, int bufsize,
                       char * output);
+
+
+/** ***************************************************************************
+ * Just free the context.
+ *
+ * Parameters:
+ *    ctx     - Algorith-specific context for this hash operation.
+ *
+ * Return: none
+ *
+ */
+void hash_fn_buf_free(void * ctx);
 
 
 #endif
