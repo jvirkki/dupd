@@ -84,7 +84,8 @@ extern pthread_mutex_t logger_lock;
 #define L_TRACE 10
 #define L_FILES 11
 #define L_MORE_TRACE 12
-#define L_MAX_LOG_LEVEL 12
+#define L_EVEN_MORE_TRACE 13
+#define L_MAX_LOG_LEVEL 13
 
 #define LOG(level, ...) if ( (log_only && level == log_level) ||        \
                              (!log_only && level <= log_level )) {      \
@@ -117,6 +118,8 @@ extern pthread_mutex_t logger_lock;
                        (!log_only && log_level >= L_TRACE) )
 #define LOG_MORE_TRACE if ( (log_only && log_level == L_MORE_TRACE) ||  \
                             (!log_only && log_level >= L_MORE_TRACE) )
+#define LOG_EVEN_MORE_TRACE if ( (log_only && log_level == L_EVEN_MORE_TRACE) ||  \
+                                 (!log_only && log_level >= L_EVEN_MORE_TRACE) )
 
 
 /** ***************************************************************************
