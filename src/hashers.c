@@ -133,6 +133,17 @@ static int build_hash_list_round(sqlite3 * dbh,
       increase_sets_first_read_completed();
     }
     size_node->path_list->wanted_bufsize = MB1;
+
+    uint32_t remaining = s_files_processed - s_files_completed_dups - s_files_completed_unique;
+    if (remaining > 2) {
+      uint32_t buflim = buffer_limit / remaining;
+      if (buflim > MB16) {
+        size_node->path_list->wanted_bufsize = MB16;
+      }
+      if (buflim > MB8) {
+        size_node->path_list->wanted_bufsize = MB8;
+      }
+    }
   }
 
   if (size_node->path_list->hash_passes < 255) {
