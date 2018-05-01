@@ -108,6 +108,7 @@ extern uint32_t s_files_skip_error;
 extern uint32_t s_files_skip_notfile;
 extern uint32_t s_files_skip_badsep;
 extern uint32_t s_files_cant_read;
+extern uint32_t s_files_hl_skip;
 extern uint32_t s_files_too_small;
 extern uint32_t s_files_processed;
 extern uint32_t s_files_in_sizetree;

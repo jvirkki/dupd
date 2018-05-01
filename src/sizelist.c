@@ -1025,7 +1025,7 @@ static void reader_read_bytes(struct size_list * size_node,
     LOG(L_MORE_THREADS, "reader_read_bytes: path %d state %s\n",
         count, file_state(node->state));
 
-    if (node->state == FS_NEW) {
+    if (node->state == FS_NEED_DATA) {
       // The path may be null if this particular path within this pathlist
       // has been discarded as a potential duplicate already. If so, skip.
       if (path[0] != 0) { // TODO
@@ -1043,7 +1043,9 @@ static void reader_read_bytes(struct size_list * size_node,
 
         } else {
           node->buffer = buffer;
-          node->state = FS_R1_BUFFER_FILLED;
+          node->bufsize = size_node->bytes_read;
+          node->data_in_buffer = received;
+          node->state = FS_BUFFER_READY;
         }
 
         LOG_TRACE {
@@ -1328,7 +1330,13 @@ static void fill_data_block(struct path_list_head * head,
     // File may be unreadable or changed size, either way, ignore it.
     LOG(L_PROGRESS, "error: read %" PRIu64 " bytes from [%s] but wanted %"
         PRIu32 "\n", bytes_read, path, want_bytes);
-    mark_path_entry_invalid(head, entry);
+    int before = head->list_size;
+    int after = mark_path_entry_invalid(head, entry);
+    int additional = before - 1 - after;
+    if (additional > 0) {
+      LOG(L_SKIPPED, "Defaulting %d additional files as unique\n", additional);
+      increase_unique_counter(additional);
+    }
 
   } else {
 
@@ -1720,6 +1728,25 @@ void process_size_list(sqlite3 * dbh)
 
   long now = get_current_time_millis();
   stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
+
+  // With round2 gone in new HDD mode, need to free buffers and
+  // adjust states so round2 works with SSD mode. Clean up later.
+
+  if (!hdd_mode) {
+    struct path_list_entry * node;
+    struct size_list * size_node = size_list_head;
+    while (size_node != NULL) {
+      if (size_node->path_list->state == PLS_NEED_DATA) {
+        size_node->path_list->state = PLS_R2_NEEDED;
+      }
+      node = pb_get_first_entry(size_node->path_list);
+      while (node != NULL) {
+        free_path_entry(node);
+        node = node->next;
+      }
+      size_node = size_node->next;
+    }
+  }
 
   if (stats_read_buffers_allocated != 0) {
     printf("error: after round1 complete, buffers: %" PRIu64 "\n",

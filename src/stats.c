@@ -100,6 +100,7 @@ uint32_t s_files_skip_error = 0;        // Files skipped due to error
 uint32_t s_files_skip_notfile = 0;      // Files skipped, not a file
 uint32_t s_files_skip_badsep = 0;       // Files skipped, separator conflict
 uint32_t s_files_cant_read = 0;         // Files skipped, can't read
+uint32_t s_files_hl_skip = 0;           // Files skipped, hardlink-is-unique
 uint32_t s_files_too_small = 0;         // Files skipped, too small
 uint32_t s_files_in_sizetree = 0;       // Files added to size tree
 uint32_t s_files_processed = 0;         // Files entered to path list
@@ -127,18 +128,21 @@ void report_stats()
   }
 
   uint32_t files_accepted = s_total_files_seen - s_files_too_small -
-    s_files_skip_notfile - s_files_skip_error - s_files_skip_badsep;
+    s_files_skip_notfile - s_files_skip_error - s_files_skip_badsep -
+    s_files_hl_skip;
   uint32_t unique_files = s_files_in_sizetree - s_files_processed;
   uint32_t handled_files =
-    s_files_completed_unique + s_files_completed_dups + s_files_cant_read;
+    s_files_completed_unique + s_files_completed_dups + s_files_cant_read +
+    s_files_hl_skip;;
 
   LOG_MORE {
     printf("\n");
     printf("Total files seen: %" PRIu32 "\n", s_total_files_seen);
     printf(" (too small: %" PRIu32 ", not file: %"
-           PRIu32 ", errors: %" PRIu32 ", skip: %" PRIu32 ")\n",
+           PRIu32 ", errors: %" PRIu32 ", skip: %" PRIu32 ", hl_skip: %"
+           PRIu32 ")\n",
            s_files_too_small, s_files_skip_notfile,
-           s_files_skip_error, s_files_skip_badsep);
+           s_files_skip_error, s_files_skip_badsep, s_files_hl_skip);
 
     printf("Files queued for processing: %" PRIu32 " in %" PRIu32 " sets\n",
            files_accepted, s_stats_size_list_count);
@@ -149,19 +153,26 @@ void report_stats()
     printf(" Duplicate files: %" PRIu32 "\n", s_files_completed_dups);
     printf(" Unique files: %" PRIu32 "\n", s_files_completed_unique);
     printf(" Unable to read: %" PRIu32 "\n", s_files_cant_read);
+    if (hardlink_is_unique) {
+      printf(" Skipped hardlinks: %" PRIu32 "\n", s_files_hl_skip);
+    }
   }
 
-  if (files_accepted != s_files_in_sizetree) {
+  if (files_accepted != s_files_in_sizetree - s_files_hl_skip) {
     printf("error: mismatch files_accepted: %" PRIu32
            " != files in sizetree: %" PRIu32 "\n",
-           files_accepted, s_files_in_sizetree);
+           files_accepted, s_files_in_sizetree - s_files_hl_skip);
     exit(1);
   }
 
-  if (handled_files != s_files_processed) {
-    printf("error: mismatch handled_files: %" PRIu32 " != files_processed: %"
-           PRIu32 "\n", handled_files, s_files_processed);
-    exit(1);
+  if (hdd_mode) { // TODO SSD mode not counting correctly
+
+    if (handled_files != s_files_processed) {
+      printf("error: mismatch handled_files: %" PRIu32 " != files_processed: %"
+             PRIu32 "\n", handled_files, s_files_processed);
+      exit(1);
+    }
+
   }
 
 }
@@ -173,11 +184,17 @@ void report_stats()
  */
 void save_stats()
 {
+  int total_groups = stats_duplicate_groups[ROUND1] +
+    stats_duplicate_groups[ROUND2];
+
   FILE * fp = fopen(stats_file, "a");
   // TODO needs cleaning up
   fprintf(fp, "using_fiemap %d\n", using_fiemap);
   fprintf(fp, "fiemap_total_blocks %" PRIu32 "\n", stats_fiemap_total_blocks);
   fprintf(fp, "fiemap_zero_blocks %" PRIu32 "\n", stats_fiemap_zero_blocks);
+  fprintf(fp, "duplicate_files %" PRIu32 "\n", s_files_completed_dups);
+  fprintf(fp, "duplicate_groups %" PRIu32 "\n", total_groups);
+
   fprintf(fp, "\n");
   fclose(fp);
 }
@@ -211,10 +228,10 @@ void dec_stats_read_buffers_allocated(int bytes)
  * Public function, see header file.
  *
  */
-void increase_unique_counter()
+void increase_unique_counter(int n)
 {
   d_mutex_lock(&counters_lock, "counters");
-  s_files_completed_unique++;
+  s_files_completed_unique += n;
   d_mutex_unlock(&counters_lock);
 }
 

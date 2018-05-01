@@ -259,18 +259,10 @@ void sort_read_list()
         build_path(inode_read_list[i].pathlist_self, path);
         LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.\n", path);
 
-        inode_read_list[i].pathlist_self->state = FS_INVALID;
-        inode_read_list[i].pathlist_head->list_size--;
-
-        if (inode_read_list[i].pathlist_head->list_size == 0) {
-          inode_read_list[i].pathlist_head->state = PLS_DONE;
-          stats_sets_dup_not[ROUND1]++;
-        }
-
-        { // XXX TODO - elsewhere, respect the FS_INVALID so no need to zero
-          char * fnxxx = pb_get_filename(inode_read_list[i].pathlist_self);
-          fnxxx[0] = 0;
-        }
+        int before = inode_read_list[i].pathlist_head->list_size;
+        int after = mark_path_entry_invalid(inode_read_list[i].pathlist_head,
+                                            inode_read_list[i].pathlist_self);
+        s_files_hl_skip += (before - after);
       }
       p_inode = inode_read_list[i].inode;
     }

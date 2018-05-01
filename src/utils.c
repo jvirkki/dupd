@@ -142,6 +142,7 @@ int read_file_bytes(char * path, char * output,
   int file = open(path, O_RDONLY);
   if (file < 0) {                                            // LCOV_EXCL_START
     LOG(L_PROGRESS, "Error opening [%s]\n", path);
+    s_files_cant_read++;
     return(-1);
   }                                                          // LCOV_EXCL_STOP
 
@@ -167,6 +168,7 @@ int read_file_bytes(char * path, char * output,
     stats_total_bytes_read += *bytes_read;
   } else {
     rv = -1;
+    s_files_cant_read++;
   }
 
   close(file);

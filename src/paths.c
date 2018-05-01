@@ -246,6 +246,7 @@ void free_path_entry(struct path_list_entry * entry)
     entry->buffer = NULL;
     dec_stats_read_buffers_allocated(entry->bufsize);
     entry->bufsize = 0;
+    entry->data_in_buffer = 0;
   }
 
   if (entry->hash_ctx != NULL) {
@@ -320,7 +321,7 @@ struct path_list_head * insert_first_path(char * filename,
   first_entry->data_in_buffer = 0;
   memcpy(filebuf, filename, filename_len);
 
-  LOG_TRACE {
+  LOG_EVEN_MORE_TRACE {
     dump_path_list("AFTER insert_first_path", -1, head, 0);
   }
 
@@ -344,10 +345,6 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   int space_needed = sizeof(struct path_list_entry) + filename_len;
   check_space(space_needed);
   space_used += space_needed;
-
-  LOG_MORE_TRACE {
-    dump_path_list("BEFORE insert_end_path", size, head, 0);
-  }
 
   // The entry will live at the top of the available space (next_entry)
   struct path_list_entry * entry = (struct path_list_entry *)next_entry;
@@ -422,7 +419,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
     add_to_read_list(head, entry, inode);
   }
 
-  LOG_TRACE {
+  LOG_EVEN_MORE_TRACE {
     dump_path_list("AFTER insert_end_path", size, head, 0);
   }
 
