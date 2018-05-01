@@ -114,8 +114,6 @@ static char * queue_state(int s)
 
 /** ***************************************************************************
  * Allocate a new size tree leaf node to store the given size and path.
- * Given that it is a new node we know it must be the first file of this
- * size being added, so store it as a new path list.
  *
  * Parameters:
  *    size      - Size of this file.
@@ -158,6 +156,8 @@ static void add_below(struct size_node * node, ino_t inode,
                       struct direntry * dir_entry)
 {
   struct size_node * p = node;
+
+  s_files_in_sizetree++;
 
   while (1) {
 
@@ -385,31 +385,15 @@ int add_file(sqlite3 * dbh,
     inode = new_stat_info.st_ino;
   }
 
-  stats_files_count++;
-
-  if (inode < 1) {                                           // LCOV_EXCL_START
-    printf("Bad inode! %d\n", (int)inode);
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
-
-  if (size >= minimum_file_size) {
-    stats_total_bytes += size;
-    stats_avg_file_size = stats_avg_file_size +
-      ((size - stats_avg_file_size)/stats_files_count);
-
-    LOG_PROGRESS {
-      if ((stats_files_count % 5000) == 0) {
-        LOG(L_PROGRESS, "Files scanned: %" PRIu32 "\n", stats_files_count);
-      }
-    }
-
-  } else {
+  if (size < minimum_file_size) {
     LOG(L_TRACE, "SKIP (too small: %" PRIu64 "): [%s]\n", size, path);
+    s_files_too_small++;
     return(-2);
   }
 
   if (tip == NULL) {
     tip = new_node(size, filename, dir_entry);
+    s_files_in_sizetree = 1;
     return(-2);
   }
 
@@ -529,11 +513,6 @@ void scan_done()
                                                              // LCOV_EXCL_START
   if (added != removed) {
     printf("added (%" PRIu32 ") != removed (%" PRIu32 ")\n", added, removed);
-    exit(1);
-  }
-  if (removed != stats_files_count) {
-    printf("files processed (%" PRIu32 ") != files scanned (%"PRIu32") !!!\n",
-           removed, stats_files_count);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 

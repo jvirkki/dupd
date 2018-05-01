@@ -65,6 +65,7 @@ void dump_path_list(const char * line, uint64_t size,
   printf("  wanted_bufsize: %" PRIu32 "\n", head->wanted_bufsize);
   printf("  buffer_ready: %d\n", head->buffer_ready);
   printf("  state: %s\n", pls_state(head->state));
+  printf("  hash_passes: %d\n", head->hash_passes);
   printf("  sizelist back ptr: %p\n", head->sizelist);
 
   if (head->sizelist != NULL) {
@@ -298,11 +299,13 @@ struct path_list_head * insert_first_path(char * filename,
 
   // Haven't read anything yet
   head->buffer_ready = 0;
+  head->hash_passes = 0;
 
   // New path list
   head->state = PLS_NEED_DATA;
 
   // Initialize the first entry
+  s_files_processed++;
   first_entry->state = FS_NEED_DATA;
   first_entry->filename_size = (uint8_t)filename_len;
   first_entry->dir = dir_entry;
@@ -362,6 +365,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   head->list_size++;
 
   // Initialize this new entry
+  s_files_processed++;
   entry->state = FS_NEED_DATA;
   entry->filename_size = (uint8_t)filename_len;
   entry->dir = dir_entry;

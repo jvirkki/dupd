@@ -453,6 +453,7 @@ int skim_uniques(sqlite3 * dbh, struct path_list_head * head,
 
           mark_path_entry_invalid(head, entry);
           skimmed++;
+          increase_unique_counter();
         }
         p = p->next;
       }

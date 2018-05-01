@@ -534,7 +534,7 @@ static void * round2_hasher(void * arg)
             path_count = size_node->path_list->list_size;
           }
 
-          show_processed(stats_size_list_count, path_count, size_node->size);
+          show_processed(s_stats_size_list_count, path_count, size_node->size);
 
         } // every_hash_computed
 
@@ -888,7 +888,7 @@ static void process_round_2(sqlite3 * dbh)
         LOG_PROGRESS {
           path_count = size_node->path_list->list_size;
         }
-        show_processed(stats_size_list_count, path_count, size_node->size);
+        show_processed(s_stats_size_list_count, path_count, size_node->size);
       }
 
       next_node_next = size_node->next;
@@ -1248,6 +1248,16 @@ static void fill_data_block(struct path_list_head * head,
     inc_stats_read_buffers_allocated(entry->bufsize);
   }
 
+  // Or if the desired bufsize has increased since we allocated, realloc.
+
+  if (entry->bufsize != head->wanted_bufsize) {
+    uint32_t inc = head->wanted_bufsize - entry->bufsize;
+    entry->bufsize = head->wanted_bufsize;
+    entry->buffer = (char *)realloc(entry->buffer, entry->bufsize);
+    entry->next_buffer_pos = 0;
+    inc_stats_read_buffers_allocated(inc);
+  }
+
   struct block_list_entry * bl = &entry->blocks->entry[entry->next_read_block];
   uint64_t current_file_pos = entry->next_read_byte;
   uint64_t current_disk_block_start = bl->start_pos;
@@ -1583,7 +1593,7 @@ void init_size_list()
   size_list_tail = NULL;
   deleted_list_head = NULL;
   deleted_list_tail = NULL;
-  stats_size_list_count = 0;
+  s_stats_size_list_count = 0;
   stats_size_list_avg = 0;
 }
 
@@ -1596,20 +1606,19 @@ struct size_list * add_to_size_list(uint64_t size,
                                     struct path_list_head * path_list)
 {
   stats_size_list_avg = stats_size_list_avg +
-    ( (size - stats_size_list_avg) / (stats_size_list_count + 1) );
+    ( (size - stats_size_list_avg) / (s_stats_size_list_count + 1) );
 
   if (size_list_head == NULL) {
     size_list_head = new_size_list_entry(size, path_list);
     size_list_tail = size_list_head;
-    stats_size_list_count = 1;
+    s_stats_size_list_count = 1;
     return size_list_head;
   }
 
   struct size_list * new_entry = new_size_list_entry(size, path_list);
   size_list_tail->next = new_entry;
   size_list_tail = size_list_tail->next;
-  stats_size_list_count++;
-
+  s_stats_size_list_count++;
   return new_entry;
 }
 

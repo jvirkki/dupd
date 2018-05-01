@@ -55,7 +55,7 @@ static void update_node_hash(struct path_list_entry * node, char * hash_out)
  *
  * Parameters:
  *    dbh       - db handle for saving duplicates/uniques
- *    size_node - Process this size node (and associated path list.
+ *    size_node - Process this size node (and associated path list).
  *    hl        - Save paths to this hash list.
  *
  * Return: 1 if this path list was completed (either confirmed duplicates
@@ -123,7 +123,20 @@ static int build_hash_list_round(sqlite3 * dbh,
       publish_duplicate_hash_table(dbh, hl, size_node->size, ROUND1);
       size_node->path_list->state = PLS_DONE;
       completed = 1;
+      increase_dup_counter(size_node->path_list->list_size);
     }
+  }
+
+  if (size_node->path_list->hash_passes == 0) {
+    increase_sets_first_read();
+    if (completed) {
+      increase_sets_first_read_completed();
+    }
+    size_node->path_list->wanted_bufsize = MB1;
+  }
+
+  if (size_node->path_list->hash_passes < 255) {
+    size_node->path_list->hash_passes++;
   }
 
   size_node->buffers_filled = 0;
@@ -204,8 +217,9 @@ void * round1_hasher(void * arg)
       }
 
       LOG_THREADS {
-        LOG(L_THREADS, "Set (%d files of size %" PRIu64 ")\n",
-            size_node->path_list->list_size, size_node->size);
+        LOG(L_THREADS, "Set (%d files of size %" PRIu64 ") pass %d\n",
+            size_node->path_list->list_size, size_node->size,
+            1 + size_node->path_list->hash_passes);
       }
 
       reset_hash_table(ht);
@@ -213,7 +227,7 @@ void * round1_hasher(void * arg)
 
       if (set_completed) {
         path_count = size_node->path_list->list_size;
-        show_processed(stats_size_list_count, path_count, size_node->size);
+        show_processed(s_stats_size_list_count, path_count, size_node->size);
       }
 
       d_mutex_unlock(&size_node->lock);

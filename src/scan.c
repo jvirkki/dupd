@@ -112,7 +112,7 @@ static void * scan_status(void * arg)
     delta = get_current_time_millis() - scan_phase_started;
     time_string(timebuf, 20, delta);
     c = snprintf(line, 100, files,
-                 (unsigned int)stats_files_count,
+                 (unsigned int)s_total_files_seen,
                  (unsigned int)stats_files_error,
                  timebuf);
     SHOW_LINE;
@@ -124,7 +124,7 @@ static void * scan_status(void * arg)
   printf("\033[%dD", c);
   time_string(timebuf, 20, stats_time_scan);
   c = snprintf(line, 100, files,
-               (unsigned int)stats_files_count,
+               (unsigned int)s_total_files_seen,
                (unsigned int)stats_files_error,
                timebuf);
   SHOW_LINE;
@@ -153,7 +153,7 @@ static void * scan_status(void * arg)
       if (bfpct > 999) { bfpct = 999; } // Keep alignment if this spikes
       if (stats_flusher_active) { scantype = 'B'; } else { scantype = 'b'; }
       c = snprintf(line, 100, sets, stats_size_list_done,
-                   stats_size_list_count, kread, ksec, queued,
+                   s_stats_size_list_count, kread, ksec, queued,
                    bfpct, scantype, timebuf);
       SHOW_LINE;
       status_wait();
@@ -258,12 +258,21 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
         if (entry->d_name[1] == '.' && entry->d_name[2] == 0) { continue; }
       }
 
+      s_total_files_seen++;
+
+      LOG_PROGRESS {
+        if ((s_total_files_seen % 5000) == 0) {
+          LOG(L_PROGRESS, "Files scanned: %" PRIu32 "\n", s_total_files_seen);
+        }
+      }
+
       // Skip files with 'path_separator' in them because dupd uses this
       // character as a separator in the sqlite duplicates table.
 
       if (strchr(entry->d_name, path_separator)) {
         LOG(L_PROGRESS, "SKIP (due to %c) [%s/%s]\n",
             path_separator, current, entry->d_name);
+        s_files_skip_badsep++;
         continue;
       }
 
@@ -308,6 +317,8 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
       switch(type) {
 
       case D_DIR:
+        s_total_files_seen--;
+
         // If 'newpath' is a directory, save it in scan_list for later
 
         // But first, if one_file_system, check whether this dir is
@@ -351,11 +362,13 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
       case D_OTHER:
         LOG(L_SKIPPED, "SKIP (not file) [%s]\n", newpath);
         stats_files_ignored++;
+        s_files_skip_notfile++;
         break;
 
       case D_ERROR:
         LOG(L_PROGRESS, "SKIP (error) [%s]\n", newpath);
         stats_files_error++;
+        s_files_skip_error++;
         break;
       }
     }
@@ -448,9 +461,9 @@ void scan()
   d_mutex_unlock(&status_lock);
 
   LOG(L_PROGRESS, "Files scanned: %" PRIu32 " (%ldms)\n",
-      stats_files_count, stats_time_scan);
+      s_total_files_seen, stats_time_scan);
 
-  if (stats_files_count == 0) {
+  if (s_total_files_seen == 0) {
     if (write_db) {
       commit_transaction(dbh);
       close_database(dbh);
@@ -459,22 +472,6 @@ void scan()
     stats_round_duration[ROUND2] = 0;
     return;
   }
-
-  LOG_PROGRESS {
-    printf("Average file size: %" PRIu64 "\n", stats_avg_file_size);
-    printf("Special files ignored: %d\n", stats_files_ignored);
-    printf("Files with stat errors: %d\n", stats_files_error);
-    printf("File scan completed in %ldms\n", stats_time_scan);
-    report_size_list();
-    printf("Longest path list %d (file size: %" PRIu64 ")\n",
-           stats_max_pathlist, stats_max_pathlist_size);
-  }
-
-  if (stats_max_pathlist > stats_files_count) {
-                                                             // LCOV_EXCL_START
-    printf("error: longest path list is larger than total files scanned!\n");
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
 
   if (save_uniques) {
     LOG(L_PROGRESS, "Saving files with unique sizes from size tree...\n");

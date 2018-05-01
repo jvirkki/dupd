@@ -60,6 +60,7 @@ struct path_list_head {
   uint16_t buffer_ready;
   uint32_t wanted_bufsize;
   uint8_t state;
+  uint8_t hash_passes;
   // first_entry follows
 };
 

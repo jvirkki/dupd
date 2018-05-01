@@ -34,6 +34,7 @@
 #include "utils.h"
 
 pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t counters_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int stats_sets_processed[ROUNDS] = { 0,0 };
 int stats_sets_dup_done[ROUNDS] = { 0,0 };
@@ -62,16 +63,15 @@ int stats_full_hash_second = 0;
 int stats_partial_hash_second = 0;
 int stats_one_block_hash_first = 0;
 
-int stats_size_list_count = 0;
+
 int stats_size_list_done = 0;
 int stats_three_file_compare = 0;
 int stats_two_file_compare = 0;
 int stats_uniques_saved = 0;
 long stats_size_list_avg = 0;
-uint32_t stats_files_count = 0;
+
 int stats_files_ignored = 0;
 int stats_files_error = 0;
-uint64_t stats_avg_file_size = 0;
 long stats_time_scan = -1;
 long stats_time_process = 0;
 long stats_time_total = 0;
@@ -86,16 +86,25 @@ int stats_flusher_active = 0;
 uint32_t stats_fiemap_total_blocks = 0;
 uint32_t stats_fiemap_zero_blocks = 0;
 
+uint32_t count_sets_first_read = 0;
+uint32_t count_files_completed = 0;
+uint32_t stats_sets_first_read_completed = 0;
 
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-void report_size_list()
-{
-  printf("Number of size sets to analyze: %d\n", stats_size_list_count);
-  printf("Avg. size of files added to size list: %ld\n", stats_size_list_avg);
-}
+
+
+// Keep from here after revamp
+uint32_t s_stats_size_list_count = 0;   // Total size sets processed
+
+uint32_t s_total_files_seen = 0;        // All file entries seen during scan
+uint32_t s_files_skip_error = 0;        // Files skipped due to error
+uint32_t s_files_skip_notfile = 0;      // Files skipped, not a file
+uint32_t s_files_skip_badsep = 0;       // Files skipped, separator conflict
+uint32_t s_files_cant_read = 0;         // Files skipped, can't read
+uint32_t s_files_too_small = 0;         // Files skipped, too small
+uint32_t s_files_in_sizetree = 0;       // Files added to size tree
+uint32_t s_files_processed = 0;         // Files entered to path list
+uint32_t s_files_completed_dups = 0;    // Files processed, found to be dups
+uint32_t s_files_completed_unique = 0;  // Files processed, found to be unique
 
 
 /** ***************************************************************************
@@ -104,89 +113,57 @@ void report_size_list()
  */
 void report_stats()
 {
-  LOG_MORE {
-    printf("\n");
-    printf("Number of size sets to analyze: %d\n", stats_size_list_count);
-    printf("Size sets with two files, hash list skipped: %d times\n",
-           stats_two_file_compare);
-    printf("Size sets with three files, hash list skipped: %d times\n",
-           stats_three_file_compare);
-
-    printf("\n");
-    printf("Round one: hash list processed for %d size sets (%dms)\n",
-           stats_sets_processed[ROUND1], stats_round_duration[ROUND1]);
-    printf("  Block size %d (%d max blocks)\n",
-           hash_one_block_size, hash_one_max_blocks);
-    printf("  Sets fully hashed in round one: %d\n", stats_full_hash_first);
-    printf("  Sets with single block first round: %d\n",
-           stats_one_block_hash_first);
-    printf("  Sets with dups ruled out in first round: %d\n",
-           stats_sets_dup_not[ROUND1]);
-    printf("  Sets with dups confirmed in first round: %d\n",
-           stats_sets_dup_done[ROUND1]);
-    printf("  Groups of dups confirmed in first round: %d\n",
-           stats_duplicate_groups[ROUND1]);
-
-    printf("Round two: hash list processed for %d size sets (%dms)\n",
-           stats_sets_processed[ROUND2], stats_round_duration[ROUND2]);
-    printf("  Reader loops: %d\n", stats_reader_loops[ROUND2]);
-    printf("  Hasher loops:");
-    for (int i = 0; i < MAX_HASHER_THREADS; i++) {
-      printf("   %d", stats_hasher_loops[ROUND2][i]);
-    }
-    printf("\n");
-    printf("  Sets with dups ruled out in second round: %d\n",
-           stats_sets_dup_not[ROUND2]);
-    printf("  Sets with dups confirmed in second round: %d\n",
-           stats_sets_dup_done[ROUND2]);
-    printf("  Groups of dups confirmed in second round: %d\n",
-           stats_duplicate_groups[ROUND2]);
-
-    printf("\n");
-    printf("Total bytes of all files: %" PRIu64 "\n", stats_total_bytes);
-    printf("Total bytes read from disk: %" PRIu64 " (%d%%)\n",
-           stats_total_bytes_read,
-           (int)((100 * stats_total_bytes_read) / stats_total_bytes));
-    printf("  Total bytes hashed: %" PRIu64 " (%d%%)\n",
-           stats_total_bytes_hashed,
-           (int)((100 * stats_total_bytes_hashed) / stats_total_bytes));
-    printf("  Total bytes directly compared: %" PRIu64 " (%d%%)\n",
-           stats_comparison_bytes_read,
-           (int)((100 * stats_comparison_bytes_read) / stats_total_bytes));
-
-    printf("\n");
-  }
-
   LOG_BASE {
+    printf("\n");
     char timebuf[20];
     time_string(timebuf, 20, get_current_time_millis() - stats_main_start);
     int total_groups = stats_duplicate_groups[ROUND1] +
       stats_duplicate_groups[ROUND2];
     printf("Total duplicates: %d files in %d groups in %s\n",
-           stats_duplicate_files, total_groups, timebuf);
-    if (save_uniques) {
-      printf("Total unique files: %d\n", stats_uniques_saved);
-    }
+           s_files_completed_dups, total_groups, timebuf);
     if (write_db && stats_duplicate_files > 0) {
       printf("Run 'dupd report' to list duplicates.\n");
     }
   }
 
+  uint32_t files_accepted = s_total_files_seen - s_files_too_small -
+    s_files_skip_notfile - s_files_skip_error - s_files_skip_badsep;
+  uint32_t unique_files = s_files_in_sizetree - s_files_processed;
+  uint32_t handled_files =
+    s_files_completed_unique + s_files_completed_dups + s_files_cant_read;
 
-  /* TODO round counts make no sense anymore
+  LOG_MORE {
+    printf("\n");
+    printf("Total files seen: %" PRIu32 "\n", s_total_files_seen);
+    printf(" (too small: %" PRIu32 ", not file: %"
+           PRIu32 ", errors: %" PRIu32 ", skip: %" PRIu32 ")\n",
+           s_files_too_small, s_files_skip_notfile,
+           s_files_skip_error, s_files_skip_badsep);
 
-  // Some sanity checking
-  int totals_from_rounds =
-    stats_sets_dup_not[ROUND1] + stats_sets_dup_done[ROUND1] +
-    stats_sets_dup_not[ROUND2] + stats_sets_dup_done[ROUND2] +
-    stats_two_file_compare + stats_three_file_compare;
+    printf("Files queued for processing: %" PRIu32 " in %" PRIu32 " sets\n",
+           files_accepted, s_stats_size_list_count);
 
-  if (totals_from_rounds != stats_size_list_count) {         // LCOV_EXCL_START
-    printf("\nerror: total size sets %d != sets confirmed %d\n",
-           stats_size_list_count, totals_from_rounds);
+
+    printf(" (files with unique size: %" PRIu32 ")\n", unique_files);
+    printf("Total files to process: %" PRIu32 "\n", s_files_processed);
+    printf(" Duplicate files: %" PRIu32 "\n", s_files_completed_dups);
+    printf(" Unique files: %" PRIu32 "\n", s_files_completed_unique);
+    printf(" Unable to read: %" PRIu32 "\n", s_files_cant_read);
+  }
+
+  if (files_accepted != s_files_in_sizetree) {
+    printf("error: mismatch files_accepted: %" PRIu32
+           " != files in sizetree: %" PRIu32 "\n",
+           files_accepted, s_files_in_sizetree);
     exit(1);
-  }                                                          // LCOV_EXCL_STOP
-  */
+  }
+
+  if (handled_files != s_files_processed) {
+    printf("error: mismatch handled_files: %" PRIu32 " != files_processed: %"
+           PRIu32 "\n", handled_files, s_files_processed);
+    exit(1);
+  }
+
 }
 
 
@@ -197,49 +174,7 @@ void report_stats()
 void save_stats()
 {
   FILE * fp = fopen(stats_file, "a");
-  fprintf(fp, "total_bytes %" PRIu64 "\n", stats_total_bytes);
-  fprintf(fp, "total_bytes_read %" PRIu64 "\n", stats_total_bytes_read);
-  fprintf(fp, "total_bytes_hashed %" PRIu64 "\n",
-          stats_total_bytes_hashed);
-  fprintf(fp, "comparison_bytes_read %" PRIu64 "\n",
-          stats_comparison_bytes_read);
-  fprintf(fp, "duplicate_files %d\n", stats_duplicate_files);
-  int total_groups = stats_duplicate_groups[ROUND1] +
-    stats_duplicate_groups[ROUND2];
-  fprintf(fp, "duplicate_groups %d\n", total_groups);
-  fprintf(fp, "duplicate_groups_1 %d\n", stats_duplicate_groups[ROUND1]);
-  fprintf(fp, "duplicate_groups_2 %d\n", stats_duplicate_groups[ROUND2]);
-  fprintf(fp, "full_hash_first %d\n", stats_full_hash_first);
-  fprintf(fp, "full_hash_second %d\n", stats_full_hash_second);
-  fprintf(fp, "partial_hash_second %d\n", stats_partial_hash_second);
-  fprintf(fp, "one_block_hash_first %d\n", stats_one_block_hash_first);
-  fprintf(fp, "set_dups_done_round_one %d\n", stats_sets_dup_done[ROUND1]);
-  fprintf(fp, "set_dups_done_round_two %d\n", stats_sets_dup_done[ROUND2]);
-  fprintf(fp, "set_no_dups_round_one %d\n", stats_sets_dup_not[ROUND1]);
-  fprintf(fp, "set_no_dups_round_two %d\n", stats_sets_dup_not[ROUND2]);
-  fprintf(fp, "set_round_one %d\n", stats_sets_processed[ROUND1]);
-  fprintf(fp, "set_round_two %d\n", stats_sets_processed[ROUND2]);
-  fprintf(fp, "size_list_count %d\n", stats_size_list_count);
-  fprintf(fp, "three_file_compare %d\n", stats_three_file_compare);
-  fprintf(fp, "two_file_compare %d\n", stats_two_file_compare);
-  fprintf(fp, "uniques_saved %d\n", stats_uniques_saved);
-  fprintf(fp, "size_list_avg %ld\n", stats_size_list_avg);
-  fprintf(fp, "files_count %" PRIu32 "\n", stats_files_count);
-  fprintf(fp, "files_ignored %d\n", stats_files_ignored);
-  fprintf(fp, "files_error %d\n", stats_files_error);
-  fprintf(fp, "avg_file_size %" PRIu64 "\n", stats_avg_file_size);
-  fprintf(fp, "time_scan %ld\n", stats_time_scan);
-  fprintf(fp, "time_process %ld\n", stats_time_process);
-  fprintf(fp, "time_total %ld\n", stats_time_total);
-  fprintf(fp, "hash_one_block_size %d\n", hash_one_block_size);
-  fprintf(fp, "hash_one_max_blocks %d\n", hash_one_max_blocks);
-  fprintf(fp, "hash_block_size %d\n", hash_block_size);
-  fprintf(fp, "path_buffer_realloc %d\n", path_buffer_realloc);
-  fprintf(fp, "stats_hashlist_path_realloc %d\n", stats_hashlist_path_realloc);
-  fprintf(fp, "path_list_entries %" PRIu32 "\n",stats_path_list_entries);
-  fprintf(fp, "hash_list_len_inc %d\n", stats_hash_list_len_inc);
-  fprintf(fp, "scan_list_usage_max %d\n", scan_list_usage_max);
-  fprintf(fp, "scan_list_resizes %d\n", scan_list_resizes);
+  // TODO needs cleaning up
   fprintf(fp, "using_fiemap %d\n", using_fiemap);
   fprintf(fp, "fiemap_total_blocks %" PRIu32 "\n", stats_fiemap_total_blocks);
   fprintf(fp, "fiemap_zero_blocks %" PRIu32 "\n", stats_fiemap_zero_blocks);
@@ -269,4 +204,52 @@ void dec_stats_read_buffers_allocated(int bytes)
   d_mutex_lock(&stats_lock, "decreasing buffers");
   stats_read_buffers_allocated -= bytes;
   d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void increase_unique_counter()
+{
+  d_mutex_lock(&counters_lock, "counters");
+  s_files_completed_unique++;
+  d_mutex_unlock(&counters_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void increase_dup_counter(int n)
+{
+  d_mutex_lock(&counters_lock, "counters");
+  s_files_completed_dups += n;
+  d_mutex_unlock(&counters_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void increase_sets_first_read()
+{
+  d_mutex_lock(&counters_lock, "counters");
+  count_sets_first_read++;
+  d_mutex_unlock(&counters_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void increase_sets_first_read_completed()
+{
+  d_mutex_lock(&counters_lock, "counters");
+  stats_sets_first_read_completed++;
+  d_mutex_unlock(&counters_lock);
 }

@@ -68,13 +68,13 @@ extern int stats_set_no_dups_round_two;
 extern int stats_set_round_one;
 extern int stats_set_round_two;
 extern int stats_single_block_count;
-extern int stats_size_list_count;
+
 extern int stats_size_list_done;
 extern int stats_three_file_compare;
 extern int stats_two_file_compare;
 extern int stats_uniques_saved;
 extern long stats_size_list_avg;
-extern uint32_t stats_files_count;
+//extern uint32_t stats_files_count;
 extern int stats_files_ignored;
 extern int stats_files_error;
 extern uint64_t stats_avg_file_size;
@@ -92,16 +92,28 @@ extern int stats_flusher_active;
 extern uint32_t stats_fiemap_total_blocks;
 extern uint32_t stats_fiemap_zero_blocks;
 
+extern uint32_t count_sets_first_read;
+extern uint32_t count_files_completed;
+extern uint32_t stats_sets_first_read_completed;
 
-/** ***************************************************************************
- * Print out some stats on size list.
- *
- * Parameters: none
- *
- * Return: none
- *
- */
-void report_size_list();
+
+
+
+
+// Keep
+extern uint32_t s_stats_size_list_count;
+
+extern uint32_t s_total_files_seen;
+extern uint32_t s_files_skip_error;
+extern uint32_t s_files_skip_notfile;
+extern uint32_t s_files_skip_badsep;
+extern uint32_t s_files_cant_read;
+extern uint32_t s_files_too_small;
+extern uint32_t s_files_processed;
+extern uint32_t s_files_in_sizetree;
+extern uint32_t s_files_dropped;
+extern uint32_t s_files_completed_dups;
+extern uint32_t s_files_completed_unique;
 
 
 /** ***************************************************************************
@@ -134,6 +146,34 @@ void inc_stats_read_buffers_allocated(int bytes);
  *
  */
 void dec_stats_read_buffers_allocated(int bytes);
+
+
+/** ***************************************************************************
+ * Increase counter of unique files by one.
+ *
+ */
+void increase_unique_counter();
+
+
+/** ***************************************************************************
+ * Increase counter of duplicate files by n.
+ *
+ */
+void increase_dup_counter(int n);
+
+
+/** ***************************************************************************
+ * Increase counter of sets which have had initial block read.
+ *
+ */
+void increase_sets_first_read();
+
+
+/** ***************************************************************************
+ * Increase counters of sets completed by the initial block read.
+ *
+ */
+void increase_sets_first_read_completed();
 
 
 #endif

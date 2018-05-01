@@ -283,7 +283,7 @@ void sort_read_list()
 
   if (using_fiemap) {
     int zeropct = (100 * stats_fiemap_zero_blocks) / stats_fiemap_total_blocks;
-    if (zeropct > 5 && stats_files_count > 100) {
+    if (zeropct > 5 && s_total_files_seen > 100) {
       using_fiemap = 0;
       LOG(L_PROGRESS, "Turning off using_fiemap, %d%% zero blocks\n", zeropct);
     }
