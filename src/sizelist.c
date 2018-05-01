@@ -1110,9 +1110,9 @@ static void submit_path_list(int thread,
   uint64_t size = sizelist->size;
   struct hasher_param * queue_info = NULL;
 
-  LOG(L_THREADS, "Inserting set (%d files of size %" PRIu64 ") in state %s "
-      "into hasher queue %d\n",
-      pathlist_head->list_size, size,
+  LOG(L_THREADS, "Inserting set (%d files of size %" PRIu64
+      ") pass %d in state %s into hasher queue %d\n",
+      pathlist_head->list_size, size, pathlist_head->hash_passes,
       pls_state(pathlist_head->state), thread);
 
   if (pathlist_head->list_size == 0) {
