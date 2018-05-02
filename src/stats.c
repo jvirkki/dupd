@@ -107,6 +107,8 @@ uint32_t s_files_processed = 0;         // Files entered to path list
 uint32_t s_files_completed_dups = 0;    // Files processed, found to be dups
 uint32_t s_files_completed_unique = 0;  // Files processed, found to be unique
 
+int current_open_files = 0;
+
 
 /** ***************************************************************************
  * Public function, see header file.
@@ -268,5 +270,17 @@ void increase_sets_first_read_completed()
 {
   d_mutex_lock(&counters_lock, "counters");
   stats_sets_first_read_completed++;
+  d_mutex_unlock(&counters_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void update_open_files(int n)
+{
+  d_mutex_lock(&counters_lock, "counters");
+  current_open_files += n;
   d_mutex_unlock(&counters_lock);
 }

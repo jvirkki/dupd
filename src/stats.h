@@ -116,6 +116,8 @@ extern uint32_t s_files_dropped;
 extern uint32_t s_files_completed_dups;
 extern uint32_t s_files_completed_unique;
 
+extern int current_open_files;
+
 
 /** ***************************************************************************
  * Print some stats to stdout depending on verbosity.
@@ -175,6 +177,13 @@ void increase_sets_first_read();
  *
  */
 void increase_sets_first_read_completed();
+
+
+/** ***************************************************************************
+ * Update counter of open files.
+ *
+ */
+void update_open_files(int n);
 
 
 #endif

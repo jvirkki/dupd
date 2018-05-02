@@ -93,6 +93,7 @@ int sort_bypass = 0;
 uint64_t buffer_limit = 0;
 int one_file_system = 0;
 int using_fiemap = 0;
+int max_open_files = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -517,6 +518,8 @@ int main(int argc, char * argv[])
   }
 
   LOG(L_INFO, "Claimed CPU cores: %d\n", cpu_cores());
+  max_open_files = get_file_limit() - 10;
+  LOG(L_INFO, "Max open files: %d\n", max_open_files);
 
   switch (operation) {
 

@@ -48,6 +48,7 @@ struct path_list_entry {
   uint8_t next_read_block;
   uint32_t bufsize;
   uint32_t data_in_buffer;
+  int fd;
   char * buffer;
   void * hash_ctx;
   // filename follows, file_size bytes

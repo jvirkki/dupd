@@ -36,6 +36,8 @@
 #include <linux/fiemap.h>
 #endif
 
+#include "paths.h"
+
 #ifdef linux
 #define STRUCT_STAT struct stat
 #define LSTAT lstat
@@ -182,6 +184,26 @@ static inline int dupd_memcmp(const char * b1, const char * b2, size_t n)
  */
 int read_file_bytes(char * path, char * output,
                     uint64_t bytes, uint64_t skip, uint64_t * bytes_read);
+
+
+/** ***************************************************************************
+ * Read data from disk.
+ *
+ * Parameters:
+ *    entry      - Path entry of file to read.
+ *    filesize   - Size of this file.
+ *    path       - Path to file to read.
+ *    output     - Caller-provided buffer to store the data read from disk.
+ *    bytes      - Read this many bytes.
+ *    skip       - Skip this many bytes (start reading file from byte skip+1).
+ *    bytes_read - Returns number of bytes actually read.
+ *
+ * Return: 0 on success
+ *
+ */
+int read_entry_bytes(struct path_list_entry * entry, uint64_t filesize,
+                     char * path, char * output,
+                     uint64_t bytes, uint64_t skip, uint64_t * bytes_read);
 
 
 /** ***************************************************************************
@@ -405,6 +427,17 @@ struct block_list * get_block_info_from_path(char * path, ino_t inode,
  *
  */
 void dump_block_list(const char * prefix, struct block_list * bl);
+
+
+/** ***************************************************************************
+ * Returns max open file limit for this process.
+ *
+ * Parameters: none
+ *
+ * Return: open file limit
+ *
+ */
+int get_file_limit();
 
 
 #endif

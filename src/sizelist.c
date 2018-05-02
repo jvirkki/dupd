@@ -1322,8 +1322,8 @@ static void fill_data_block(struct path_list_head * head,
 
   uint64_t bytes_read = 0;
   uint64_t t1 = get_current_time_millis();
-  read_file_bytes(path, entry->buffer + entry->next_buffer_pos,
-                  want_bytes, current_file_pos, &bytes_read);
+  read_entry_bytes(entry, filesize, path, entry->buffer + entry->next_buffer_pos,
+                   want_bytes, current_file_pos, &bytes_read);
   uint64_t took = get_current_time_millis() - t1;
 
   if (bytes_read != want_bytes) {
@@ -1529,6 +1529,10 @@ static void * read_list_reader(void * arg)
     LOG(L_THREADS, "Completed loop %d: list size: %d worked: %d "
         "(NEED_DATA %d, NEED_HASH %d, INVALID %d, DONE %d)\n",
         loop, rlpos, did_something, needy, waiting_hash, invalid, done_files);
+
+    if (!did_something) {
+       usleep(1000 * waiting_hash);
+    }
 
   } while (done_files < rlpos);
 
@@ -1756,7 +1760,9 @@ void process_size_list(sqlite3 * dbh)
   }
 
   // Process any remaining entries in round 2.
-  process_round_2(dbh);
+  if (!hdd_mode) {
+    process_round_2(dbh);
+  }
 
   for (int n = 0; n < HASHER_THREADS; n++) {
     free(hasher_info[n].queue);

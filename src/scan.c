@@ -102,7 +102,7 @@ static void * scan_status(void * arg)
   const char * files =
     "Files: %8u                      %6u errors                 %12s";
   const char * sets =
-    "Sets : %8u/%8u %10uK (%7ldK/s) %4uq %3d%%%c      %12s";
+    "Sets : %8u/%8u %10uK (%7ldK/s) %4uq %3d%%%c %4df%12s";
   const char * sets_done =
     "Round %d: %8u groups of duplicates confirmed                   %12s\n";
 
@@ -154,7 +154,7 @@ static void * scan_status(void * arg)
       if (stats_flusher_active) { scantype = 'B'; } else { scantype = 'b'; }
       c = snprintf(line, 100, sets, stats_size_list_done,
                    s_stats_size_list_count, kread, ksec, queued,
-                   bfpct, scantype, timebuf);
+                   bfpct, scantype, current_open_files, timebuf);
       SHOW_LINE;
       status_wait();
 

@@ -90,6 +90,7 @@ void dump_path_list(const char * line, uint64_t size,
       printf("   file state: %s\n", file_state(entry->state));
       printf("   filename_size: %d\n", entry->filename_size);
       printf("   dir: %p\n", entry->dir);
+      printf("   fd: %d\n", entry->fd);
       printf("   next: %p\n", entry->next);
       printf("   buffer: %p\n", entry->buffer);
       printf("   bufsize: %" PRIu32 "\n", entry->bufsize);
@@ -258,6 +259,12 @@ void free_path_entry(struct path_list_entry * entry)
     free(entry->blocks);
     entry->blocks = NULL;
   }
+
+  if (entry->fd != 0) {
+    close(entry->fd);
+    entry->fd = 0;
+    update_open_files(-1);
+  }
 }
 
 
@@ -309,6 +316,7 @@ struct path_list_head * insert_first_path(char * filename,
   s_files_processed++;
   first_entry->state = FS_NEED_DATA;
   first_entry->filename_size = (uint8_t)filename_len;
+  first_entry->fd = 0;
   first_entry->dir = dir_entry;
   first_entry->blocks = NULL;
   first_entry->hash_ctx = NULL;
@@ -365,6 +373,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   s_files_processed++;
   entry->state = FS_NEED_DATA;
   entry->filename_size = (uint8_t)filename_len;
+  entry->fd = 0;
   entry->dir = dir_entry;
   entry->next = NULL;
   entry->buffer = NULL;
@@ -511,12 +520,7 @@ int mark_path_entry_invalid(struct path_list_head * head,
         head->list_size);
   }
 
-  if (entry->buffer != NULL) {
-    free(entry->buffer);
-    entry->buffer = NULL;
-    dec_stats_read_buffers_allocated(entry->bufsize);
-    entry->bufsize = 0;
-  }
+  free_path_entry(entry);
 
   { // TODO
     char * fname = pb_get_filename(entry);
@@ -541,12 +545,7 @@ int mark_path_entry_invalid(struct path_list_head * head,
 
       case FS_NEED_DATA:
       case FS_BUFFER_READY:
-        if (e->buffer != NULL) {
-          free(e->buffer);
-          e->buffer = NULL;
-          dec_stats_read_buffers_allocated(e->bufsize);
-          e->bufsize = 0;
-        }
+        free_path_entry(e);
         good++;
         e->state = FS_INVALID;
         break;

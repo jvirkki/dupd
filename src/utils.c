@@ -22,7 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -173,6 +175,86 @@ int read_file_bytes(char * path, char * output,
 
   close(file);
   return rv;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int read_entry_bytes(struct path_list_entry * entry, uint64_t filesize,
+                     char * path, char * output,
+                     uint64_t bytes, uint64_t skip, uint64_t * bytes_read)
+{
+  *bytes_read = 0;
+  int fd = 0;
+
+  if (bytes == 0) {
+    printf("error: requested zero bytes from [%s] (skip=%" PRIu64 ")\n",
+           path, skip);
+    exit(1);
+  }
+
+  if (entry->fd != 0) {
+    fd = entry->fd;
+  } else {
+    int file = open(path, O_RDONLY);
+    if (file < 0) {                                          // LCOV_EXCL_START
+      LOG(L_PROGRESS, "Error opening [%s]\n", path);
+      s_files_cant_read++;
+      return -1;
+    }                                                        // LCOV_EXCL_STOP
+    fd = file;
+    update_open_files(1);
+  }
+
+  if (skip > 0) {
+    uint64_t pos = lseek(fd, skip, SEEK_SET);
+    if (pos != skip) {                                       // LCOV_EXCL_START
+      LOG(L_PROGRESS, "Error seeking [%s]\n", path);
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
+  }
+
+  ssize_t got = read(fd, output, bytes);
+
+  if (got >= 0) {
+    *bytes_read = got;
+    stats_total_bytes_read += *bytes_read;
+  } else {
+    s_files_cant_read++;
+    close(fd);
+    update_open_files(-1);
+    return -1;
+  }
+
+  // If all remaining files can be kept open, just do that
+  int remaining = s_files_processed -
+    s_files_completed_dups - s_files_completed_unique;
+  if (remaining < max_open_files) {
+    entry->fd = fd;
+    return 0;
+  }
+
+  // If this is not the first pass (didn't start at pos 0)
+  // and there are file descriptors left, keep it open
+  if (skip > 0 && current_open_files < max_open_files) {
+    entry->fd = fd;
+    return 0;
+  }
+
+  // If file is large and there are file descriptors left,
+  // keep it open.
+  if (filesize > MB1 && current_open_files < max_open_files) {
+    entry->fd = fd;
+    return 0;
+  }
+
+  update_open_files(-1);
+  close(fd);
+  entry->fd = 0;
+
+  return 0;
 }
 
 
@@ -393,4 +475,27 @@ void * fiemap_alloc()
 #else
   return NULL;
 #endif
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int get_file_limit()
+{
+  struct rlimit rlim;
+
+  if (getrlimit(RLIMIT_NOFILE, &rlim)) {
+    LOG(L_INFO, "Unable get file limit, guessing...\n");
+    return 200;
+  }
+
+  if (rlim.rlim_cur < rlim.rlim_max) {
+    rlim.rlim_cur = rlim.rlim_max;
+    setrlimit(RLIMIT_NOFILE, &rlim);
+    getrlimit(RLIMIT_NOFILE, &rlim);
+  }
+
+  return rlim.rlim_cur;
 }

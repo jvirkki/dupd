@@ -394,6 +394,13 @@ extern int one_file_system;
 
 
 /** ***************************************************************************
+ * Limit of open files.
+ *
+ */
+extern int max_open_files;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

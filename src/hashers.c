@@ -151,8 +151,8 @@ static int build_hash_list_round(sqlite3 * dbh,
     // Will be reading more, so increase buffer size for next time around
     uint32_t remaining = s_files_processed -
       s_files_completed_dups - s_files_completed_unique;
-    if (remaining > 2) {
-      uint32_t buflim = buffer_limit / (remaining / 5);
+    if (remaining > 0) {
+      uint32_t buflim = (buffer_limit / remaining) * 5;
       if (buflim > MB16) { size_node->path_list->wanted_bufsize = MB16; }
       else if (buflim > MB8) { size_node->path_list->wanted_bufsize = MB8; }
     }
