@@ -4,6 +4,8 @@ source common
 
 DESC="scan(files3): 20K files"
 
+rm -f files3/fileA files3/fileB files3/fileC files3/fileD
+
 for ((i=1; i<=20000; i++));
 do
     echo $i > files3/tmp.$i
