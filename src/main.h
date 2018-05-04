@@ -38,9 +38,12 @@
 #ifdef __OpenBSD__
 #endif
 
+#define K512 (1024 * 512)
 #define MB1 (1024 * 1024)
+#define MB2 (1024 * 1024 * 2)
 #define MB8 (1024 * 1024 * 8)
 #define MB16 (1024 * 1024 * 16)
+#define MB32 (1024 * 1024 * 32)
 #define GB1 (1024 * 1024 * 1024)
 
 

@@ -206,14 +206,18 @@ int read_entry_bytes(struct path_list_entry * entry, uint64_t filesize,
     }                                                        // LCOV_EXCL_STOP
     fd = file;
     update_open_files(1);
+    entry->file_pos = 0;
   }
 
   if (skip > 0) {
-    uint64_t pos = lseek(fd, skip, SEEK_SET);
-    if (pos != skip) {                                       // LCOV_EXCL_START
-      LOG(L_PROGRESS, "Error seeking [%s]\n", path);
-      exit(1);
-    }                                                        // LCOV_EXCL_STOP
+    if (skip != entry->file_pos) {
+      uint64_t pos = lseek(fd, skip, SEEK_SET);
+      if (pos != skip) {                                     // LCOV_EXCL_START
+        LOG(L_PROGRESS, "Error seeking [%s]\n", path);
+        exit(1);
+      }                                                      // LCOV_EXCL_STOP
+      entry->file_pos = pos;
+    }
   }
 
   ssize_t got = read(fd, output, bytes);
@@ -221,9 +225,12 @@ int read_entry_bytes(struct path_list_entry * entry, uint64_t filesize,
   if (got >= 0) {
     *bytes_read = got;
     stats_total_bytes_read += *bytes_read;
+    entry->file_pos += *bytes_read;
   } else {
     s_files_cant_read++;
     close(fd);
+    entry->fd = 0;
+    entry->file_pos = 0;
     update_open_files(-1);
     return -1;
   }
@@ -253,6 +260,7 @@ int read_entry_bytes(struct path_list_entry * entry, uint64_t filesize,
   update_open_files(-1);
   close(fd);
   entry->fd = 0;
+  entry->file_pos = 0;
 
   return 0;
 }

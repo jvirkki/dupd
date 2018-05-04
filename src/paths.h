@@ -43,6 +43,7 @@ struct path_list_entry {
   struct direntry * dir;
   struct path_list_entry * next;
   struct block_list * blocks;
+  uint64_t file_pos;
   uint64_t next_read_byte;
   uint32_t next_buffer_pos;
   uint8_t next_read_block;

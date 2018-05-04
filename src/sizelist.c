@@ -18,6 +18,7 @@
 */
 
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <pthread.h>
@@ -1260,6 +1261,11 @@ static void fill_data_block(struct path_list_head * head,
     inc_stats_read_buffers_allocated(inc);
   }
 
+  if (entry->buffer == NULL) {
+    printf("error: unable to allocate read buffer, sorry!\n");
+    exit(1);
+  }
+
   struct block_list_entry * bl = &entry->blocks->entry[entry->next_read_block];
   uint64_t current_file_pos = entry->next_read_byte;
   uint64_t current_disk_block_start = bl->start_pos;
@@ -1329,7 +1335,7 @@ static void fill_data_block(struct path_list_head * head,
   if (bytes_read != want_bytes) {
     // File may be unreadable or changed size, either way, ignore it.
     LOG(L_PROGRESS, "error: read %" PRIu64 " bytes from [%s] but wanted %"
-        PRIu32 "\n", bytes_read, path, want_bytes);
+        PRIu32 " (%s)\n", bytes_read, path, want_bytes, strerror(errno));
     int before = head->list_size;
     int after = mark_path_entry_invalid(head, entry);
     int additional = before - 1 - after;
@@ -1531,7 +1537,7 @@ static void * read_list_reader(void * arg)
         loop, rlpos, did_something, needy, waiting_hash, invalid, done_files);
 
     if (!did_something) {
-       usleep(1000 * waiting_hash);
+      usleep(1000 * 5);
     }
 
   } while (done_files < rlpos);
@@ -1755,6 +1761,13 @@ void process_size_list(sqlite3 * dbh)
   if (stats_read_buffers_allocated != 0) {
     printf("error: after round1 complete, buffers: %" PRIu64 "\n",
            stats_read_buffers_allocated);
+    dump_size_list();
+    exit(1);
+  }
+
+  if (current_open_files != 0) {
+    printf("error: after round1 complete, open files: %d\n",
+           current_open_files);
     dump_size_list();
     exit(1);
   }

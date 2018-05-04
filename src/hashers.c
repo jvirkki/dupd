@@ -129,7 +129,6 @@ static int build_hash_list_round(sqlite3 * dbh,
 
   if (size_node->path_list->hash_passes == 0) {
     increase_sets_first_read();
-    size_node->path_list->wanted_bufsize = MB1;
     if (completed) { increase_sets_first_read_completed(); }
   }
 
@@ -149,12 +148,16 @@ static int build_hash_list_round(sqlite3 * dbh,
     }
   } else {
     // Will be reading more, so increase buffer size for next time around
-    uint32_t remaining = s_files_processed -
-      s_files_completed_dups - s_files_completed_unique;
-    if (remaining > 0) {
-      uint32_t buflim = (buffer_limit / remaining) * 5;
-      if (buflim > MB16) { size_node->path_list->wanted_bufsize = MB16; }
-      else if (buflim > MB8) { size_node->path_list->wanted_bufsize = MB8; }
+
+    if (size_node->path_list->hash_passes == 1) {
+      size_node->path_list->wanted_bufsize = MB2;
+    } else if (size_node->path_list->hash_passes > 2) {
+      size_node->path_list->wanted_bufsize = MB16;
+    } else if (size_node->path_list->hash_passes > 8) {
+      size_node->path_list->wanted_bufsize = MB32;
+    }
+    if (size_node->path_list->wanted_bufsize > size_node->size) {
+      size_node->path_list->wanted_bufsize = size_node->size;
     }
   }
 

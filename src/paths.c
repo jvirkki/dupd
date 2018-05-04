@@ -95,6 +95,7 @@ void dump_path_list(const char * line, uint64_t size,
       printf("   buffer: %p\n", entry->buffer);
       printf("   bufsize: %" PRIu32 "\n", entry->bufsize);
       printf("   data_in_buffer: %" PRIu32 "\n", entry->data_in_buffer);
+      printf("   file_pos: %" PRIu64 "\n", entry->file_pos);
       printf("   next_read_byte: %" PRIu64 "\n", entry->next_read_byte);
       printf("   next_buffer_pos: %" PRIu32 "\n", entry->next_buffer_pos);
       printf("   next_read_block: %d\n", entry->next_read_block);
@@ -320,6 +321,7 @@ struct path_list_head * insert_first_path(char * filename,
   first_entry->dir = dir_entry;
   first_entry->blocks = NULL;
   first_entry->hash_ctx = NULL;
+  first_entry->file_pos = 0;
   first_entry->next_read_byte = 0;
   first_entry->next_buffer_pos = 0;
   first_entry->next_read_block = 0;
@@ -381,6 +383,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   entry->bufsize = 0;
   entry->data_in_buffer = 0;
   entry->blocks = NULL;
+  entry->file_pos = 0;
   entry->next_read_byte = 0;
   entry->next_buffer_pos = 0;
   entry->next_read_block = 0;
