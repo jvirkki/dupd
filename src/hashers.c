@@ -153,8 +153,6 @@ static int build_hash_list_round(sqlite3 * dbh,
       size_node->path_list->wanted_bufsize = MB2;
     } else if (size_node->path_list->hash_passes > 2) {
       size_node->path_list->wanted_bufsize = MB16;
-    } else if (size_node->path_list->hash_passes > 8) {
-      size_node->path_list->wanted_bufsize = MB32;
     }
     if (size_node->path_list->wanted_bufsize > size_node->size) {
       size_node->path_list->wanted_bufsize = size_node->size;
