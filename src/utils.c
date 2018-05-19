@@ -252,7 +252,7 @@ int read_entry_bytes(struct path_list_entry * entry, uint64_t filesize,
 
   // If file is large and there are file descriptors left,
   // keep it open.
-  if (filesize > MB1 && current_open_files < max_open_files) {
+  if (filesize > bytes && current_open_files < max_open_files) {
     entry->fd = fd;
     return 0;
   }
