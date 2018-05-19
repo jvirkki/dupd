@@ -1234,11 +1234,14 @@ static void * size_list_flusher(void * arg)
  *     If unable to read expected bytes:
  *       - entry marked invalid (which might make head PLS_DONE)
  *
+ * Return: true if current disk block was fully consumed.
+ *
  */
-static void fill_data_block(struct path_list_head * head,
-                            struct path_list_entry * entry,
-                            char * path)
+static int fill_data_block(struct path_list_head * head,
+                           struct path_list_entry * entry,
+                           char * path)
 {
+  int rv = 0;
   uint64_t filesize = head->sizelist->size;
 
   // If we haven't been here before for this entry (or if we had to
@@ -1286,7 +1289,7 @@ static void fill_data_block(struct path_list_head * head,
     memset(entry->buffer + entry->next_buffer_pos, 0, zeroes);
     entry->next_buffer_pos += zeroes;
     entry->next_read_byte += zeroes;
-    if (filling_buffer) { return; }
+    if (filling_buffer) { return rv; }
     current_file_pos = entry->next_read_byte;
   }
 
@@ -1328,7 +1331,8 @@ static void fill_data_block(struct path_list_head * head,
 
   uint64_t bytes_read = 0;
   uint64_t t1 = get_current_time_millis();
-  read_entry_bytes(entry, filesize, path, entry->buffer + entry->next_buffer_pos,
+  read_entry_bytes(entry, filesize, path,
+                   entry->buffer + entry->next_buffer_pos,
                    want_bytes, current_file_pos, &bytes_read);
   uint64_t took = get_current_time_millis() - t1;
 
@@ -1350,6 +1354,7 @@ static void fill_data_block(struct path_list_head * head,
     entry->next_buffer_pos += bytes_read;
 
     if (consumed_block) {
+      rv = 1;
       entry->next_read_block++;
 
       if (entry->next_read_block < entry->blocks->count) {
@@ -1398,6 +1403,8 @@ static void fill_data_block(struct path_list_head * head,
     LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
         took, read_count, avg_read_time);
   }
+
+  return rv;
 }
 
 
@@ -1456,6 +1463,12 @@ static void * read_list_reader(void * arg)
     do {
 
       rlentry = &read_list[rlpos];
+      if (rlentry->done) {
+        rlpos++;
+        done_files++;
+        continue;
+      }
+
       pathlist_head = rlentry->pathlist_head;
       pathlist_entry = rlentry->pathlist_self;
       sizelist = pathlist_head->sizelist;
@@ -1487,7 +1500,9 @@ static void * read_list_reader(void * arg)
               file_state(pathlist_entry->state),
               pathlist_entry->next_read_byte, block, path);
 
-          fill_data_block(pathlist_head, pathlist_entry, path);
+          if (fill_data_block(pathlist_head, pathlist_entry, path)) {
+            rlentry->done = 1;
+          }
           did_something++;
 
           if (pathlist_head->state == PLS_ALL_BUFFERS_READY) {

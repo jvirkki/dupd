@@ -154,6 +154,7 @@ static void add_one_to_read_list(struct path_list_head * head,
   read_list[read_list_end].pathlist_self = entry;
   read_list[read_list_end].block = block;
   read_list[read_list_end].inode = inode;
+  read_list[read_list_end].done = 0;
 
   read_list_end++;
   if (read_list_end == read_list_size) {
@@ -177,6 +178,7 @@ static void add_one_to_inode_read_list(struct path_list_head * head,
     inode_read_list[inode_read_list_end].pathlist_self = entry;
     inode_read_list[inode_read_list_end].block = inode;
     inode_read_list[inode_read_list_end].inode = inode;
+    inode_read_list[inode_read_list_end].done = 0;
 
     inode_read_list_end++;
     if (inode_read_list_end == inode_read_list_size) {

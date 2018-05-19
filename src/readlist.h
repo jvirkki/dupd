@@ -30,6 +30,7 @@ struct read_list_entry {
   struct path_list_entry * pathlist_self;
   uint64_t block;
   ino_t inode;
+  uint8_t done;
 };
 
 extern struct read_list_entry * read_list;
