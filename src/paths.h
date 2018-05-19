@@ -38,29 +38,29 @@
  *
  */
 struct path_list_entry {
-  uint8_t state;
-  uint8_t filename_size;
-  struct direntry * dir;
   struct path_list_entry * next;
   struct block_list * blocks;
+  struct direntry * dir;
+  char * buffer;
+  void * hash_ctx;
   uint64_t file_pos;
   uint64_t next_read_byte;
   uint32_t next_buffer_pos;
-  uint8_t next_read_block;
   uint32_t bufsize;
   uint32_t data_in_buffer;
   int fd;
-  char * buffer;
-  void * hash_ctx;
+  uint8_t state;
+  uint8_t filename_size;
+  uint8_t next_read_block;
   // filename follows, file_size bytes
 };
 
 struct path_list_head {
   struct size_list * sizelist;
   struct path_list_entry * last_entry;
+  uint32_t wanted_bufsize;
   uint16_t list_size;
   uint16_t buffer_ready;
-  uint32_t wanted_bufsize;
   uint8_t state;
   uint8_t hash_passes;
   // first_entry follows

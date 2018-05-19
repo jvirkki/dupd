@@ -25,15 +25,15 @@
 #include <sys/types.h>
 
 struct size_list {
-  uint64_t size;
   struct path_list_head * path_list;
-  int state;
-  int fully_read;
-  uint32_t buffers_filled;
-  uint64_t bytes_read;
-  pthread_mutex_t lock;
   struct size_list * next;
   struct size_list * dnext;
+  uint64_t size;
+  uint64_t bytes_read;
+  uint32_t buffers_filled;
+  int state;
+  int fully_read;
+  pthread_mutex_t lock;
 };
 
 // Size list states. TODO remove

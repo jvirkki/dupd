@@ -27,8 +27,8 @@
 struct direntry {
   struct direntry * parent;
   char * name;              // NOT null-terminated directory name
-  uint8_t name_size;        // Length of the 'name' string
   uint16_t total_size;      // Total length of the path (including self 'name')
+  uint8_t name_size;        // Length of the 'name' string
 };
 
 
