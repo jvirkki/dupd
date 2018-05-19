@@ -1419,6 +1419,7 @@ static void * read_list_reader(void * arg)
   struct read_list_entry * rlentry;
   uint64_t size;
   int rlpos = 0;
+  int done;
   int needy;
   int done_files = 0;
   int waiting_hash;
@@ -1449,7 +1450,8 @@ static void * read_list_reader(void * arg)
     invalid = 0;
     did_something = 0;
 
-    LOG(L_THREADS, "Starting HDD read list loop %d\n", ++loop);
+    loop++;
+    LOG(L_THREADS, "Starting HDD read list loop %d\n", loop);
 
     do {
 
@@ -1536,13 +1538,15 @@ static void * read_list_reader(void * arg)
         "(NEED_DATA %d, NEED_HASH %d, INVALID %d, DONE %d)\n",
         loop, rlpos, did_something, needy, waiting_hash, invalid, done_files);
 
-    if (!did_something) {
-      usleep(1000 * 5);
+    done = done_files >= rlpos;
+
+    if (!done) {
+      if (!did_something) { usleep(1000 * 50); }
     }
 
-  } while (done_files < rlpos);
+  } while (!done);
 
-  LOG(L_THREADS, "DONE\n");
+  LOG(L_MORE_INFO, "DONE read list reader (%d loops)\n", loop);
 
   return NULL;
 }
