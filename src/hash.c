@@ -293,6 +293,11 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
     return(-1);
   }
 
+  // When reading the entire file, say so
+  if (blocks == 0) {
+    posix_fadvise(file, 0, 0, POSIX_FADV_WILLNEED);
+  }
+
   if (skip > 0) {
     uint64_t seek = skip * bsize;
     uint64_t pos = (uint64_t)lseek(file, seek, SEEK_SET);
