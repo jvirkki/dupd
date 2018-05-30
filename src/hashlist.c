@@ -290,8 +290,7 @@ void add_hash_table_from_mem(struct hash_table * hl,
  *
  */
 static void publish_duplicate_hash_list(sqlite3 * dbh,
-                                        struct hash_list * hl,
-                                        uint64_t size, int round)
+                                        struct hash_list * hl, uint64_t size)
 {
   struct hash_list * p = hl;
   struct path_list_entry * entry;
@@ -303,7 +302,7 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
 
     if (p->next_index > 1) {
 
-      stats_duplicate_groups[round]++;
+      stats_duplicate_groups++;
       stats_duplicate_files += p->next_index;
 
       if (!write_db || log_level >= L_TRACE) {
@@ -338,6 +337,9 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
             sprintf(path_buffer + pos, "%s%c", file, 0);
           }
 
+          entry->state = FS_DONE;
+          free_path_entry(entry);
+
           LOG_INFO {
             int hsize = hash_get_bufsize(hash_function);
             char hash_out[HASH_MAX_BUFSIZE];
@@ -367,12 +369,11 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
  *
  */
 void publish_duplicate_hash_table(sqlite3 * dbh,
-                                  struct hash_table * hl,
-                                  uint64_t size, int round)
+                                  struct hash_table * hl, uint64_t size)
 {
   for (int n = 0; n <= 255; n++) {
     if (hl->table[n] != NULL) {
-      publish_duplicate_hash_list(dbh, hl->table[n], size, round);
+      publish_duplicate_hash_list(dbh, hl->table[n], size);
     }
   }
 }

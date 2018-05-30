@@ -527,7 +527,7 @@ static void * round2_hasher(void * arg)
             // Still something left, go publish them to db
             LOG(L_TRACE, "Finally some dups confirmed, here they are:\n");
             stats_sets_dup_done[ROUND2]++;
-            publish_duplicate_hash_table(dbh, ht, size_node->size, ROUND2);
+            publish_duplicate_hash_table(dbh, ht, size_node->size);
             size_node->path_list->state = PLS_DONE;
           }
 

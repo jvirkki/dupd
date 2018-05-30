@@ -164,7 +164,7 @@ static void * scan_status(void * arg)
     time_string(timebuf, 20, stats_round_duration[round]);
 
     c = snprintf(line, 100, sets_done, round + 1,
-                 stats_duplicate_groups[round], timebuf);
+                 stats_duplicate_groups, timebuf);
     SHOW_LINE;
 
   } while (++round < ROUNDS);

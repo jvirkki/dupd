@@ -120,7 +120,7 @@ static int build_hash_list_round(sqlite3 * dbh,
     // If by now we already have a full hash, publish and we're done!
     if (size_node->fully_read) {
       LOG(L_TRACE, "Some dups confirmed, here they are:\n");
-      publish_duplicate_hash_table(dbh, hl, size_node->size, ROUND1);
+      publish_duplicate_hash_table(dbh, hl, size_node->size);
       size_node->path_list->state = PLS_DONE;
       completed = 1;
       increase_dup_counter(size_node->path_list->list_size);
@@ -138,15 +138,7 @@ static int build_hash_list_round(sqlite3 * dbh,
 
   size_node->buffers_filled = 0;
 
-  if (completed) {
-    // Don't need buffers anymore so free them all
-    node = pb_get_first_entry(size_node->path_list);
-    while (node != NULL) {
-      node->state = FS_DONE;
-      free_path_entry(node);
-      node = node->next;
-    }
-  } else {
+  if (!completed) {
     // Will be reading more, so increase buffer size for next time around
 
     if (size_node->path_list->hash_passes == 1) {

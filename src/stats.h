@@ -37,7 +37,7 @@ extern int stats_sets_full_read[ROUNDS];
 extern int stats_sets_part_read[ROUNDS];
 extern long stats_round_start[ROUNDS];
 extern int stats_round_duration[ROUNDS];
-extern int stats_duplicate_groups[ROUNDS];
+extern int stats_duplicate_groups;
 extern int stats_reader_loops[ROUNDS];
 extern int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS];
 extern int stats_hasher_queue_len[MAX_HASHER_THREADS];

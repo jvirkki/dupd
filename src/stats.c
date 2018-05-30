@@ -43,7 +43,7 @@ int stats_sets_full_read[ROUNDS] = { 0,0 };
 int stats_sets_part_read[ROUNDS] = { 0,0 };
 long stats_round_start[ROUNDS] = { -1,-1 };
 int stats_round_duration[ROUNDS] = { -1,-1 };
-int stats_duplicate_groups[ROUNDS] = { 0,0 };
+int stats_duplicate_groups = 0;
 int stats_reader_loops[ROUNDS] = { 0,0 };
 int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS] = { {0,0}, {0,0} };
 int stats_hasher_queue_len[MAX_HASHER_THREADS] = { 0,0 };
@@ -120,10 +120,8 @@ void report_stats()
     printf("\n");
     char timebuf[20];
     time_string(timebuf, 20, get_current_time_millis() - stats_main_start);
-    int total_groups = stats_duplicate_groups[ROUND1] +
-      stats_duplicate_groups[ROUND2];
     printf("Total duplicates: %d files in %d groups in %s\n",
-           s_files_completed_dups, total_groups, timebuf);
+           s_files_completed_dups, stats_duplicate_groups, timebuf);
     if (write_db && stats_duplicate_files > 0) {
       printf("Run 'dupd report' to list duplicates.\n");
     }
@@ -186,16 +184,13 @@ void report_stats()
  */
 void save_stats()
 {
-  int total_groups = stats_duplicate_groups[ROUND1] +
-    stats_duplicate_groups[ROUND2];
-
   FILE * fp = fopen(stats_file, "a");
   // TODO needs cleaning up
   fprintf(fp, "using_fiemap %d\n", using_fiemap);
   fprintf(fp, "fiemap_total_blocks %" PRIu32 "\n", stats_fiemap_total_blocks);
   fprintf(fp, "fiemap_zero_blocks %" PRIu32 "\n", stats_fiemap_zero_blocks);
   fprintf(fp, "duplicate_files %" PRIu32 "\n", s_files_completed_dups);
-  fprintf(fp, "duplicate_groups %" PRIu32 "\n", total_groups);
+  fprintf(fp, "duplicate_groups %" PRIu32 "\n", stats_duplicate_groups);
 
   fprintf(fp, "\n");
   fclose(fp);

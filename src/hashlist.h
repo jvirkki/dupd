@@ -150,13 +150,12 @@ void add_hash_table_from_mem(struct hash_table * hl,
  *     dbh   - Database handle.
  *     hl    - Source hash table.
  *     size  - The size of these files.
- *     round - Round in which these duplicates are being published.
  *
  * Return: none.
  *
  */
 void publish_duplicate_hash_table(sqlite3 * dbh, struct hash_table * hl,
-                                  uint64_t size, int round);
+                                  uint64_t size);
 
 
 /** ***************************************************************************

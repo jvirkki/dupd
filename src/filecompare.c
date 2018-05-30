@@ -81,7 +81,7 @@ static void compare_two_open_files(sqlite3 * dbh,
     duplicate_to_db(dbh, 2, size, paths);
   }
 
-  stats_duplicate_groups[round]++;
+  stats_duplicate_groups++;
   stats_duplicate_files += 2;
 
   if (!write_db || log_level >= L_TRACE) {
@@ -264,7 +264,7 @@ void compare_three_files(sqlite3 * dbh,
     duplicate_to_db(dbh, 3, size, paths);
   }
 
-  stats_duplicate_groups[round]++;
+  stats_duplicate_groups++;
   stats_duplicate_files += 3;
 
   if (!write_db || log_level >= L_TRACE) {
