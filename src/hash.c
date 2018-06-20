@@ -56,14 +56,13 @@
 
 #define MAX_BLOCK (1024 * 256)
 
-static char buffer[MAX_BLOCK];
-
 
 /** ***************************************************************************
  * MD5 implementation for hash_fn().
  *
  */
-static int md5(char * output, uint64_t blocks, int bsize, int file)
+static int md5(char * output, uint64_t blocks, int bsize, int file,
+               char * buffer)
 {
   uint64_t counter = blocks;
   ssize_t bytes;
@@ -107,7 +106,8 @@ static int md5_buf(const char * buffer, int bufsize, char * output)
  * SHA1 implementation for hash_fn().
  *
  */
-static int sha1(char * output, uint64_t blocks, int bsize, int file)
+static int sha1(char * output, uint64_t blocks, int bsize, int file,
+                char * buffer)
 {
   uint64_t counter = blocks;
   ssize_t bytes;
@@ -151,7 +151,8 @@ static int sha1_buf(const char * buffer, int bufsize, char * output)
  * SHA512 implementation for hash_fn().
  *
  */
-static int sha512(char * output, uint64_t blocks, int bsize, int file)
+static int sha512(char * output, uint64_t blocks, int bsize, int file,
+                  char * buffer)
 {
   uint64_t counter = blocks;
   ssize_t bytes;
@@ -195,7 +196,8 @@ static int sha512_buf(const char * buffer, int bufsize, char * output)
  * XXHASH implementation for hash_fn().
  *
  */
-static int xxhash(char * output, uint64_t blocks, int bsize, int file)
+static int xxhash(char * output, uint64_t blocks, int bsize, int file,
+                  char * buffer)
 {
   uint64_t counter = blocks;
   ssize_t bytes;
@@ -308,24 +310,34 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
     }                                                        // LCOV_EXCL_STOP
   }
 
+  char * buffer = (char *)malloc(block_size);
+  int rv = -1;
+
   switch(hash_function) {
 
   case HASH_FN_MD5:
-    return md5(output, blocks, block_size, file);
+    rv = md5(output, blocks, block_size, file, buffer);
+    break;
 
   case HASH_FN_SHA1:
-    return sha1(output, blocks, block_size, file);
+    rv = sha1(output, blocks, block_size, file, buffer);
+    break;
 
   case HASH_FN_SHA512:
-    return sha512(output, blocks, block_size, file);
+    rv = sha512(output, blocks, block_size, file, buffer);
+    break;
 
   case HASH_FN_XXHASH:
-    return xxhash(output, blocks, block_size, file);
+    rv = xxhash(output, blocks, block_size, file, buffer);
+    break;
 
   default:                                                   // LCOV_EXCL_START
     printf("error: invalid hash_function value %d\n", hash_function);
     exit(1);                                                 // LCOV_EXCL_STOP
   }
+
+  free(buffer);
+  return rv;
 }
 
 
