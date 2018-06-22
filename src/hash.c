@@ -53,8 +53,7 @@
 #define SHA512_Final CC_SHA512_Final
 #endif
 
-
-#define MAX_BLOCK (1024 * 256)
+#define MAX_BLOCK (1024 * 1024)
 
 
 /** ***************************************************************************

@@ -1165,8 +1165,7 @@ static void submit_path_list(int thread,
  * Size list-based reader used to flush buffer usage down.
  *
  * This is called from HDD reader (read_list_reader) if the data buffer
- * usage grows beyond desired limit. Here we'll read in size_list order
- * filling missing buffers so they can be hashed and flushed.
+ * usage grows beyond desired limit. Here we'll read in size_list order.
  *
  * Parameters:
  *    arg - Contains hasher_info array.
@@ -1177,37 +1176,75 @@ static void submit_path_list(int thread,
 static void * size_list_flusher(void * arg)
 {
   struct size_list * size_node;
+  struct size_list * size_node_next;
+  struct path_list_entry * entry;
   int sets;
   int bfpct;
-  int next_queue = 0;
-  uint32_t max_to_read;
+  int path_count;
   struct hasher_param * hasher_info = (struct hasher_param *)arg;
+  struct hash_table * ht = init_hash_table();
 
   size_node = size_list_head;
   sets = 0;
   stats_flusher_active = 1;
 
   do {
-    LOG(L_THREADS, "FL.SET %d size:%ld state:%s\n", ++sets,
-        (long)size_node->size, pls_state(size_node->path_list->state));
+    d_mutex_lock(&size_node->lock, "flusher");
 
-    if (size_node->path_list->state == PLS_R1_IN_PROGRESS) {
+    LOG(L_THREADS, "FL.SET %d size:%" PRIu64 " state:%s\n", ++sets,
+        size_node->size, pls_state(size_node->path_list->state));
 
-      max_to_read = size_node->path_list->wanted_bufsize;
-      reader_read_bytes(size_node, max_to_read);
-      size_node->path_list->state = PLS_R1_BUFFERS_FULL;
-      submit_path_list(next_queue, size_node->path_list, hasher_info);
-      next_queue = (next_queue + 1) % HASHER_THREADS;
+    if (size_node->path_list->state == PLS_NEED_DATA) {
+
+      reset_hash_table(ht);
+      entry = pb_get_first_entry(size_node->path_list);
+
+      while (entry != NULL) {
+
+        LOG_MORE_THREADS {
+          char buffer[DUPD_PATH_MAX];
+          build_path(entry, buffer);
+          LOG(L_MORE_THREADS, "FL.FILE %s state %s\n",
+              buffer, file_state(entry->state));
+        }
+
+        switch (entry->state) {
+
+        case FS_NEED_DATA:
+        case FS_BUFFER_READY:
+          add_hash_table(ht, entry, 0, 0, 0);
+          break;
+
+        default:
+          printf("flusher bad state: %s\n", file_state(entry->state));
+          exit(1);
+        }
+        entry = entry->next;
+      }
+
+      skim_uniques(hasher_info->dbh, size_node->path_list, ht, save_uniques);
+      if (hash_table_has_dups(ht)) {
+        publish_duplicate_hash_table(hasher_info->dbh, ht, size_node->size);
+        increase_dup_counter(size_node->path_list->list_size);
+      }
+
+      size_node->path_list->state = PLS_DONE;
+      path_count = size_node->path_list->list_size;
+      show_processed(s_stats_size_list_count, path_count, size_node->size);
 
       bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
       if (bfpct < 85) {
-        LOG(L_THREADS, "size_list_flusher returning at %d\n", bfpct);
+        LOG(L_THREADS, "size_list_flusher returning at %d%%\n", bfpct);
         stats_flusher_active = 0;
+        d_mutex_unlock(&size_node->lock);
         return NULL;
       }
     }
 
-    size_node = size_node->next;
+    size_node_next = size_node->next;
+    d_mutex_unlock(&size_node->lock);
+    size_node = size_node_next;
+
   } while (size_node != NULL);
 
   stats_flusher_active = 0;
@@ -1440,6 +1477,7 @@ static void * read_list_reader(void * arg)
   struct hasher_param * hasher_info = (struct hasher_param *)arg;
   int next_queue = 0;
   uint8_t block;
+  int bfpct;
 
   pthread_setspecific(thread_name, self);
   LOG(L_THREADS, "Thread created\n");
@@ -1539,13 +1577,11 @@ static void * read_list_reader(void * arg)
 
       rlpos++;
 
-      /* TODO this needs to be aware of the new way
-         bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
-         if (bfpct > 99) {
-         LOG(L_THREADS, "Buffer usage %d, flushing...\n", bfpct);
-         size_list_flusher(hasher_info);
-         }
-      */
+      bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
+      if (bfpct > 99) {
+        LOG(L_THREADS, "Buffer usage %d, flushing...\n", bfpct);
+        size_list_flusher(hasher_info);
+      }
 
     } while (rlpos < read_list_end);
 

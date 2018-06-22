@@ -337,9 +337,6 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
             sprintf(path_buffer + pos, "%s%c", file, 0);
           }
 
-          entry->state = FS_DONE;
-          free_path_entry(entry);
-
           LOG_INFO {
             int hsize = hash_get_bufsize(hash_function);
             char hash_out[HASH_MAX_BUFSIZE];
@@ -352,6 +349,9 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
               exit(1);
             }
           }
+
+          entry->state = FS_DONE;
+          free_path_entry(entry);
         }
 
         // go publish to db
