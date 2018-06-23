@@ -61,10 +61,10 @@
 // hidden (--hidden) : include hidden files and dirs in scan
 #define OPT_hidden 4
 
-// hdd (-D,--hdd) : select HDD mode
+// hdd (-D,--hdd) : deprecated
 #define OPT_hdd 5
 
-// ssd (-S,--ssd) : select SSD mode
+// ssd (-S,--ssd) : deprecated
 #define OPT_ssd 6
 
 // buflimit (--buflimit) NAME : read buffer size cap
@@ -100,10 +100,10 @@
 // fileblocksize (--fileblocksize) N : size of blocks to read in file compare
 #define OPT_fileblocksize 17
 
-// skip_two (--skip-two) : do not compare two files directly
+// skip_two (--skip-two) : deprecated
 #define OPT_skip_two 18
 
-// skip_three (--skip-three) : do not compare three files directly
+// skip_three (--skip-three) : deprecated
 #define OPT_skip_three 19
 
 // cmp_two (--cmp-two) : force direct comparison of two files

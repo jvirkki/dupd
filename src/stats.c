@@ -131,9 +131,6 @@ void report_stats()
     s_files_skip_notfile - s_files_skip_error - s_files_skip_badsep -
     s_files_hl_skip;
   uint32_t unique_files = s_files_in_sizetree - s_files_processed;
-  uint32_t handled_files =
-    s_files_completed_unique + s_files_completed_dups + s_files_cant_read +
-    s_files_hl_skip;;
 
   LOG_MORE {
     printf("\n");
@@ -164,17 +161,6 @@ void report_stats()
            files_accepted, s_files_in_sizetree - s_files_hl_skip);
     exit(1);
   }
-
-  if (hdd_mode) { // TODO SSD mode not counting correctly
-
-    if (handled_files != s_files_processed) {
-      printf("error: mismatch handled_files: %" PRIu32 " != files_processed: %"
-             PRIu32 "\n", handled_files, s_files_processed);
-      exit(1);
-    }
-
-  }
-
 }
 
 

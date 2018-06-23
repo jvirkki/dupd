@@ -82,13 +82,7 @@ This isn't very interesting so `dupd` ignores empty files. Only files
 with one byte or more are scanned (one byte files aren't that interesting
 either so perhaps the default should be larger, but I've kept it as 1).
 
-### To override
-
-The `--minsize` option can be set to zero if for some reason you really
-wanted to include empty files. Note that you'll need to specify `--minsize 0`
-both during scan and report if you want them included in the report.
-
-A better way would be to run `find . -size 0` instead, it'll be much faster!
+If you needed to find zero-length files, try `find . -size 0`.
 
 
 Symlinks are ignored

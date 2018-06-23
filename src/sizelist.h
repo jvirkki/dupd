@@ -31,25 +31,9 @@ struct size_list {
   uint64_t size;
   uint64_t bytes_read;
   uint32_t buffers_filled;
-  int state;
   int fully_read;
   pthread_mutex_t lock;
 };
-
-// Size list states. TODO remove
-#define SLS_NEED_BYTES_ROUND_1 88
-#define SLS_READY_1 89
-#define SLS_NEED_BYTES_ROUND_2 90
-#define SLS_READY_2 91
-#define SLS_NEEDS_ROUND_2 92
-#define SLS_DONE 94
-#define SLS_R2_HASH_ME 96
-#define SLS_R2_HASH_ME_FINAL 97
-#define SLS_R2_HASH_DONE 98
-#define SLS_R2_READ_MORE 99
-#define SLS_R2_READ_FINAL 100
-#define SLS_R2_HASHER_IGNORE 101
-#define SLS_DELETED 102
 
 
 /** ***************************************************************************

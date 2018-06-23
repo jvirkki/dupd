@@ -22,8 +22,8 @@ How dupd works
 
 At a high level the `dupd` approach is:
 
-1. Run dupd with suitable options (`dupd scan`)
-2. It produces a database containing duplicate info
+1. Run dupd with suitable options (`dupd scan`).
+2. It produces a database containing duplicate info.
 3. Explore the filesystem with `dupd` interactive commands to identify
    what to keep and what to delete.
 

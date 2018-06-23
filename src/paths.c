@@ -403,33 +403,29 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
       head->wanted_bufsize = hash_one_block_size;
     }
 
-    if (hdd_mode) {
-      STRUCT_STAT info;
+    STRUCT_STAT info;
 
-      // Add the first entry to the read list. It wasn't added earlier
-      // because we didn't know it needed to be there but now we do.
-      // We'll need to re-stat() it to get info. This should be fast
-      // because it should be in the cache already. (Alternatively,
-      // could keep this info in the path list head.)
+    // Add the first entry to the read list. It wasn't added earlier
+    // because we didn't know it needed to be there but now we do.
+    // We'll need to re-stat() it to get info. This should be fast
+    // because it should be in the cache already. (Alternatively,
+    // could keep this info in the path list head.)
 
-      build_path(prior, pathbuf);
-      if (get_file_info(pathbuf, &info)) {                   // LCOV_EXCL_START
-        printf("error: unable to stat %s\n", pathbuf);
-        exit(1);
-      }                                                      // LCOV_EXCL_STOP
+    build_path(prior, pathbuf);
+    if (get_file_info(pathbuf, &info)) {                   // LCOV_EXCL_START
+      printf("error: unable to stat %s\n", pathbuf);
+      exit(1);
+    }                                                      // LCOV_EXCL_STOP
 
-      block_list = get_block_info_from_path(pathbuf, info.st_ino, size,fiemap);
-      prior->blocks = block_list;
-      add_to_read_list(head, prior, info.st_ino);
-    }
+    block_list = get_block_info_from_path(pathbuf, info.st_ino, size,fiemap);
+    prior->blocks = block_list;
+    add_to_read_list(head, prior, info.st_ino);
   }
 
-  if (hdd_mode) {
-    build_path_from_string(filename, dir_entry, pathbuf);
-    block_list = get_block_info_from_path(pathbuf, inode, size, fiemap);
-    entry->blocks = block_list;
-    add_to_read_list(head, entry, inode);
-  }
+  build_path_from_string(filename, dir_entry, pathbuf);
+  block_list = get_block_info_from_path(pathbuf, inode, size, fiemap);
+  entry->blocks = block_list;
+  add_to_read_list(head, entry, inode);
 
   LOG_EVEN_MORE_TRACE {
     dump_path_list("AFTER insert_end_path", size, head, 0);

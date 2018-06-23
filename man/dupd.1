@@ -70,21 +70,6 @@ By default all files with 1 byte or more are scanned.
 In practice duplicates in files that small are rarely interesting,
 so you can speed up the scan by ignoring smaller files.
 .TP
-.BR \-D ", " \-\-hdd
-Select HDD (hard disk drive) scan mode. This is the default.
-While the HDD mode is generally always faster on HDDs and the SSD mode is
-nearly always faster on a SSD, there can be edge case scenarios where this
-is not true.
-Note in particular that if the file content is in the filesystem cache
-(which it \fIwill often be\fR if you are using dupd in the interactive
-filesystem exploration mode it was designed to support) then the SSD
-mode is often faster even if the underlying files are stored on a HDD.
-.TP
-.BR \-S ", " \-\-ssd
-Select SSD (solid state disk) scan mode. The SSD mode uses less RAM and
-is often faster when reading from SSD or from file cache. However, this
-mode can be dramatically slower when reading from an actual HDD.
-.TP
 .BR \-\-buflimit " " LIMIT
 Limit read buffer size. LIMIT may be an integer in bytes, or include a
 suffix of M for megabytes or G for gigabytes. The scan animation shows
@@ -92,8 +77,6 @@ the percentage of buffer space in use (%b). Unless that value goes up
 to 100% or beyond during a scan there is no need to adjust this limit.
 Setting this limit to a low value will constrain dupd memory usage
 but possibly at a cost to performance (depends on the data set).
-Note that this limit applies only to the read buffers in HDD mode,
-it is not a cap on total memory usage by the process.
 .TP
 .BR \-X ", " \-\-one\-file\-system
 For each path scanned, do not cross over to a different filesystem.

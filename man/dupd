@@ -73,88 +73,69 @@ OPTIONS
               in files that small are rarely interesting, so you can speed  up
               the scan by ignoring smaller files.
 
-       -D, --hdd
-              Select  HDD  (hard  disk  drive) scan mode. This is the default.
-              While the HDD mode is generally always faster on  HDDs  and  the
-              SSD  mode  is  nearly  always faster on a SSD, there can be edge
-              case scenarios where this is not true.  Note in particular  that
-              if  the  file  content is in the filesystem cache (which it will
-              often be if you are using dupd  in  the  interactive  filesystem
-              exploration  mode  it was designed to support) then the SSD mode
-              is often faster even if the underlying files  are  stored  on  a
-              HDD.
-
-       -S, --ssd
-              Select  SSD (solid state disk) scan mode. The SSD mode uses less
-              RAM and is often faster when  reading  from  SSD  or  from  file
-              cache.  However, this mode can be dramatically slower when read‐
-              ing from an actual HDD.
-
        --buflimit LIMIT
-              Limit read buffer size. LIMIT may be an  integer  in  bytes,  or
+              Limit  read  buffer  size.  LIMIT may be an integer in bytes, or
               include a suffix of M for megabytes or G for gigabytes. The scan
-              animation shows the percentage of  buffer  space  in  use  (%b).
-              Unless  that value goes up to 100% or beyond during a scan there
-              is no need to adjust this limit.  Setting this limit  to  a  low
+              animation  shows  the  percentage  of  buffer space in use (%b).
+              Unless that value goes up to 100% or beyond during a scan  there
+              is  no  need  to adjust this limit.  Setting this limit to a low
               value will constrain dupd memory usage but possibly at a cost to
-              performance (depends on the data set).   Note  that  this  limit
-              applies only to the read buffers in HDD mode, it is not a cap on
-              total memory usage by the process.
+              performance (depends on the data set).
 
        -X, --one-file-system
               For each path scanned, do not cross over to a different filesys‐
-              tem.   This  is  helpful, for example, if you want to scan / but
-              want to avoid any other mounted filesystems such as  NFS  mounts
+              tem.  This is helpful, for example, if you want to  scan  /  but
+              want  to  avoid any other mounted filesystems such as NFS mounts
               or external drives.
 
        --hidden
-              Include  hidden  files (and hidden directories) in the scan.  By
+              Include hidden files (and hidden directories) in the  scan.   By
               default these are not included.
 
        --db PATH
-              Override the default database file  location.   The  default  is
-              $HOME/.dupd_sqlite.   If  you  override  the  path  during scan,
-              remember to provide this argument and the  path  for  subsequent
+              Override  the  default  database  file location.  The default is
+              $HOME/.dupd_sqlite.  If  you  override  the  path  during  scan,
+              remember  to  provide  this argument and the path for subsequent
               operations so the database can be found.
 
        -I, --hardlink-is-unique
-              Consider  hard  links  to  the  same file content as unique.  By
-              default hard links are listed as  duplicates.   See  HARD  LINKS
-              section  below.   Note that if this option is given during scan,
+              Consider hard links to the same  file  content  as  unique.   By
+              default  hard  links  are  listed as duplicates.  See HARD LINKS
+              section below.  Note that if this option is given  during  scan,
               it cannot be given during interactive operations.
 
        --stats-file FILE
-              On completion, create (or append to) FILE and  save  some  stats
+              On  completion,  create  (or append to) FILE and save some stats
               from the run.  These are the same stats as get displayed in ver‐
               bose mode but are more suitable for programmatic consumption.
 
        report - Display the list of duplicates.
 
        --cut PATHSEG
-              Remove prefix PATHSEG from the file paths in the report  output.
-              This  can  reduce  clutter  in  the output text if all the files
+              Remove  prefix PATHSEG from the file paths in the report output.
+              This can reduce clutter in the output  text  if  all  the  files
               scanned share a long identical prefix.
 
        --minsize SIZE
               Report only duplicate sets which consume at least this much disk
-              space.   Note  this is the total size occupied by all the dupli‐
+              space.  Note this is the total size occupied by all  the  dupli‐
               cates in a set, not their individual file size.
 
        --format NAME
-              Produce the report in this output format.  NAME is one of  text,
+              Produce  the report in this output format.  NAME is one of text,
               csv, json.  The default is text.
 
-       Note:  The  database  format  generated by scan is not guaranteed to be
-       compatible with future versions. You should run  report  (and  all  the
-       other  commands below which access the database) using the same version
+       Note: The database format generated by scan is  not  guaranteed  to  be
+       compatible  with  future  versions.  You should run report (and all the
+       other commands below which access the database) using the same  version
        of dupd that was used to generate the database.
 
        file - Report duplicate status of one file.
 
        To check whether one given file still has known duplicates use the file
-       operation.   Note  that this does not do a new scan so it will not find
-       new duplicates.  This checks whether the duplicates  identified  during
-       the  previous  scan still exist and verifies (by hash) whether they are
+       operation.  Note that this does not do a new scan so it will  not  find
+       new  duplicates.   This checks whether the duplicates identified during
+       the previous scan still exist and verifies (by hash) whether  they  are
        still duplicates.
 
        --file PATH
@@ -164,17 +145,17 @@ OPTIONS
               Remove prefix PATHSEG from the file paths in the report output.
 
        --exclude PATH
-              Ignore any duplicates  under  PATH  when  reporting  duplicates.
-              This  is  useful  if  you intend to delete the entire tree under
+              Ignore  any  duplicates  under  PATH  when reporting duplicates.
+              This is useful if you intend to delete  the  entire  tree  under
               PATH, to make sure you don't delete all copies of the file.
 
        --hardlink-is-unique
-              Ignore the existence of hard links to the file for  the  purpose
+              Ignore  the  existence of hard links to the file for the purpose
               of considering whether the file is unique.
 
        ls, uniques, dups - List matching files.
 
-       While  the  file  command checks the duplicate status of a single file,
+       While the file command checks the duplicate status of  a  single  file,
        these commands do the same for all the files in a given directory tree.
 
        ls - List all files, show whether they have duplicates or not.
@@ -193,29 +174,29 @@ OPTIONS
               Ignore any duplicates under PATH when reporting duplicates.
 
        --hardlink-is-unique
-              Ignore the existence of hard links to the file for  the  purpose
+              Ignore  the  existence of hard links to the file for the purpose
               of considering whether the file is unique.
 
        refresh - Refreshing the database.
 
-       As  you remove duplicate files these are still listed in the dupd data‐
-       base.  Ideally you'd run the scan again to rebuild the database.   Note
-       that  re-running  the  scan  after deleting some duplicates can be very
+       As you remove duplicate files these are still listed in the dupd  data‐
+       base.   Ideally you'd run the scan again to rebuild the database.  Note
+       that re-running the scan after deleting some  duplicates  can  be  very
        fast because the files are in the cache, so that is the best option.
 
-       However, when dealing with a set of files large enough that they  don't
-       fit  in the cache, re-running the scan may take a long time.  For those
+       However,  when dealing with a set of files large enough that they don't
+       fit in the cache, re-running the scan may take a long time.  For  those
        cases the refresh command offers a much faster alternative.
 
-       The refresh command checks whether all the files in the  dupd  database
+       The  refresh  command checks whether all the files in the dupd database
        still exist and removes those which do not.
 
        Be sure to consider the limitations of this approach.  The refresh com‐
-       mand does not re-verify whether all  files  listed  as  duplicates  are
-       still  duplicates.   It also, of course, does not detect any new dupli‐
+       mand  does  not  re-verify  whether  all files listed as duplicates are
+       still duplicates.  It also, of course, does not detect any  new  dupli‐
        cates which may have appeared since the last scan.
 
-       In summary, if you have only been deleting duplicates since the  previ‐
+       In  summary, if you have only been deleting duplicates since the previ‐
        ous scan, run the refresh command.  It will prune all the deleted files
        from the database and will be much faster than a scan.  However, if you
        have been adding and/or modifying files since the last scan, it is best
@@ -223,35 +204,35 @@ OPTIONS
 
        validate - Validating the database.
 
-       The validate operation is primarily for testing but is documented  here
+       The  validate operation is primarily for testing but is documented here
        as it may be useful if you want to reconfirm that all duplicates in the
        database are still truly duplicates.
 
-       In most cases you will be better  off  re-running  the  scan  operation
+       In  most  cases  you  will  be better off re-running the scan operation
        instead of using validate.
 
-       Validate  is  fairly slow as it will fully hash every file in the data‐
+       Validate is fairly slow as it will fully hash every file in  the  data‐
        base.
 
        rmsh - Create shell scrip to remove duplicate files.
 
        As a policy dupd never modifies the filesystem!
 
-       As a convenience for those times when it is desirable to  automatically
-       remove  files,  this operation can create a shell script to do so.  The
-       output is a shell script (to stdout) which can you run to  delete  your
+       As  a convenience for those times when it is desirable to automatically
+       remove files, this operation can create a shell script to do  so.   The
+       output  is  a shell script (to stdout) which can you run to delete your
        files (if you're feeling lucky).
 
-       Review  the generated script carefully to see if it truly does what you
+       Review the generated script carefully to see if it truly does what  you
        want!
 
-       Automated deletion is generally not very useful because it takes  human
-       intervention  to decide which of the duplicates is the best one to keep
-       in each case.  While the content is the same, one of them  may  have  a
+       Automated  deletion is generally not very useful because it takes human
+       intervention to decide which of the duplicates is the best one to  keep
+       in  each  case.   While the content is the same, one of them may have a
        better file name and/or location.
 
-       Optionally,  the shell script can create either soft or hard links from
-       each removed file to the copy being kept.   The  options  are  mutually
+       Optionally, the shell script can create either soft or hard links  from
+       each  removed  file  to  the copy being kept.  The options are mutually
        exclusive.
 
        --link Create symlinks for deleted files.
@@ -263,7 +244,7 @@ OPTIONS
 
        -q     Quiet, suppress all output.
 
-       -v     Verbose  mode.  Can be repeated multiple times for ever increas‐
+       -v     Verbose mode.  Can be repeated multiple times for ever  increas‐
               ing verbosity.
 
        -V, --verbose-level N
@@ -276,42 +257,42 @@ OPTIONS
 
        -F, --hash NAME
               Specify an different hash function.  This applies to any command
-              which  uses  content  hashing.   NAME is one of: md5 sha1 sha512
+              which uses content hashing.  NAME is one  of:  md5  sha1  sha512
               xxhash
 
 HARD LINKS
-       Are hard links duplicates or not?  The answer depends on "what  do  you
+       Are  hard  links duplicates or not?  The answer depends on "what do you
        mean by duplicates?" and "what are you trying to do?"
 
        If your primary goal for removing duplicates is to save disk space then
-       it makes sense to ignore hardlinks.  If, on the other hand,  your  pri‐
-       mary  goal  is to reduce filesystem clutter then it makes more sense to
+       it  makes  sense to ignore hardlinks.  If, on the other hand, your pri‐
+       mary goal is to reduce filesystem clutter then it makes more  sense  to
        think of hardlinks as duplicates.
 
-       By default dupd considers hardlinks as duplicates. You can switch  this
-       around  with the --hardlink-is-unique option.  This option can be given
-       either during scan or to the interactive reporting commands (file,  ls,
+       By  default dupd considers hardlinks as duplicates. You can switch this
+       around with the --hardlink-is-unique option.  This option can be  given
+       either  during scan or to the interactive reporting commands (file, ls,
        uniques, dups).
 
 EXAMPLES
-       Scan  all files in your home directory and then show the sets of dupli‐
+       Scan all files in your home directory and then show the sets of  dupli‐
        cates found:
 
               % dupd scan --path $HOME
 
               % dupd report
 
-       Show duplicate status (duplicate or unique) for all files in docs  sub‐
+       Show  duplicate status (duplicate or unique) for all files in docs sub‐
        directory:
 
               % dupd ls --path docs
 
-       I'm  about  to delete docs/old.doc but want to check one last time that
+       I'm about to delete docs/old.doc but want to check one last  time  that
        it is a duplicate and I want to review where those duplicates are:
 
               % dupd file --file docs/old.doc -v
 
-       Read the documentation in the dupd 'docs' directory or online  documen‐
+       Read  the documentation in the dupd 'docs' directory or online documen‐
        tation for more usage examples.
 
 EXIT

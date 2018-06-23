@@ -392,8 +392,7 @@ void scan()
   init_sizetree();
   init_scanlist();
   init_dirtree();
-
-  if (hdd_mode) { init_read_list(); }
+  init_read_list();
 
   if (write_db) {
     dbh = open_database(db_path, 1);

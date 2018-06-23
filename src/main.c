@@ -65,11 +65,10 @@ int hash_one_max_blocks = 16;
 uint32_t hash_one_block_size = 0;
 uint32_t round1_max_bytes = 0;
 uint32_t DEF_HDD_hash_one_block_size = 1024*128;
-uint32_t DEF_SSD_hash_one_block_size = 1024*16;
 int hash_block_size = 8192;
 int filecmp_block_size = 131072;
-int opt_compare_two = 1;
-int opt_compare_three = 1;
+int opt_compare_two = 0;
+int opt_compare_three = 0;
 int save_uniques = 0;
 int have_uniques = 0;
 int no_unique = 0;
@@ -80,7 +79,6 @@ int path_separator = '\x1C';
 char * path_sep_string = NULL;
 int x_small_buffers = 0;
 int only_testing = 0;
-int hdd_mode = 1;
 int threaded_sizetree = 1;
 int hardlink_is_unique = 0;
 int hash_function = -1;
@@ -317,15 +315,11 @@ static int process_args(int argc, char * argv[])
     snprintf(db_path, DUPD_PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
-  if (options[OPT_ssd]) { hdd_mode = 0; }
-  if (options[OPT_hdd]) { hdd_mode = 1; }
   if (options[OPT_nodb]) { write_db = 0; }
   if (options[OPT_link]) { rmsh_link = RMSH_LINK_SOFT; }
   if (options[OPT_hardlink]) { rmsh_link = RMSH_LINK_HARD; }
   if (options[OPT_uniques]) { save_uniques = 1; }
   if (options[OPT_no_unique]) { no_unique = 1; }
-  if (options[OPT_skip_two]) { opt_compare_two = 0; }
-  if (options[OPT_skip_three]) { opt_compare_three = 0; }
   if (options[OPT_hidden]) { scan_hidden = 1; }
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }
@@ -409,23 +403,15 @@ static int process_args(int argc, char * argv[])
     }
   }
 
-  if (hdd_mode) {
-    opt_compare_two = 0;
-    opt_compare_three = 0;
-    if (options[OPT_cmp_two]) {
-      opt_compare_two = 1;
-    }
-    if (options[OPT_cmp_three]) {
-      opt_compare_three = 1;
-    }
+  if (options[OPT_cmp_two]) {
+    opt_compare_two = 1;
+  }
+  if (options[OPT_cmp_three]) {
+    opt_compare_three = 1;
   }
 
   if (hash_one_block_size == 0) {
-    if (hdd_mode) {
-      hash_one_block_size = DEF_HDD_hash_one_block_size;
-    } else {
-      hash_one_block_size = DEF_SSD_hash_one_block_size;
-    }
+    hash_one_block_size = DEF_HDD_hash_one_block_size;
   }
 
   round1_max_bytes = hash_one_block_size * hash_one_max_blocks;
@@ -451,7 +437,6 @@ static int process_args(int argc, char * argv[])
     }
   }
 
-  if (!hdd_mode) { using_fiemap = 0; }
   if (sort_bypass != 0 && sort_bypass != SORT_BY_BLOCK) {
     using_fiemap = 0;
   }

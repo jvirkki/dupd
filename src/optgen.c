@@ -1257,8 +1257,6 @@ void opt_show_help()
   printf("     --stats-file FILE        save stats to this file\n");
   printf("  -m --minsize SIZE           min size of files to scan\n");
   printf("     --hidden                 include hidden files and dirs in scan\n");
-  printf("  -D --hdd                    select HDD mode\n");
-  printf("  -S --ssd                    select SSD mode\n");
   printf("     --buflimit NAME          read buffer size cap\n");
   printf("  -X --one-file-system        for each path, stay in that filesystem\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
