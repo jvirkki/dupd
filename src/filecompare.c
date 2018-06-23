@@ -44,7 +44,7 @@ static char paths[DUPD_PATH_MAX * 3];
 static void compare_two_open_files(sqlite3 * dbh,
                                    char * path1, int file1,
                                    char * path2, int file2,
-                                   uint64_t size, int sofar, int round)
+                                   uint64_t size, int sofar)
 {
   int bread = sofar;
   ssize_t bytes1;
@@ -96,7 +96,7 @@ static void compare_two_open_files(sqlite3 * dbh,
  *
  */
 void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
-                       uint64_t size, int round)
+                       uint64_t size)
 {
   LOG(L_TRACE, "compare_two_files: [%s] vs [%s]\n", path1, path2);
 
@@ -113,7 +113,7 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
     return;
   }
 
-  compare_two_open_files(dbh, path1, file1, path2, file2, size, 0, round);
+  compare_two_open_files(dbh, path1, file1, path2, file2, size, 0);
 }
 
 
@@ -123,7 +123,7 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
  */
 void compare_three_files(sqlite3 * dbh,
                          char * path1, char * path2, char * path3,
-                         uint64_t size, int round)
+                         uint64_t size)
 {
   LOG(L_TRACE, "compare_three_files: [%s],[%s],[%s]\n",
       path1, path2, path3);
@@ -132,15 +132,15 @@ void compare_three_files(sqlite3 * dbh,
   // skim_uniques(), in which case, ignore the first one seen and this
   // becomes a compare_two.
   if (path1[0] == 0) {
-    compare_two_files(dbh, path2, path3, size, round);
+    compare_two_files(dbh, path2, path3, size);
     return;
   }
   if (path2[0] == 0) {
-    compare_two_files(dbh, path1, path3, size, round);
+    compare_two_files(dbh, path1, path3, size);
     return;
   }
   if (path3[0] == 0) {
-    compare_two_files(dbh, path1, path2, size, round);
+    compare_two_files(dbh, path1, path2, size);
     return;
   }
 
@@ -150,7 +150,7 @@ void compare_three_files(sqlite3 * dbh,
   file[1] = open(path1, O_RDONLY);
   if (file[1] < 0) {                                         // LCOV_EXCL_START
     LOG(L_PROGRESS, "Error opening [%s]\n", path1);
-    compare_two_files(dbh, path2, path3, size, round);
+    compare_two_files(dbh, path2, path3, size);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -158,7 +158,7 @@ void compare_three_files(sqlite3 * dbh,
   if (file[2] < 0) {                                         // LCOV_EXCL_START
     LOG(L_PROGRESS, "Error opening [%s]\n", path2);
     close(file[1]);
-    compare_two_files(dbh, path1, path3, size, round);
+    compare_two_files(dbh, path1, path3, size);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -167,7 +167,7 @@ void compare_three_files(sqlite3 * dbh,
     LOG(L_PROGRESS, "Error opening [%s]\n", path3);
     close(file[1]);
     close(file[2]);
-    compare_two_files(dbh, path1, path2, size, round);
+    compare_two_files(dbh, path1, path2, size);
     return;
   }                                                          // LCOV_EXCL_STOP
 
@@ -222,7 +222,7 @@ void compare_three_files(sqlite3 * dbh,
         unique_to_db(dbh, path1, "3-compare1");
       }
       compare_two_open_files(dbh, path2, file[2], path3, file[3],
-                             size, bread, round);
+                             size, bread);
       return;
     }
 
@@ -232,7 +232,7 @@ void compare_three_files(sqlite3 * dbh,
         unique_to_db(dbh, path2, "3-compare2");
       }
       compare_two_open_files(dbh, path1, file[1], path3, file[3],
-                             size, bread, round);
+                             size, bread);
       return;
     }
 
@@ -242,7 +242,7 @@ void compare_three_files(sqlite3 * dbh,
         unique_to_db(dbh, path3, "3-compare3");
       }
       compare_two_open_files(dbh, path1, file[1], path2, file[2],
-                             size, bread, round);
+                             size, bread);
       return;
     }
                                                              // LCOV_EXCL_START

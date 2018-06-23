@@ -32,13 +32,12 @@
  *    path1 - Path of first file.
  *    path2 - Path of second file.
  *    size  - Size of the files.
- *    round - Round in which these duplicates are being published.
  *
  * Return: none.
  *
  */
 void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
-                       uint64_t size, int round);
+                       uint64_t size);
 
 
 /** ***************************************************************************
@@ -50,14 +49,13 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
  *    path2 - Path of second file.
  *    path3 - Path of third file.
  *    size  - Size of the files.
- *    round - Round in which these duplicates are being published.
  *
  * Return: none.
  *
  */
 void compare_three_files(sqlite3 * dbh,
                          char * path1, char * path2, char * path3,
-                         uint64_t size, int round);
+                         uint64_t size);
 
 
 /** ***************************************************************************

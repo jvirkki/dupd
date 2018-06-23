@@ -762,7 +762,7 @@ static void process_round_2(sqlite3 * dbh)
           struct path_list_entry * node2= pl_entry_get_valid_node(node1->next);
           build_path(node1, path1);
           build_path(node2, path2);
-          compare_two_files(dbh, path1, path2, size_node->size, ROUND2);
+          compare_two_files(dbh, path1, path2, size_node->size);
           stats_two_file_compare++;
           size_node->path_list->state = PLS_DONE;
           did_one = 1;
@@ -782,7 +782,7 @@ static void process_round_2(sqlite3 * dbh)
           build_path(node1, path1);
           build_path(node2, path2);
           build_path(node3, path3);
-          compare_three_files(dbh, path1, path2, path3,size_node->size,ROUND2);
+          compare_three_files(dbh, path1, path2, path3,size_node->size);
           stats_three_file_compare++;
           size_node->path_list->state = PLS_DONE;
           did_one = 1;
