@@ -24,20 +24,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#ifdef __APPLE__
-#endif
-
-#ifdef __linux__
-#define FADVISE 1
-#endif
-
-#ifdef __sun__
-#define FADVISE 1
-#endif
-
-#ifdef __OpenBSD__
-#endif
-
 #define K512 (1024 * 512)
 #define MB1 (1024 * 1024)
 #define MB2 (1024 * 1024 * 2)

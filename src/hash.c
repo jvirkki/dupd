@@ -53,6 +53,18 @@
 #define SHA512_Final CC_SHA512_Final
 #endif
 
+#ifdef __linux__
+#define FADVISE 1
+#endif
+
+#ifdef __sun__
+#define FADVISE 1
+#endif
+
+#ifdef __FreeBSD__
+#define FADVISE 1
+#endif
+
 #define MAX_BLOCK (1024 * 1024)
 
 
@@ -295,9 +307,11 @@ int hash_fn(const char * path, char * output, uint64_t blocks,
   }
 
   // When reading the entire file, say so
+#ifdef FADVISE
   if (blocks == 0) {
     posix_fadvise(file, 0, 0, POSIX_FADV_WILLNEED);
   }
+#endif
 
   if (skip > 0) {
     uint64_t seek = skip * bsize;
