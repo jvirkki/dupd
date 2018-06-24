@@ -502,7 +502,7 @@ static int fill_data_block(struct path_list_head * head,
     int new_avg = avg_read_time + (took - avg_read_time) / read_count;
     avg_read_time = new_avg;
 
-    LOG(L_TRACE, " read took %ldms (count=%d avg=%d)\n",
+    LOG(L_TRACE, " read took %" PRIu64 "ms (count=%d avg=%d)\n",
         took, read_count, avg_read_time);
   }
 
