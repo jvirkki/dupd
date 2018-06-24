@@ -460,12 +460,8 @@ void report_path_block_usage()
 const char * pls_state(int state)
 {
   switch(state) {
-  case PLS_NEW:                      return "PLS_NEW";
-  case PLS_R1_IN_PROGRESS:           return "PLS_R1_IN_PROGRESS";
   case PLS_NEED_DATA:                return "PLS_NEED_DATA";
-  case PLS_R1_BUFFERS_FULL:          return "PLS_R1_BUFFERS_FULL";
   case PLS_ALL_BUFFERS_READY:        return "PLS_ALL_BUFFERS_READY";
-  case PLS_R2_NEEDED:                return "PLS_R2_NEEDED";
   case PLS_DONE:                     return "PLS_DONE";
   default:
     printf("\nerror: unknown pls_state %d\n", state);
@@ -481,12 +477,9 @@ const char * pls_state(int state)
 const char * file_state(int state)
 {
   switch(state) {
-  case FS_NEW:                        return "FS_NEW";
   case FS_NEED_DATA:                  return "FS_NEED_DATA";
-  case FS_R1_BUFFER_FILLED:           return "FS_R1_BUFFER_FILLED";
   case FS_BUFFER_READY:               return "FS_BUFFER_READY";
   case FS_INVALID:                    return "FS_INVALID";
-  case FS_R1_DONE:                    return "FS_R1_DONE";
   case FS_DONE:                       return "FS_DONE";
   default:
     printf("\nerror: unknown file_state %d\n", state);

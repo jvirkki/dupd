@@ -68,21 +68,14 @@ struct path_list_head {
 
 
 // File State used in path_list_entry
-#define FS_NEW 50
 #define FS_NEED_DATA 51
-#define FS_R1_BUFFER_FILLED 52  /* TODO remove */
 #define FS_BUFFER_READY 53
 #define FS_INVALID 55
-#define FS_R1_DONE 56
 #define FS_DONE 57
 
 // Path List State in path_list_head
-#define PLS_NEW 11
-#define PLS_R1_IN_PROGRESS 13   /* TODO remove */
 #define PLS_NEED_DATA 14
-#define PLS_R1_BUFFERS_FULL 16  /* TODO remove */
 #define PLS_ALL_BUFFERS_READY 18
-#define PLS_R2_NEEDED 19
 #define PLS_DONE 21
 
 
