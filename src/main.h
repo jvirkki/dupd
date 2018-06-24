@@ -229,16 +229,6 @@ extern int filecmp_block_size;
 
 
 /** ***************************************************************************
- * Start and end of the usage info document buffer.
- *
- */
-#ifndef __APPLE__
-extern char _binary_man_dupd_start;
-extern char _binary_man_dupd_end;
-#endif
-
-
-/** ***************************************************************************
  * If true, save files found to be unique during a scan in the database.
  *
  */
