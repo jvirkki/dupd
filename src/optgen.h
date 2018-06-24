@@ -109,7 +109,7 @@
 // cmp_two (--cmp-two) : force direct comparison of two files
 #define OPT_cmp_two 20
 
-// cmp_three (--cmp-three) : force direct comparison of three files
+// cmp_three (--cmp-three) : deprecated
 #define OPT_cmp_three 21
 
 // uniques (--uniques) : deprecated
