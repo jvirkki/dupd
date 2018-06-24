@@ -1,5 +1,5 @@
 #
-#  Copyright 2014-2017 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2014-2018 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -20,6 +20,7 @@
 rm -f report nreport
 
 UNAME=`uname`
+WHOAMI=`whoami`
 
 check_equal () {
     if [ "$1" != "$2" ]; then
@@ -34,7 +35,9 @@ checkrv () {
     if [ "$1" != "0" ]; then
         echo "FAIL ${DESC}"
         if [[ "$FAILOK" =~ "$UNAME" ]]; then
-            echo "IGNORING"
+            echo "IGNORING rv on $FAILOK"
+        elif [[ "$FAILUSEROK" == "$WHOAMI" ]]; then
+            echo "IGNORING rv due to $FAILUSEROK"
         else
             exit 1
         fi
@@ -55,6 +58,10 @@ checkerr () {
 check_nreport () {
     DESC="${DESC}: verifying against $1"
     sort nreport > report
+    if [[ "$FAILUSEROK" == "$WHOAMI" ]]; then
+        echo "IGNORING result due to $FAILUSEROK"
+        return
+    fi
     diff report $1
     checkrv $?
 }
