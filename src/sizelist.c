@@ -377,7 +377,7 @@ static int fill_data_block(struct path_list_head * head,
     uint32_t buf_space = entry->bufsize - entry->next_buffer_pos;
     uint32_t zeroes = gap_size;
     int filling_buffer = 0;
-    if (buf_space < zeroes) {
+    if (buf_space <= zeroes) {
       zeroes = buf_space;
       filling_buffer = 1;
     }
@@ -386,7 +386,11 @@ static int fill_data_block(struct path_list_head * head,
     memset(entry->buffer + entry->next_buffer_pos, 0, zeroes);
     entry->next_buffer_pos += zeroes;
     entry->next_read_byte += zeroes;
-    if (filling_buffer) { return rv; }
+    if (filling_buffer) {
+      mark_path_entry_ready(head, entry);
+      entry->data_in_buffer = entry->bufsize;
+      return rv;
+    }
     current_file_pos = entry->next_read_byte;
   }
 
@@ -538,6 +542,7 @@ static void * read_list_reader(void * arg)
   int next_queue = 0;
   uint8_t block;
   int bfpct;
+  useconds_t sleepy_time = 1;
 
   pthread_setspecific(thread_name, self);
   LOG(L_THREADS, "Thread created\n");
@@ -652,7 +657,13 @@ static void * read_list_reader(void * arg)
     done = done_files >= rlpos;
 
     if (!done) {
-      if (!did_something) { usleep(1000 * 50); }
+      if (!did_something) {
+        sleepy_time *= 2;
+        usleep(sleepy_time);
+        LOG(L_MORE_TRACE, "Sleeping before next loop %d\n", sleepy_time);
+      } else {
+        sleepy_time = 1;
+      }
     }
 
   } while (!done);
