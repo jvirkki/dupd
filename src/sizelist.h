@@ -27,7 +27,6 @@
 struct size_list {
   struct path_list_head * path_list;
   struct size_list * next;
-  struct size_list * dnext;
   uint64_t size;
   uint64_t bytes_read;
   uint32_t buffers_filled;

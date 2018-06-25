@@ -69,7 +69,6 @@ static void dump_size_list()
     printf("buffers_filled: %" PRIu32 "\n", node->buffers_filled);
     printf("bytes_read    : %" PRIu64 "\n", node->bytes_read);
     printf("next          : %p\n", node->next);
-    printf("dnext         : %p\n", node->dnext);
     printf("  == pathlist follows:\n");
     dump_path_list("  == pathlist follows", node->size, node->path_list, 1);
 
