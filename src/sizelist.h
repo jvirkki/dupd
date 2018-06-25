@@ -28,7 +28,6 @@ struct size_list {
   struct path_list_head * path_list;
   struct size_list * next;
   uint64_t size;
-  uint64_t bytes_read;
   int fully_read;
   pthread_mutex_t lock;
 };
