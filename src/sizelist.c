@@ -764,7 +764,7 @@ void process_size_list(sqlite3 * dbh)
     }
   }
 
-  stats_round_start[ROUND1] = get_current_time_millis();
+  stats_process_start = get_current_time_millis();
 
   // Start file reader thread
   LOG(L_THREADS, "Starting file reader thread...\n");
@@ -795,7 +795,7 @@ void process_size_list(sqlite3 * dbh)
   }
 
   long now = get_current_time_millis();
-  stats_round_duration[ROUND1] = now - stats_round_start[ROUND1];
+  stats_process_duration = now - stats_process_start;
 
   if (stats_read_buffers_allocated != 0) {
     printf("error: after round1 complete, buffers: %" PRIu64 "\n",

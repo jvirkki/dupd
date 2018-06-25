@@ -103,8 +103,6 @@ static void * scan_status(void * arg)
     "Files: %8u                      %6u errors                 %12s";
   const char * sets =
     "Sets : %8u/%8u %10uK (%7ldK/s) %4uq %3d%%%c %4df%12s";
-  const char * sets_done =
-    "Round %d: %8u groups of duplicates confirmed                   %12s\n";
 
   // Loop showing count of files being scanned until that phase is done
   while (stats_time_scan == -1) {
@@ -131,43 +129,36 @@ static void * scan_status(void * arg)
   printf("\n");
   pthread_mutex_unlock(&status_lock);
 
-  int round = 0;
   int queued;
   int bfpct;
   char scantype = 'b';
 
   do {
-    do {
-      printf("\033[%dD", c);
-      delta = get_current_time_millis() - read_phase_started;
-      time_string(timebuf, 20, delta);
-      delta = delta / 1000;
-      kread = stats_total_bytes_read / 1024;
-      ksec = delta == 0 ? 0 : kread / delta;
-      queued = 0;
-      for (int q = 0; q < MAX_HASHER_THREADS; q++) {
-        queued += stats_hasher_queue_len[q];
-      }
-      if (queued < 0) { queued = 0; }
-      bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
-      if (bfpct > 999) { bfpct = 999; } // Keep alignment if this spikes
-      if (stats_flusher_active) { scantype = 'B'; } else { scantype = 'b'; }
-      c = snprintf(line, 100, sets, stats_size_list_done,
-                   s_stats_size_list_count, kread, ksec, queued,
-                   bfpct, scantype, current_open_files, timebuf);
-      SHOW_LINE;
-      status_wait();
-
-    } while (stats_round_duration[round] < 0);
-
     printf("\033[%dD", c);
-    time_string(timebuf, 20, stats_round_duration[round]);
-
-    c = snprintf(line, 100, sets_done, round + 1,
-                 stats_duplicate_groups, timebuf);
+    delta = get_current_time_millis() - read_phase_started;
+    time_string(timebuf, 20, delta);
+    delta = delta / 1000;
+    kread = stats_total_bytes_read / 1024;
+    ksec = delta == 0 ? 0 : kread / delta;
+    queued = 0;
+    for (int q = 0; q < MAX_HASHER_THREADS; q++) {
+      queued += stats_hasher_queue_len[q];
+    }
+    if (queued < 0) { queued = 0; }
+    bfpct = (int)(100 * stats_read_buffers_allocated / buffer_limit);
+    if (bfpct > 999) { bfpct = 999; } // Keep alignment if this spikes
+    if (stats_flusher_active) { scantype = 'B'; } else { scantype = 'b'; }
+    c = snprintf(line, 100, sets, stats_size_list_done,
+                 s_stats_size_list_count, kread, ksec, queued,
+                 bfpct, scantype, current_open_files, timebuf);
     SHOW_LINE;
+    status_wait();
 
-  } while (++round < ROUNDS);
+  } while (stats_process_duration < 0);
+
+  printf("\033[%dD", c);
+  printf("                                       "
+         "                                        ");
 
   return NULL;
 }
@@ -467,8 +458,7 @@ void scan()
       commit_transaction(dbh);
       close_database(dbh);
     }
-    stats_round_duration[ROUND1] = 0;
-    stats_round_duration[ROUND2] = 0;
+    stats_process_duration = 0;
     return;
   }
 
@@ -491,8 +481,7 @@ void scan()
 
   stats_time_process = get_current_time_millis() - read_phase_started;;
 
-  if (stats_round_duration[ROUND1] < 0) { stats_round_duration[ROUND1] = 0; }
-  if (stats_round_duration[ROUND2] < 0) { stats_round_duration[ROUND2] = 0; }
+  if (stats_process_duration < 0) { stats_process_duration = 0; }
 
   LOG(L_PROGRESS, "Duplicate processing took %ldms\n", stats_time_process);
   LOG(L_PROGRESS, "Largest duplicate set %d\n", stats_most_dups);

@@ -48,6 +48,9 @@ int stats_reader_loops[ROUNDS] = { 0,0 };
 int stats_hasher_loops[ROUNDS][MAX_HASHER_THREADS] = { {0,0}, {0,0} };
 int stats_hasher_queue_len[MAX_HASHER_THREADS] = { 0,0 };
 
+long stats_process_start = -1;
+long stats_process_duration = -1;
+
 uint64_t stats_total_bytes = 0;
 uint64_t stats_total_bytes_read = 0;
 uint64_t stats_total_bytes_hashed = 0;
