@@ -514,6 +514,13 @@ int mark_path_entry_invalid(struct path_list_head * head,
 
   free_path_entry(entry);
 
+  // After shrinking list_size, we might now have all remaining entries ready
+  if (head->list_size == head->buffer_ready) {
+    head->state = PLS_ALL_BUFFERS_READY;
+    LOG(L_TRACE, "After shrinking list_size to %d, state now %s\n",
+        head->list_size, pls_state(head->state));
+  }
+
   { // TODO
     char * fname = pb_get_filename(entry);
     fname[0] = 0;
