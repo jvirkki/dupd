@@ -66,7 +66,6 @@ static void dump_size_list()
   while (node != NULL) {
     printf("size          : %" PRIu64 "\n", node->size);
     printf("fully read    : %d\n", node->fully_read);
-    printf("buffers_filled: %" PRIu32 "\n", node->buffers_filled);
     printf("bytes_read    : %" PRIu64 "\n", node->bytes_read);
     printf("next          : %p\n", node->next);
     printf("  == pathlist follows:\n");
@@ -118,7 +117,6 @@ static struct size_list * new_size_list_entry(uint64_t size,
   e->size = size;
   e->path_list = path_list;
   e->fully_read = 0;
-  e->buffers_filled = 0;
   e->bytes_read = 0;
   if (pthread_mutex_init(&e->lock, NULL)) {
                                                              // LCOV_EXCL_START

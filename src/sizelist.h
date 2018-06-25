@@ -29,7 +29,6 @@ struct size_list {
   struct size_list * next;
   uint64_t size;
   uint64_t bytes_read;
-  uint32_t buffers_filled;
   int fully_read;
   pthread_mutex_t lock;
 };
