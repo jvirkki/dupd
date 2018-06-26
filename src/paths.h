@@ -216,35 +216,6 @@ static inline char * pb_get_filename(struct path_list_entry * entry)
 
 
 /** ***************************************************************************
- * Return pointer to an entry containing a valid path given a starting point.
- * The node returned might be entry itself, if it contains a path. Or else,
- * the next available one.
- *
- * Parameters:
- *    entry - The entry
- *
- * Return: pointer to entry with valid path (or NULL if end of the path list)
- *
- */
-static inline struct path_list_entry *
-pl_entry_get_valid_node(struct path_list_entry * entry)
-{
-  struct path_list_entry * n = entry;
-  char * p;
-
-  do {
-    p = pb_get_filename(n);
-    if (p != NULL && p[0] != 0) {
-      return n;
-    }
-    n = n->next;
-  } while (n != NULL);
-
-  return NULL;
-}
-
-
-/** ***************************************************************************
  * Mark the given path list entry invalid. This is done if it wasn't possible
  * to read from it. If this reduces the path list to one remaining file,
  * mark the whole path list done and update file states to match.

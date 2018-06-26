@@ -105,18 +105,14 @@ void dump_path_list(const char * line, uint64_t size,
       dump_block_list("      ", entry->blocks);
 
       filename = pb_get_filename(entry);
-      if (filename[0] != 0) { // TODO
-        bzero(buffer, DUPD_PATH_MAX);
-        memcpy(buffer, filename, entry->filename_size);
-        buffer[entry->filename_size] = 0;
-        printf("   filename (direct read): [%s]\n", buffer);
-        bzero(buffer, DUPD_PATH_MAX);
-        build_path(entry, buffer);
-        printf("   built path: [%s]\n", buffer);
-        if (entry->state != FS_INVALID) { valid++; }
-      } else {
-        printf("   filename: REMOVED EARLIER\n"); // TODO shouldn't exist
-      }
+      bzero(buffer, DUPD_PATH_MAX);
+      memcpy(buffer, filename, entry->filename_size);
+      buffer[entry->filename_size] = 0;
+      printf("   filename (direct read): [%s]\n", buffer);
+      bzero(buffer, DUPD_PATH_MAX);
+      build_path(entry, buffer);
+      printf("   built path: [%s]\n", buffer);
+      if (entry->state != FS_INVALID) { valid++; }
     }
     counted++;
     entry = entry->next;
@@ -520,11 +516,6 @@ int mark_path_entry_invalid(struct path_list_head * head,
     head->state = PLS_ALL_BUFFERS_READY;
     LOG(L_TRACE, "After shrinking list_size to %d, state now %s\n",
         head->list_size, pls_state(head->state));
-  }
-
-  { // TODO
-    char * fname = pb_get_filename(entry);
-    fname[0] = 0;
   }
 
   // If this path list is down to one file, nothing to see here.
