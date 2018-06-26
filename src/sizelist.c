@@ -58,6 +58,7 @@ static pthread_mutex_t show_processed_lock = PTHREAD_MUTEX_INITIALIZER;
  * Debug output, show the whole size list.
  *
  */
+                                                             // LCOV_EXCL_START
 static void dump_size_list()
 {
   struct size_list * node = size_list_head;
@@ -74,6 +75,7 @@ static void dump_size_list()
   }
   printf("--- END SIZE LIST\n");
 }
+                                                             // LCOV_EXCL_STOP
 
 
 /** ***************************************************************************
@@ -174,18 +176,6 @@ static void submit_path_list(int thread,
       ") pass %d in state %s into hasher queue %d\n",
       pathlist_head->list_size, size, pathlist_head->hash_passes,
       pls_state(pathlist_head->state), thread);
-
-  if (pathlist_head->list_size == 0) {
-    LOG(L_THREADS, "SKIP set (%d files of size %" PRIu64 ") in state %s ",
-        pathlist_head->list_size, size, pls_state(pathlist_head->state));
-    pathlist_head->state = PLS_DONE;
-    return;
-  }
-
-  if (pathlist_head->state != PLS_ALL_BUFFERS_READY) {
-    printf("error: pathlist not in correct state for going into queue\n");
-    exit(1);
-  }
 
   queue_info = &hasher_info[thread];
 
@@ -361,10 +351,10 @@ static int fill_data_block(struct path_list_head * head,
     inc_stats_read_buffers_allocated(inc);
   }
 
-  if (entry->buffer == NULL) {
+  if (entry->buffer == NULL) {                               // LCOV_EXCL_START
     printf("error: unable to allocate read buffer, sorry!\n");
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   struct block_list_entry * bl = &entry->blocks->entry[entry->next_read_block];
   uint64_t current_file_pos = entry->next_read_byte;
@@ -394,6 +384,7 @@ static int fill_data_block(struct path_list_head * head,
     current_file_pos = entry->next_read_byte;
   }
 
+                                                             // LCOV_EXCL_START
   if (current_file_pos < current_disk_block_start ||
       current_file_pos > current_disk_block_end) {
     printf("error: current_file_pos: %" PRIu64 ", current_disk_block_start: %"
@@ -401,7 +392,7 @@ static int fill_data_block(struct path_list_head * head,
            current_file_pos, current_disk_block_start, current_disk_block_end);
     dump_path_list("", filesize, head, 1);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   // How much can we read now? Limited either by how much left to read in
   // current disk block or by how much needed to fill memory buffer.
@@ -589,12 +580,6 @@ static void * read_list_reader(void * arg)
         if (pathlist_entry->blocks->entry[block].block == rlentry->block) {
 
           build_path(pathlist_entry, path);
-
-          if (path[0] == 0) {
-            printf("error: path zero len\n");
-            exit(1);
-          }
-
           size = sizelist->size;
 
           LOG(L_MORE_THREADS, "[%d] Entry %d (%d files of size %" PRIu64
@@ -627,11 +612,11 @@ static void * read_list_reader(void * arg)
         invalid++;
         break;
 
-      default:
+      default:                                               // LCOV_EXCL_START
         dump_path_list("read list reader, unexpected state",
                        pathlist_head->sizelist->size, pathlist_head, 1);
         exit(1);
-      }
+      }                                                      // LCOV_EXCL_STOP
 
       d_mutex_unlock(&sizelist->lock);
 
@@ -797,6 +782,7 @@ void process_size_list(sqlite3 * dbh)
   long now = get_current_time_millis();
   stats_process_duration = now - stats_process_start;
 
+                                                             // LCOV_EXCL_START
   if (stats_read_buffers_allocated != 0) {
     printf("error: after round1 complete, buffers: %" PRIu64 "\n",
            stats_read_buffers_allocated);
@@ -810,6 +796,7 @@ void process_size_list(sqlite3 * dbh)
     dump_size_list();
     exit(1);
   }
+                                                             // LCOV_EXCL_STOP
 
   for (int n = 0; n < HASHER_THREADS; n++) {
     free(hasher_info[n].queue);

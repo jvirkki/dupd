@@ -457,7 +457,7 @@ static int process_args(int argc, char * argv[])
   if (buffer_limit == 0) {
     buffer_limit = 0.6 * ram;
     if (x_small_buffers) {
-      buffer_limit = 4 * MB1;
+      buffer_limit = MB1;
     }
   }
 

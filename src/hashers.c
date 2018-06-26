@@ -208,13 +208,6 @@ void * round1_hasher(void * arg)
       size_node = entry->sizelist;
       d_mutex_lock(&size_node->lock, "hasher");
 
-      if (entry->state != PLS_ALL_BUFFERS_READY) {
-        printf("error: round1_hasher bad path list state %s\n",
-               pls_state(entry->state));
-        dump_path_list("bad state", 0, entry, 1);
-        exit(1);
-      }
-
       LOG_THREADS {
         LOG(L_THREADS, "Set (%d files of size %" PRIu64 ") pass %d\n",
             size_node->path_list->list_size, size_node->size,

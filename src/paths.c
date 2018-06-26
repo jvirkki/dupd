@@ -53,6 +53,7 @@ void * fiemap = NULL;
  * Debug function. Dumps the path list for a given size starting from head.
  *
  */
+                                                             // LCOV_EXCL_START
 void dump_path_list(const char * line, uint64_t size,
                     struct path_list_head * head, int dump_all)
 {
@@ -70,10 +71,10 @@ void dump_path_list(const char * line, uint64_t size,
 
   if (head->sizelist != NULL) {
     printf("   forward ptr back to me: %p\n", head->sizelist->path_list);
-    if (head->sizelist->path_list != head) {                 // LCOV_EXCL_START
+    if (head->sizelist->path_list != head) {
       printf("error: mismatch!\n");
       exit(1);
-    }                                                        // LCOV_EXCL_STOP
+    }
   }
 
   struct path_list_entry * entry = pb_get_first_entry(head);
@@ -125,13 +126,13 @@ void dump_path_list(const char * line, uint64_t size,
   printf("counted entries: %d\n", counted);
   printf("valid entries: %d\n", valid);
   if (valid != head->list_size) {
-                                                             // LCOV_EXCL_START
     printf("list_len (%d)!=valid entries (%d)\n", head->list_size, valid);
     exit(1);
-  }                                                          // LCOV_EXCL_STOP
+  }
 
   printf("-----\n\n\n");
 }
+                                                             // LCOV_EXCL_STOP
 
 
 /** ***************************************************************************

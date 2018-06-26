@@ -45,6 +45,7 @@ static long inode_read_list_size;
  * Dump read list.
  *
  */
+                                                             // LCOV_EXCL_START
 static void dump_read_list(int with_path_list)
 {
   printf("--- dumping read_list ---\n");
@@ -56,6 +57,7 @@ static void dump_read_list(int with_path_list)
     }
   }
 }
+                                                             // LCOV_EXCL_STOP
 
 
 /** ***************************************************************************
@@ -198,11 +200,11 @@ static void add_one_to_inode_read_list(struct path_list_head * head,
 void add_to_read_list(struct path_list_head * head,
                       struct path_list_entry * entry, ino_t inode)
 {
-  if (entry->blocks == NULL) {
+  if (entry->blocks == NULL) {                               // LCOV_EXCL_START
     printf("error: add_to_read_list but no block(s)\n");
     dump_path_list("block missing", 0, head, 1);
     exit(1);
-  }
+  }                                                          // LCOV_EXCL_STOP
 
   // If using_fiemap, may add multiple entries for the same file, one for
   // each block. If not, there is only one "block", the inode.
