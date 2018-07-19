@@ -82,7 +82,7 @@ endif
 
 
 dupd: src/optgen.c src/optgen.h $(OBJS)
-	$(CCC) $(CFLAGS) $(OPT) $(OBJS) $(LIB) \
+	$(CCC) $(CFLAGS) $(OBJS) $(LIB) \
 	    -lsqlite3 -lcrypto -lpthread -lm -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
