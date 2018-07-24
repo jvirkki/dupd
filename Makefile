@@ -51,28 +51,60 @@ CCC=$(CC) -Wall -Wextra -std=gnu99 $(OPT)
 SRCS:=$(wildcard src/*.c)
 OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
 
+
+#
+# Linux
+#
 ifeq ($(BUILD_OS),Linux)
 CFLAGS+=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE -DUSE_FIEMAP
 endif
 
+#
+# OpenBSD
+#
 ifeq ($(BUILD_OS),OpenBSD)
 CFLAGS+=-DDIRENT_HAS_TYPE
 endif
 
+#
+# FreeBSD
+#
+# In FreeBSD libsqlite3 lives under /usr/local/ instead of /usr/lib
+# so need to point at it. If you wanted to override the location so
+# it is obtained from elsewhere, set INCLUDE_DIR and LIB_DIR accordingly.
+#
 ifeq ($(BUILD_OS),FreeBSD)
-INC+=-I/usr/local/include
-LIB+=-L/usr/local/lib
+
 CFLAGS+=-DDIRENT_HAS_TYPE
+
+ifeq ($(INCLUDE_DIR),)
+INC+=-I/usr/local/include
+else
+INC+=-I$(INCLUDE_DIR)
 endif
 
+ifeq ($(LIB_DIR),)
+LIB+=-L/usr/local/lib
+else
+LIB+=-L$(LIB_DIR)
+endif
+endif
+
+#
+# SunOS (Solaris and descendants)
+#
 ifeq ($(BUILD_OS),SunOS)
 CC=gcc
 CFLAGS=-m64
 endif
 
+#
+# Darwin (Mac OS X)
+#
 ifeq ($(BUILD_OS),Darwin)
 CFLAGS+=-DDIRENT_HAS_TYPE
 endif
+
 
 ifeq ($(DEBUG),1)
 OPT=-g $(DEBUGOPT)
