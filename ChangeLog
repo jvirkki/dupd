@@ -1,19 +1,20 @@
 2018-07-18  Jyri J. Virkki  <jyri@virkki.com>
+
 	* Version 1.7
 	* Add --one-file-system option.
 	* Removed SSD scan implementation.
-	This is unfortunate as it is faster than the HDD scan in some
-	scenarios. However, it can also be much slower.  More importantly,
-	keeping both was becoming too much of a maintenance burden.
+	    This is unfortunate as it is faster than the HDD scan in some
+	    scenarios. However, it can also be much slower. More importantly,
+	    keeping both was becoming too much of a maintenance burden.
 	* Deprecated several options. These are likely to be removed in 2.0:
-		--cmp-three
-		--hdd
-		--ssd
-		--skip-two
-		--skip-three
+	    --cmp-three
+	    --hdd
+	    --ssd
+	    --skip-two
+	    --skip-three
 	* Test cleanup
-		Ignore tests which fail as root if run as root.
-		Clean tmp files from another test (in case it had failed).
+	    Ignore tests which fail as root if run as root.
+	    Clean tmp files from another test (in case it had failed).
 	* Updated included xxhash.
 	* Some stats cleanup, not enough.
 	* Revive 32 bit support (github #21).
