@@ -265,6 +265,9 @@ static void * size_list_flusher(void * arg)
           add_hash_table(ht, entry, 0, 0, 0);
           break;
 
+        case FS_INVALID:
+          break;
+
         default:
           printf("flusher bad state: %s\n", file_state(entry->state));
           exit(1);
