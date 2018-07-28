@@ -94,7 +94,7 @@ endif
 # SunOS (Solaris and descendants)
 #
 ifeq ($(BUILD_OS),SunOS)
-CC=gcc
+CCC=$(CC) $(OPT)
 CFLAGS=-m64
 endif
 
