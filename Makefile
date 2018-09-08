@@ -109,7 +109,7 @@ endif
 ifeq ($(DEBUG),1)
 OPT=-g $(DEBUGOPT)
 else
-OPT=-O3
+OPT?=-O3
 endif
 
 
