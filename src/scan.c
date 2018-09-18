@@ -458,11 +458,6 @@ void scan()
     return;
   }
 
-  if (save_uniques) {
-    LOG(L_PROGRESS, "Saving files with unique sizes from size tree...\n");
-    find_unique_sizes(dbh);
-  }
-
   long t1 = get_current_time_millis();
   sort_read_list(fiemap_ok);
   LOG_PROGRESS {

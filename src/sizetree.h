@@ -67,20 +67,6 @@ int add_queue(sqlite3 * dbh,
 
 
 /** ***************************************************************************
- * Walk through the (presumably completed) size tree to identify size
- * nodes corresponding to only one path. Save these unique files to
- * the database.
- *
- * Parameters:
- *    dbh  - sqlite3 database handle.
- *
- * Return: none
- *
- */
-void find_unique_sizes(sqlite3 * dbh);
-
-
-/** ***************************************************************************
  * Initialize.
  *
  * Parameters: none

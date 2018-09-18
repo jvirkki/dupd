@@ -63,10 +63,6 @@ static void compare_two_open_files(sqlite3 * dbh,
       close(file2);
       LOG(L_TRACE, "compare_two_files: differ after reading %d blocks\n",
           bread);
-      if (save_uniques) {
-        unique_to_db(dbh, path1, "2-compare");
-        unique_to_db(dbh, path2, "2-compare");
-      }
       return;
     }
   }

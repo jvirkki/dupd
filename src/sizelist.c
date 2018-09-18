@@ -275,7 +275,7 @@ static void * size_list_flusher(void * arg)
         entry = entry->next;
       }
 
-      skim_uniques(hasher_info->dbh, size_node->path_list, ht, save_uniques);
+      skim_uniques(size_node->path_list, ht);
       if (hash_table_has_dups(ht)) {
         publish_duplicate_hash_table(hasher_info->dbh, ht, size_node->size);
         increase_dup_counter(size_node->path_list->list_size);

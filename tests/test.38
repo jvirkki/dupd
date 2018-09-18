@@ -2,8 +2,8 @@
 
 source common
 
-DESC="scan(files2) with uniques"
-$DUPD_CMD scan --uniques --path `pwd`/files2 -q
+DESC="scan(files2)"
+$DUPD_CMD scan --path `pwd`/files2 -q
 checkrv $?
 
 DESC="ls report (verbose)"

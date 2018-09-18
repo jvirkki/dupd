@@ -44,7 +44,7 @@
 // ab..e.g.ijkl.no..rstu.w.yzABCDE.G..JK.MNOPQRSTU.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 38
+#define COUNT_OPTIONS 36
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -97,68 +97,62 @@
 // cmp_two (--cmp-two) : force direct comparison of two files
 #define OPT_cmp_two 16
 
-// uniques (--uniques) : deprecated
-#define OPT_uniques 17
-
 // avg_size (--avg-size) : deprecated
-#define OPT_avg_size 18
+#define OPT_avg_size 17
 
 // no_thread_hash (--no-thread-hash) : obsoleted
-#define OPT_no_thread_hash 19
+#define OPT_no_thread_hash 18
 
 // sort_by (--sort-by) NAME : testing
-#define OPT_sort_by 20
+#define OPT_sort_by 19
 
 // x_nofie (--x-nofie) : testing
-#define OPT_x_nofie 21
+#define OPT_x_nofie 20
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 22
+#define OPT_cut 21
 
 // format (--format) NAME : report output format (text, csv, json)
-#define OPT_format 23
+#define OPT_format 22
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 24
+#define OPT_file 23
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 25
+#define OPT_exclude_path 24
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 26
+#define OPT_link 25
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 27
+#define OPT_hardlink 26
 
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 28
+#define OPT_hash 27
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 29
+#define OPT_verbose 28
 
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
-#define OPT_verbose_level 30
+#define OPT_verbose_level 29
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 31
+#define OPT_quiet 30
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 32
+#define OPT_db 31
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 33
-
-// no_unique (--no-unique) : ignore unique table even if present, for testing
-#define OPT_no_unique 34
+#define OPT_help 32
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 35
+#define OPT_x_small_buffers 33
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 36
+#define OPT_x_testing 34
 
 // log_only (--log-only) : log only messages at chosen level
-#define OPT_log_only 37
+#define OPT_log_only 35
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

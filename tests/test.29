@@ -2,12 +2,12 @@
 
 source common
 
-DESC="scan(files2) --uniques"
-$DUPD_CMD scan --path `pwd`/files -q --uniques --x-small-buffers
+DESC="scan(files2)"
+$DUPD_CMD scan --path `pwd`/files -q --x-small-buffers
 checkrv $?
 
-DESC="ls --no-unique"
-$DUPD_CMD ls --x-small-buffers -v --no-unique --cut `pwd`/files/ --path `pwd`/files/ > nreport
+DESC="ls"
+$DUPD_CMD ls --x-small-buffers -v --cut `pwd`/files/ --path `pwd`/files/ > nreport
 checkrv $?
 
 check_nreport output.29

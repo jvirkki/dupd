@@ -4,7 +4,7 @@ source common
 
 DESC="scan(files4): 2-compare differentiates"
 
-$DUPD_CMD scan --path `pwd`/files4 -v -v -v --uniques > /dev/null
+$DUPD_CMD scan --path `pwd`/files4 -v -v -v > /dev/null
 checkrv $?
 
 DESC="generate report"

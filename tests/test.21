@@ -4,7 +4,7 @@ source common
 
 DESC="scan with --intblocks 5"
 
-$DUPD_CMD scan --path `pwd`/files -q --intblocks 5 --uniques
+$DUPD_CMD scan --path `pwd`/files -q --intblocks 5
 checkrv $?
 
 DESC="ls report"

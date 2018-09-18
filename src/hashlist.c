@@ -426,10 +426,8 @@ void print_hash_table(struct hash_table * src)
  * Public function, see header file.
  *
  */
-int skim_uniques(sqlite3 * dbh, struct path_list_head * head,
-                 struct hash_table * src, int record_in_db)
+int skim_uniques(struct path_list_head * head, struct hash_table * src)
 {
-  char file[DUPD_PATH_MAX];
   struct path_list_entry * entry;
   int skimmed = 0;
   struct hash_list * p;
@@ -445,12 +443,6 @@ int skim_uniques(sqlite3 * dbh, struct path_list_head * head,
         if (p->next_index == 1) {
           entry = *(p->entries);
           LOG(L_TRACE, "skim_uniques: marking a single entry list invalid\n");
-
-          if (record_in_db) {
-            build_path(entry, file);
-            unique_to_db(dbh, file, "hashlist");
-          }
-
           mark_path_entry_invalid(head, entry);
           skimmed++;
           increase_unique_counter(1);

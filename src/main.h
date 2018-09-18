@@ -200,27 +200,6 @@ extern int filecmp_block_size;
 
 
 /** ***************************************************************************
- * If true, save files found to be unique during a scan in the database.
- *
- */
-extern int save_uniques;
-
-
-/** ***************************************************************************
- * If true, current database has info on unique files.
- *
- */
-extern int have_uniques;
-
-
-/** ***************************************************************************
- * If true, ignore unique table info even if have_uniques is true.
- *
- */
-extern int no_unique;
-
-
-/** ***************************************************************************
  * Save stats to this file if defined.
  *
  */

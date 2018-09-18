@@ -2,8 +2,8 @@
 
 source common
 
-DESC="scan(files) -q --uniques"
-$DUPD_CMD scan --path `pwd`/files -V -V --uniques > /dev/null
+DESC="scan(files) -q"
+$DUPD_CMD scan --path `pwd`/files -V -V > /dev/null
 checkrv $?
 
 DESC="generate report"

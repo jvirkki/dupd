@@ -122,35 +122,6 @@ void delete_duplicate_entry(sqlite3 * dbh, int id);
 
 
 /** ***************************************************************************
- * Write unique file info to database.
- *
- * Parameters:
- *    dbh  - Database handle.
- *    path - Path of the unique file.
- *    msg  - Debug string for verbose reporting, who detected this unique.
- *
- * Return: none.
- *
- */
-void unique_to_db(sqlite3 * dbh, char * path, char * msg);
-
-
-/** ***************************************************************************
- * Check files table (if available) to see if this file is unique.
- *
- * Parameters:
- *    dbh  - Database handle.
- *    path - Path of the file to check.
- *
- * Return:
- *    0 - Not present in table.
- *    1 - Known unique, present in table.
- *
- */
-int is_known_unique(sqlite3 * dbh, char * path);
-
-
-/** ***************************************************************************
  * Pre-allocate memory used by get_known_duplicates().
  *
  * Parameters: none

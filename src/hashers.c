@@ -108,7 +108,7 @@ static int build_hash_list_round(sqlite3 * dbh,
   }
 
   // Remove the uniques seen
-  skim_uniques(dbh, size_node->path_list, hl, save_uniques);
+  skim_uniques(size_node->path_list, hl);
 
   // If no potential dups after this round, we're done!
   if (!hash_table_has_dups(hl)) {

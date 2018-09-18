@@ -200,31 +200,6 @@ static void add_below(struct size_node * node, ino_t inode,
 
 
 /** ***************************************************************************
- * Walk through the (presumably completed) size tree to identify size
- * nodes corresponding to only one path. Save these unique files to
- * the database.
- *
- * Parameters:
- *    dbh  - sqlite3 database handle.
- *    node - Check this node and recursively its children.
- *
- * Return: none
- *
- */
-static void check_uniques(sqlite3 * dbh, struct size_node * node)
-{
-  if (node->paths == NULL) {
-    char buff[DUPD_PATH_MAX];
-    build_path_from_string(node->filename, node->dir_entry, buff);
-    unique_to_db(dbh, buff, "by-size");
-  }
-
-  if (node->left != NULL) { check_uniques(dbh, node->left); }
-  if (node->right != NULL) { check_uniques(dbh, node->right); }
-}
-
-
-/** ***************************************************************************
  * Worker thread for inserting files to the sizetree if using threaded scan.
  *
  * The scan operation queues files via add_queue() into its queue and this
@@ -516,20 +491,6 @@ void scan_done()
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-void find_unique_sizes(sqlite3 * dbh)
-{
-  if (tip == NULL) {
-    return;
-  }
-
-  check_uniques(dbh, tip);
 }
 
 

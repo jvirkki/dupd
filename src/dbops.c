@@ -90,10 +90,6 @@ static void initialize_database(sqlite3 * dbh)
                         "(separator TEXT, hidden INTEGER, version TEXT, "
                         "dbtime INTEGER, hardlinks TEXT)");
 
-  if (save_uniques) {
-    single_statement(dbh, "CREATE TABLE files (path TEXT)");
-  }
-
   // Save settings to meta table for future reference
 
   static sqlite3_stmt * stmt;
@@ -163,35 +159,6 @@ sqlite3 * open_database(char * path, int newdb)
   if (newdb) {
     initialize_database(dbh);
     LOG(L_INFO, "Done initializing new database [%s]\n", path);
-  }
-
-  // Check if this db has 'files' table which will help with unique files
-
-  if (no_unique) {
-    LOG(L_BASE, "warning: Ignoring unique info in database!\n");
-
-  } else {
-    sqlite3_stmt * statement = NULL;
-    char * table_name = NULL;
-    char * sql = "SELECT name FROM sqlite_master WHERE type='table'";
-    rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
-    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
-
-    while (rv != SQLITE_DONE) {
-      rv = sqlite3_step(statement);
-      if (rv == SQLITE_DONE) { continue; }
-      if (rv != SQLITE_ROW) {                                // LCOV_EXCL_START
-        printf("Error reading duplicates table!\n");
-        exit(1);
-      }                                                      // LCOV_EXCL_STOP
-
-      table_name = (char *)sqlite3_column_text(statement, 0);
-      if (!strcmp(table_name, "files")) {
-        have_uniques = 1;
-        LOG(L_INFO, "Database has unique file info.\n");
-      }
-    }
-    sqlite3_finalize(statement);
   }
 
   // Load meta info from database
@@ -398,90 +365,6 @@ void delete_duplicate_entry(sqlite3 * dbh, int id)
   rvchk(rv, SQLITE_DONE, "tried to delete from duplicates table: %s\n", dbh);
 
   sqlite3_reset(stmt_delete_duplicate);
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-void unique_to_db(sqlite3 * dbh, char * path, char * msg)
-{
-  const char * sql = "INSERT INTO files (path) VALUES (?)";
-  int rv;
-
-  if (path == NULL) {                                        // LCOV_EXCL_START
-    printf("error: unique_to_db: path is null\n");
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
-
-  if (path[0] == 0) {                                        // LCOV_EXCL_START
-    printf("error: unique_to_db: path is empty\n");
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
-
-  pthread_mutex_lock(&dbh_lock);
-
-  if (stmt_unique_to_db == NULL) {
-    rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_unique_to_db, NULL);
-    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
-  }
-
-  rv = sqlite3_bind_text(stmt_unique_to_db, 1, path, -1, SQLITE_STATIC);
-  rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
-
-  rv = sqlite3_step(stmt_unique_to_db);
-  rvchk(rv, SQLITE_DONE, "tried to add to files table: %s\n", dbh);
-
-  stats_uniques_saved++;
-
-  sqlite3_reset(stmt_unique_to_db);
-
-  pthread_mutex_unlock(&dbh_lock);
-
-  LOG(L_INFO, "Unique file (%s): [%s]\n", msg, path);
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
-int is_known_unique(sqlite3 * dbh, char * path)
-{
-  const char * sql = "SELECT path FROM files WHERE path=?";
-  int rv;
-
-  LOG(L_TRACE, "Checking files table for uniqueness [%s]\n", path);
-
-  if (stmt_is_known_unique == NULL) {
-    rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt_is_known_unique, NULL);
-    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
-  }
-
-  rv = sqlite3_bind_text(stmt_is_known_unique, 1, path, -1, SQLITE_STATIC);
-  rvchk(rv, SQLITE_OK, "Can't bind path list: %s\n", dbh);
-
-  char * got_path = NULL;
-
-  while (rv != SQLITE_DONE) {
-    rv = sqlite3_step(stmt_is_known_unique);
-    if (rv == SQLITE_DONE) { continue; }
-    if (rv != SQLITE_ROW) {                                  // LCOV_EXCL_START
-      printf("Error reading duplicates table!\n");
-      exit(1);
-    }                                                        // LCOV_EXCL_STOP
-
-    got_path = (char *)sqlite3_column_text(stmt_is_known_unique, 0);
-    if (!strcmp(got_path, path)) {
-      sqlite3_reset(stmt_is_known_unique);
-      LOG(L_TRACE, "is present in uniques table: %s\n", path);
-      return(1);
-    }
-  }
-  sqlite3_reset(stmt_is_known_unique);
-
-  return(0);
 }
 
 

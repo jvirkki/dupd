@@ -65,7 +65,6 @@ int option_blocksize[] = { 1 };
 int option_fileblocksize[] = { 1 };
 int option_skip_two[] = { 1 };
 int option_cmp_two[] = { 1 };
-int option_uniques[] = { 1 };
 int option_avg_size[] = { 1 };
 int option_no_thread_hash[] = { 1 };
 int option_sort_by[] = { 1 };
@@ -82,7 +81,6 @@ int option_verbose_level[] = { 16 };
 int option_quiet[] = { 16 };
 int option_db[] = { 16 };
 int option_help[] = { 16 };
-int option_no_unique[] = { 16 };
 int option_x_small_buffers[] = { 16 };
 int option_x_testing[] = { 16 };
 int option_log_only[] = { 16 };
@@ -570,37 +568,12 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 9 && !strncmp("--uniques", argv[pos], 9))) {
+    if ((l == 10 && !strncmp("--avg-size", argv[pos], 10))) {
       if (options[17] == NULL) {
         options[17] = numstring[0];
       } else {
         options[17] = numstring[atoi(options[17])];
         if (!strcmp(options[17], "X")) {
-          printf("error: option %s repeated too many times!\n", argv[pos]);
-          exit(1);
-        }
-      }
-      pos++;
-      // strict_options: is uniques allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_uniques) / sizeof(option_uniques)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_uniques[cc] == *command) { ok = 1; }
-        if (option_uniques[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'uniques' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
-    if ((l == 10 && !strncmp("--avg-size", argv[pos], 10))) {
-      if (options[18] == NULL) {
-        options[18] = numstring[0];
-      } else {
-        options[18] = numstring[atoi(options[18])];
-        if (!strcmp(options[18], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -621,11 +594,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 16 && !strncmp("--no-thread-hash", argv[pos], 16))) {
-      if (options[19] == NULL) {
-        options[19] = numstring[0];
+      if (options[18] == NULL) {
+        options[18] = numstring[0];
       } else {
-        options[19] = numstring[atoi(options[19])];
-        if (!strcmp(options[19], "X")) {
+        options[18] = numstring[atoi(options[18])];
+        if (!strcmp(options[18], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -650,7 +623,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --sort-by\n");
         exit(1);
       }
-      options[20] = argv[pos+1];
+      options[19] = argv[pos+1];
       pos += 2;
       // strict_options: is sort_by allowed?
       int ok = 0;
@@ -667,11 +640,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 9 && !strncmp("--x-nofie", argv[pos], 9))) {
-      if (options[21] == NULL) {
-        options[21] = numstring[0];
+      if (options[20] == NULL) {
+        options[20] = numstring[0];
       } else {
-        options[21] = numstring[atoi(options[21])];
-        if (!strcmp(options[21], "X")) {
+        options[20] = numstring[atoi(options[20])];
+        if (!strcmp(options[20], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -697,7 +670,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --cut\n");
         exit(1);
       }
-      options[22] = argv[pos+1];
+      options[21] = argv[pos+1];
       pos += 2;
       // strict_options: is cut allowed?
       int ok = 0;
@@ -718,7 +691,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --format\n");
         exit(1);
       }
-      options[23] = argv[pos+1];
+      options[22] = argv[pos+1];
       pos += 2;
       // strict_options: is format allowed?
       int ok = 0;
@@ -740,7 +713,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --file\n");
         exit(1);
       }
-      options[24] = argv[pos+1];
+      options[23] = argv[pos+1];
       pos += 2;
       // strict_options: is file allowed?
       int ok = 0;
@@ -762,7 +735,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --exclude-path\n");
         exit(1);
       }
-      options[25] = argv[pos+1];
+      options[24] = argv[pos+1];
       pos += 2;
       // strict_options: is exclude_path allowed?
       int ok = 0;
@@ -780,11 +753,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--link", argv[pos], 6))||
         (l == 2 && !strncmp("-L", argv[pos], 2))) {
-      if (options[26] == NULL) {
-        options[26] = numstring[0];
+      if (options[25] == NULL) {
+        options[25] = numstring[0];
       } else {
-        options[26] = numstring[atoi(options[26])];
-        if (!strcmp(options[26], "X")) {
+        options[25] = numstring[atoi(options[25])];
+        if (!strcmp(options[25], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -806,11 +779,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 10 && !strncmp("--hardlink", argv[pos], 10))||
         (l == 2 && !strncmp("-H", argv[pos], 2))) {
-      if (options[27] == NULL) {
-        options[27] = numstring[0];
+      if (options[26] == NULL) {
+        options[26] = numstring[0];
       } else {
-        options[27] = numstring[atoi(options[27])];
-        if (!strcmp(options[27], "X")) {
+        options[26] = numstring[atoi(options[26])];
+        if (!strcmp(options[26], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -836,7 +809,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --hash\n");
         exit(1);
       }
-      options[28] = argv[pos+1];
+      options[27] = argv[pos+1];
       pos += 2;
       // strict_options: is hash allowed?
       int ok = 0;
@@ -854,11 +827,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 9 && !strncmp("--verbose", argv[pos], 9))||
         (l == 2 && !strncmp("-v", argv[pos], 2))) {
-      if (options[29] == NULL) {
-        options[29] = numstring[0];
+      if (options[28] == NULL) {
+        options[28] = numstring[0];
       } else {
-        options[29] = numstring[atoi(options[29])];
-        if (!strcmp(options[29], "X")) {
+        options[28] = numstring[atoi(options[28])];
+        if (!strcmp(options[28], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -884,7 +857,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --verbose-level\n");
         exit(1);
       }
-      options[30] = argv[pos+1];
+      options[29] = argv[pos+1];
       pos += 2;
       // strict_options: is verbose_level allowed?
       int ok = 0;
@@ -902,11 +875,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 7 && !strncmp("--quiet", argv[pos], 7))||
         (l == 2 && !strncmp("-q", argv[pos], 2))) {
-      if (options[31] == NULL) {
-        options[31] = numstring[0];
+      if (options[30] == NULL) {
+        options[30] = numstring[0];
       } else {
-        options[31] = numstring[atoi(options[31])];
-        if (!strcmp(options[31], "X")) {
+        options[30] = numstring[atoi(options[30])];
+        if (!strcmp(options[30], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -932,7 +905,7 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
         printf("error: no value for arg --db\n");
         exit(1);
       }
-      options[32] = argv[pos+1];
+      options[31] = argv[pos+1];
       pos += 2;
       // strict_options: is db allowed?
       int ok = 0;
@@ -950,11 +923,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     }
     if ((l == 6 && !strncmp("--help", argv[pos], 6))||
         (l == 2 && !strncmp("-h", argv[pos], 2))) {
-      if (options[33] == NULL) {
-        options[33] = numstring[0];
+      if (options[32] == NULL) {
+        options[32] = numstring[0];
       } else {
-        options[33] = numstring[atoi(options[33])];
-        if (!strcmp(options[33], "X")) {
+        options[32] = numstring[atoi(options[32])];
+        if (!strcmp(options[32], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -974,37 +947,12 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
-    if ((l == 11 && !strncmp("--no-unique", argv[pos], 11))) {
-      if (options[34] == NULL) {
-        options[34] = numstring[0];
-      } else {
-        options[34] = numstring[atoi(options[34])];
-        if (!strcmp(options[34], "X")) {
-          printf("error: option %s repeated too many times!\n", argv[pos]);
-          exit(1);
-        }
-      }
-      pos++;
-      // strict_options: is no_unique allowed?
-      int ok = 0;
-      unsigned int cc;
-      unsigned int len = sizeof(option_no_unique) / sizeof(option_no_unique)[0];
-      for (cc = 0; cc < len; cc++) {
-        if (option_no_unique[cc] == *command) { ok = 1; }
-        if (option_no_unique[cc] == COMMAND_GLOBAL) { ok = 1; }
-      }
-      if (!ok) {
-        printf("error: option 'no_unique' not compatible with given command\n");
-        exit(1);
-      }
-      continue;
-    }
     if ((l == 17 && !strncmp("--x-small-buffers", argv[pos], 17))) {
-      if (options[35] == NULL) {
-        options[35] = numstring[0];
+      if (options[33] == NULL) {
+        options[33] = numstring[0];
       } else {
-        options[35] = numstring[atoi(options[35])];
-        if (!strcmp(options[35], "X")) {
+        options[33] = numstring[atoi(options[33])];
+        if (!strcmp(options[33], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -1025,11 +973,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 11 && !strncmp("--x-testing", argv[pos], 11))) {
-      if (options[36] == NULL) {
-        options[36] = numstring[0];
+      if (options[34] == NULL) {
+        options[34] = numstring[0];
       } else {
-        options[36] = numstring[atoi(options[36])];
-        if (!strcmp(options[36], "X")) {
+        options[34] = numstring[atoi(options[34])];
+        if (!strcmp(options[34], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -1050,11 +998,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 10 && !strncmp("--log-only", argv[pos], 10))) {
-      if (options[37] == NULL) {
-        options[37] = numstring[0];
+      if (options[35] == NULL) {
+        options[35] = numstring[0];
       } else {
-        options[37] = numstring[atoi(options[37])];
-        if (!strcmp(options[37], "X")) {
+        options[35] = numstring[atoi(options[35])];
+        if (!strcmp(options[35], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }

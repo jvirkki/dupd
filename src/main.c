@@ -67,9 +67,6 @@ uint32_t DEF_HDD_hash_one_block_size = 1024*128;
 int hash_block_size = 8192;
 int filecmp_block_size = 131072;
 int opt_compare_two = 0;
-int save_uniques = 0;
-int have_uniques = 0;
-int no_unique = 0;
 char * stats_file = NULL;
 int rmsh_link = 0;
 int scan_hidden = 0;
@@ -310,8 +307,6 @@ static int process_args(int argc, char * argv[])
 
   if (options[OPT_link]) { rmsh_link = RMSH_LINK_SOFT; }
   if (options[OPT_hardlink]) { rmsh_link = RMSH_LINK_HARD; }
-  if (options[OPT_uniques]) { save_uniques = 1; }
-  if (options[OPT_no_unique]) { no_unique = 1; }
   if (options[OPT_hidden]) { scan_hidden = 1; }
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }

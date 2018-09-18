@@ -178,15 +178,13 @@ void print_hash_table(struct hash_table * src);
  * If record_in_db is true, these files are also saved in the database.
  *
  * Parameters:
- *     dbh  - Database handle.
  *     head - The pathlist which was used to build the hashlist.
  *     src  - Source hash table.
  *
  * Return: The number of skimmed entries.
  *
  */
-int skim_uniques(sqlite3 * dbh, struct path_list_head * head,
-                 struct hash_table * src, int record_in_db);
+int skim_uniques(struct path_list_head * head, struct hash_table * src);
 
 
 /** ***************************************************************************

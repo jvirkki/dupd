@@ -6,7 +6,7 @@ DESC="scan(files)"
 $DUPD_CMD scan --path `pwd`/files -q
 checkrv $?
 
-DESC="ls without --uniques"
+DESC="ls"
 $DUPD_CMD ls --cut `pwd`/files/ --path `pwd`/files/ > nreport
 checkrv $?
 

@@ -410,16 +410,6 @@ static int file_callback(sqlite3 * dbh,
     dup_pfx = "DUPLICATE: ";
   }
 
-  // If we have a unique file table, just check that!
-  if (have_uniques) {
-    if (is_known_unique(dbh, path)) {
-      if (print_uniques) {
-        print_path(unique_pfx, path);
-      }
-      return(0);
-    }
-  }
-
   int dups;
   char * * dup_paths = get_known_duplicates(dbh, path, &dups);
 
