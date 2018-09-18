@@ -44,7 +44,7 @@
 // ab..e.g.ijkl.no..rstu.w.yzABC.E.G..JK.MNOPQR.TU.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 41
+#define COUNT_OPTIONS 40
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -100,74 +100,71 @@
 // skip_two (--skip-two) : deprecated
 #define OPT_skip_two 17
 
-// skip_three (--skip-three) : deprecated
-#define OPT_skip_three 18
-
 // cmp_two (--cmp-two) : force direct comparison of two files
-#define OPT_cmp_two 19
+#define OPT_cmp_two 18
 
 // uniques (--uniques) : deprecated
-#define OPT_uniques 20
+#define OPT_uniques 19
 
 // avg_size (--avg-size) : deprecated
-#define OPT_avg_size 21
+#define OPT_avg_size 20
 
 // no_thread_hash (--no-thread-hash) : obsoleted
-#define OPT_no_thread_hash 22
+#define OPT_no_thread_hash 21
 
 // sort_by (--sort-by) NAME : testing
-#define OPT_sort_by 23
+#define OPT_sort_by 22
 
 // x_nofie (--x-nofie) : testing
-#define OPT_x_nofie 24
+#define OPT_x_nofie 23
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 25
+#define OPT_cut 24
 
 // format (--format) NAME : report output format (text, csv, json)
-#define OPT_format 26
+#define OPT_format 25
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 27
+#define OPT_file 26
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 28
+#define OPT_exclude_path 27
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 29
+#define OPT_link 28
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 30
+#define OPT_hardlink 29
 
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 31
+#define OPT_hash 30
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 32
+#define OPT_verbose 31
 
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
-#define OPT_verbose_level 33
+#define OPT_verbose_level 32
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 34
+#define OPT_quiet 33
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 35
+#define OPT_db 34
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 36
+#define OPT_help 35
 
 // no_unique (--no-unique) : ignore unique table even if present, for testing
-#define OPT_no_unique 37
+#define OPT_no_unique 36
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 38
+#define OPT_x_small_buffers 37
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 39
+#define OPT_x_testing 38
 
 // log_only (--log-only) : log only messages at chosen level
-#define OPT_log_only 40
+#define OPT_log_only 39
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
