@@ -2,8 +2,8 @@
 
 source common
 
-DESC="scan -q --hdd"
-$DUPD_CMD scan --path `pwd`/files -q --hdd --x-small-buffers
+DESC="scan -q"
+$DUPD_CMD scan --path `pwd`/files -q --x-small-buffers
 checkrv $?
 
 DESC="generate report"

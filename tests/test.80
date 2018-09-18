@@ -4,8 +4,8 @@ source common
 
 rm -f stx
 
-DESC="scan(files) testing count stats (HDD)"
-$DUPD_CMD scan --path `pwd`/files -q --hdd --stats-file stx
+DESC="scan(files) testing count stats"
+$DUPD_CMD scan --path `pwd`/files -q --stats-file stx
 checkrv $?
 
 rm -f nreport report

@@ -400,11 +400,6 @@ static int process_args(int argc, char * argv[])
 
   round1_max_bytes = hash_one_block_size * hash_one_max_blocks;
 
-  if (options[OPT_ssd] && options[OPT_hdd]) {
-    printf("error: SSD mode and HDD mode are mutually exclusive\n");
-    return 2;
-  }
-
   char * sortby = opt_string(options[OPT_sort_by], "def");
   if (!strcmp("inode", sortby)) {
     sort_bypass = SORT_BY_INODE;

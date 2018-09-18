@@ -14,9 +14,9 @@ $DUPD_CMD report --cut `pwd`/files9/ | grep -v "Duplicate report from database" 
 checkrv $?
 check_nreport output.76
 
-DESC="scan larger files HDD w/SHA512 (files9)"
+DESC="scan larger files w/SHA512 (files9)"
 
-$DUPD_CMD scan --path `pwd`/files9 -q --hdd --hash sha512
+$DUPD_CMD scan --path `pwd`/files9 -q --hash sha512
 checkrv $?
 
 DESC="report"
@@ -24,9 +24,9 @@ $DUPD_CMD report --cut `pwd`/files9/ | grep -v "Duplicate report from database" 
 checkrv $?
 check_nreport output.76
 
-DESC="scan larger files HDD w/SHA1 verbose (files9)"
+DESC="scan larger files w/SHA1 verbose (files9)"
 
-$DUPD_CMD scan --path `pwd`/files9 --hdd --hash sha1 -V 3 > /dev/null
+$DUPD_CMD scan --path `pwd`/files9 --hash sha1 -V 3 > /dev/null
 checkrv $?
 
 DESC="report"
@@ -34,9 +34,9 @@ $DUPD_CMD report --cut `pwd`/files9/ | grep -v "Duplicate report from database" 
 checkrv $?
 check_nreport output.76
 
-DESC="scan larger files HDD w/xxHash verbose (files9)"
+DESC="scan larger files w/xxHash verbose (files9)"
 
-$DUPD_CMD scan --path `pwd`/files9 --hdd --hash xxhash -V 3 > /dev/null
+$DUPD_CMD scan --path `pwd`/files9 --hash xxhash -V 3 > /dev/null
 checkrv $?
 
 DESC="report"

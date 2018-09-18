@@ -2,11 +2,11 @@
 
 source common
 
-DESC="scan(files8) hdd"
+DESC="scan(files8)"
 
 (cd ./files8 && ./create_files)
 
-$DUPD_CMD scan --path `pwd`/files8 -q --hdd
+$DUPD_CMD scan --path `pwd`/files8 -q
 checkrv $?
 
 DESC="report"

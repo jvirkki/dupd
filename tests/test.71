@@ -2,11 +2,11 @@
 
 source common
 
-DESC="scan(files7) with hard links in HDD mode"
+DESC="scan(files7) with hard links"
 
 (cd ./files7 && ./create_files)
 
-$DUPD_CMD scan --path `pwd`/files7 -q --hdd
+$DUPD_CMD scan --path `pwd`/files7 -q
 checkrv $?
 
 DESC="ls with hard links"

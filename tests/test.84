@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-source common
-
-DESC="SSD/HDD are mutually exclusive"
-$DUPD_CMD scan --ssd --hdd > /dev/null
-checkerr $?
-
-tdone

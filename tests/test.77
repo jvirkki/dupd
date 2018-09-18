@@ -3,7 +3,7 @@
 source common
 
 DESC="scan(files)"
-$DUPD_CMD scan --path `pwd`/files -q --hdd
+$DUPD_CMD scan --path `pwd`/files -q
 checkrv $?
 
 DESC="csv report"
