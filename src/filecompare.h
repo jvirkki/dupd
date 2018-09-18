@@ -41,24 +41,6 @@ void compare_two_files(sqlite3 * dbh, char * path1, char * path2,
 
 
 /** ***************************************************************************
- * Compare three files and publish to duplicates if that is the case.
- *
- * Parameters:
- *    dbh   - Database handle.
- *    path1 - Path of first file.
- *    path2 - Path of second file.
- *    path3 - Path of third file.
- *    size  - Size of the files.
- *
- * Return: none.
- *
- */
-void compare_three_files(sqlite3 * dbh,
-                         char * path1, char * path2, char * path3,
-                         uint64_t size);
-
-
-/** ***************************************************************************
  * Initialize.
  *
  */

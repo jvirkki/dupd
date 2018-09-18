@@ -165,14 +165,6 @@ extern int opt_compare_two;
 
 
 /** ***************************************************************************
- * If true, in sets with only three files the files are compared directly
- * skipping the hash list processing entirely.
- *
- */
-extern int opt_compare_three;
-
-
-/** ***************************************************************************
  * Maximum number of blocks read by the first pass.
  *
  */

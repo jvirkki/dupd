@@ -67,7 +67,6 @@ uint32_t DEF_HDD_hash_one_block_size = 1024*128;
 int hash_block_size = 8192;
 int filecmp_block_size = 131072;
 int opt_compare_two = 0;
-int opt_compare_three = 0;
 int save_uniques = 0;
 int have_uniques = 0;
 int no_unique = 0;
@@ -272,11 +271,6 @@ static int process_args(int argc, char * argv[])
     return 2;
   }
 
-  if (options[OPT_cmp_three] && options[OPT_skip_three]) {
-    printf("error: unable to both skip and compare three!\n");
-    return 2;
-  }
-
   if (options[OPT_x_small_buffers]) { x_small_buffers = 1; }
   if (options[OPT_x_testing]) { only_testing = 1; }
   if (options[OPT_quiet]) { log_level = -99; }
@@ -398,9 +392,6 @@ static int process_args(int argc, char * argv[])
 
   if (options[OPT_cmp_two]) {
     opt_compare_two = 1;
-  }
-  if (options[OPT_cmp_three]) {
-    opt_compare_three = 1;
   }
 
   if (hash_one_block_size == 0) {
