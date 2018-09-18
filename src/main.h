@@ -126,13 +126,6 @@ extern char * file_path;
 
 
 /** ***************************************************************************
- * Duplicate info will be saved in the sqlite database unless this is false.
- *
- */
-extern int write_db;
-
-
-/** ***************************************************************************
  * Path to the sqlite database.
  *
  */

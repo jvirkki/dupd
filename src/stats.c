@@ -125,7 +125,7 @@ void report_stats()
     time_string(timebuf, 20, get_current_time_millis() - stats_main_start);
     printf("Total duplicates: %d files in %d groups in %s\n",
            s_files_completed_dups, stats_duplicate_groups, timebuf);
-    if (write_db && stats_duplicate_files > 0) {
+    if (stats_duplicate_files > 0) {
       printf("Run 'dupd report' to list duplicates.\n");
     }
   }

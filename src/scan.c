@@ -385,10 +385,8 @@ void scan()
   init_dirtree();
   init_read_list();
 
-  if (write_db) {
-    dbh = open_database(db_path, 1);
-    begin_transaction(dbh);
-  }
+  dbh = open_database(db_path, 1);
+  begin_transaction(dbh);
 
   pthread_t status_thread;
   int started_status_thread = 0;
@@ -454,10 +452,8 @@ void scan()
       s_total_files_seen, stats_time_scan);
 
   if (s_total_files_seen == 0) {
-    if (write_db) {
-      commit_transaction(dbh);
-      close_database(dbh);
-    }
+    commit_transaction(dbh);
+    close_database(dbh);
     stats_process_duration = 0;
     return;
   }
@@ -486,10 +482,8 @@ void scan()
   LOG(L_PROGRESS, "Duplicate processing took %ldms\n", stats_time_process);
   LOG(L_PROGRESS, "Largest duplicate set %d\n", stats_most_dups);
 
-  if (write_db) {
-    commit_transaction(dbh);
-    close_database(dbh);
-  }
+  commit_transaction(dbh);
+  close_database(dbh);
 
   LOG_RESOURCES {
     report_path_block_usage();

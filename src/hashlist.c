@@ -305,7 +305,7 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
       stats_duplicate_groups++;
       stats_duplicate_files += p->next_index;
 
-      if (!write_db || log_level >= L_TRACE) {
+      if (log_level >= L_TRACE) {
         printf("Duplicates: file size: %ld, count: [%d]\n",
                (long)size, p->next_index);
         for (int j=0; j < p->next_index; j++) {
@@ -315,48 +315,47 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
         }
       }
 
-      if (write_db) {
-        // print separated list of the paths into buffer
-        int pos = 0;
-        for (int i = 0; i < p->next_index; i++) {
+      // print separated list of the paths into buffer
+      int pos = 0;
+      for (int i = 0; i < p->next_index; i++) {
 
-          // if not enough space (conservatively) in path_buffer, increase
-          if (pos + DUPD_PATH_MAX > path_buffer_size) {
-            path_buffer_size += DUPD_PATH_MAX * 10;
-            path_buffer = (char *)realloc(path_buffer, path_buffer_size);
-            path_buffer_realloc++;
-            LOG(L_RESOURCES, "Increased path_buffer %d\n", path_buffer_size);
-          }
-
-          entry = *(p->entries + i);
-          build_path(entry, file);
-
-          if (i + 1 < p->next_index) {
-            pos += sprintf(path_buffer + pos, "%s%c", file, path_separator);
-          } else{
-            sprintf(path_buffer + pos, "%s%c", file, 0);
-          }
-
-          LOG_INFO {
-            int hsize = hash_get_bufsize(hash_function);
-            char hash_out[HASH_MAX_BUFSIZE];
-            hash_fn(file, hash_out, 0, 0, 0);
-            if (memcmp(hash_out, p->hash, hsize)) {
-              printf("file [%s] ", file);
-              memdump("hash", p->hash, hsize);
-              printf("error: computed hash differs from hash! [%s]\n", file);
-              memdump("hash", hash_out, hsize);
-              exit(1);
-            }
-          }
-
-          entry->state = FS_DONE;
-          free_path_entry(entry);
+        // if not enough space (conservatively) in path_buffer, increase
+        if (pos + DUPD_PATH_MAX > path_buffer_size) {
+          path_buffer_size += DUPD_PATH_MAX * 10;
+          path_buffer = (char *)realloc(path_buffer, path_buffer_size);
+          path_buffer_realloc++;
+          LOG(L_RESOURCES, "Increased path_buffer %d\n", path_buffer_size);
         }
 
-        // go publish to db
-        duplicate_to_db(dbh, p->next_index, size, path_buffer);
+        entry = *(p->entries + i);
+        build_path(entry, file);
+
+        if (i + 1 < p->next_index) {
+          pos += sprintf(path_buffer + pos, "%s%c", file, path_separator);
+        } else{
+          sprintf(path_buffer + pos, "%s%c", file, 0);
+        }
+
+        LOG_INFO {
+          int hsize = hash_get_bufsize(hash_function);
+          char hash_out[HASH_MAX_BUFSIZE];
+          hash_fn(file, hash_out, 0, 0, 0);
+          if (memcmp(hash_out, p->hash, hsize)) {
+            printf("file [%s] ", file);
+            memdump("hash", p->hash, hsize);
+            printf("error: computed hash differs from hash! [%s]\n", file);
+            memdump("hash", hash_out, hsize);
+            exit(1);
+          }
+        }
+
+        entry->state = FS_DONE;
+        free_path_entry(entry);
       }
+
+      // go publish to db
+      duplicate_to_db(dbh, p->next_index, size, path_buffer);
+
     }
     p = p->next;
   }

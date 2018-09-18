@@ -55,7 +55,6 @@ int log_level = 1;
 int log_only = 0;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
-int write_db = 1;
 char * db_path = NULL;
 char * cut_path = NULL;
 char * exclude_path = NULL;
@@ -315,7 +314,6 @@ static int process_args(int argc, char * argv[])
     snprintf(db_path, DUPD_PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
-  if (options[OPT_nodb]) { write_db = 0; }
   if (options[OPT_link]) { rmsh_link = RMSH_LINK_SOFT; }
   if (options[OPT_hardlink]) { rmsh_link = RMSH_LINK_HARD; }
   if (options[OPT_uniques]) { save_uniques = 1; }
@@ -346,11 +344,6 @@ static int process_args(int argc, char * argv[])
 
   minimum_file_size = opt_int(options[OPT_minsize], minimum_file_size);
   if (minimum_file_size < 1) { minimum_file_size = 1; }
-
-  if (save_uniques && !write_db) {
-    printf("error: --uniques and --nodb are incompatible\n");
-    return 2;
-  }
 
   path_sep_string = (char *)malloc(2);
   path_sep_string[0] = (char)path_separator;

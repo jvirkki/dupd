@@ -76,15 +76,13 @@ static void compare_two_open_files(sqlite3 * dbh,
 
   LOG(L_TRACE, "compare_two_files: duplicates after reading full files\n");
 
-  if (write_db) {
-    snprintf(paths, 2 * DUPD_PATH_MAX, "%s%c%s", path1, path_separator, path2);
-    duplicate_to_db(dbh, 2, size, paths);
-  }
+  snprintf(paths, 2 * DUPD_PATH_MAX, "%s%c%s", path1, path_separator, path2);
+  duplicate_to_db(dbh, 2, size, paths);
 
   stats_duplicate_groups++;
   stats_duplicate_files += 2;
 
-  if (!write_db || log_level >= L_TRACE) {
+  if (log_level >= L_TRACE) {
     printf("Duplicates: file size: %ld, count: [2]\n", (long)size);
     printf(" %s\n %s\n", path1, path2);
   }
@@ -258,16 +256,14 @@ void compare_three_files(sqlite3 * dbh,
 
   LOG(L_TRACE, "compare_three_files: duplicates after reading files\n");
 
-  if (write_db) {
-    snprintf(paths, 3 * DUPD_PATH_MAX, "%s%c%s%c%s",
-             path1, path_separator, path2, path_separator, path3);
-    duplicate_to_db(dbh, 3, size, paths);
-  }
+  snprintf(paths, 3 * DUPD_PATH_MAX, "%s%c%s%c%s",
+           path1, path_separator, path2, path_separator, path3);
+  duplicate_to_db(dbh, 3, size, paths);
 
   stats_duplicate_groups++;
   stats_duplicate_files += 3;
 
-  if (!write_db || log_level >= L_TRACE) {
+  if (log_level >= L_TRACE) {
     printf("Duplicates: file size: %ld, count: [3]\n", (long)size);
     printf(" %s\n %s\n %s\n", path1, path2, path3);
   }
