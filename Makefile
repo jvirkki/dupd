@@ -118,7 +118,7 @@ dupd: src/optgen.c src/optgen.h $(OBJS)
 	    -lsqlite3 -lcrypto -lpthread -lm -o dupd
 
 $(BUILD)/%.o: src/%.c src/%.h
-	mkdir -p $(BUILD)
+	@mkdir -p $(BUILD)
 	$(CCC) $(INC) $(CFLAGS) \
 		-DDUPD_VERSION=\"$(VERSION)\" -DGITHASH=\"$(GITHASH)\" \
 		 -c $< -o $@
