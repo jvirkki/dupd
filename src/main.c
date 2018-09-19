@@ -272,8 +272,6 @@ static int process_args(int argc, char * argv[])
 
   if (options[OPT_log_only]) { log_only = 1; }
 
-  path_separator = opt_char(options[OPT_pathsep], path_separator);
-
   if (start_path_state == START_PATH_NULL) {
     start_path[0] = (char *)malloc(DUPD_PATH_MAX);
     getcwd(start_path[0], DUPD_PATH_MAX);
