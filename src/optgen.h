@@ -44,7 +44,7 @@
 // ab..e.g.ijkl.no..rstu.w.yzABCDE.G..JK.MNOPQRSTU.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 34
+#define COUNT_OPTIONS 32
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -67,86 +67,80 @@
 // hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
 #define OPT_hardlink_is_unique 6
 
-// file_count (--file-count) NUM : max estimated number of files to scan
-#define OPT_file_count 7
-
 // no_thread_scan (--no-thread-scan) : do scan phase in a single thread
-#define OPT_no_thread_scan 8
+#define OPT_no_thread_scan 7
 
 // pathsep (--pathsep) CHAR : change internal path separator to CHAR
-#define OPT_pathsep 9
+#define OPT_pathsep 8
 
 // firstblocks (--firstblocks) N : max blocks to read in first hash pass
-#define OPT_firstblocks 10
+#define OPT_firstblocks 9
 
 // firstblocksize (--firstblocksize) N : size of firstblocks to read
-#define OPT_firstblocksize 11
+#define OPT_firstblocksize 10
 
 // blocksize (--blocksize) N : size of regular blocks to read
-#define OPT_blocksize 12
+#define OPT_blocksize 11
 
 // fileblocksize (--fileblocksize) N : size of blocks to read in file compare
-#define OPT_fileblocksize 13
+#define OPT_fileblocksize 12
 
 // skip_two (--skip-two) : deprecated
-#define OPT_skip_two 14
+#define OPT_skip_two 13
 
 // cmp_two (--cmp-two) : force direct comparison of two files
-#define OPT_cmp_two 15
-
-// avg_size (--avg-size) : deprecated
-#define OPT_avg_size 16
+#define OPT_cmp_two 14
 
 // sort_by (--sort-by) NAME : testing
-#define OPT_sort_by 17
+#define OPT_sort_by 15
 
 // x_nofie (--x-nofie) : testing
-#define OPT_x_nofie 18
+#define OPT_x_nofie 16
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 19
+#define OPT_cut 17
 
 // format (--format) NAME : report output format (text, csv, json)
-#define OPT_format 20
+#define OPT_format 18
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 21
+#define OPT_file 19
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 22
+#define OPT_exclude_path 20
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 23
+#define OPT_link 21
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 24
+#define OPT_hardlink 22
 
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 25
+#define OPT_hash 23
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 26
+#define OPT_verbose 24
 
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
-#define OPT_verbose_level 27
+#define OPT_verbose_level 25
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 28
+#define OPT_quiet 26
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 29
+#define OPT_db 27
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 30
+#define OPT_help 28
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 31
+#define OPT_x_small_buffers 29
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 32
+#define OPT_x_testing 30
 
 // log_only (--log-only) : log only messages at chosen level
-#define OPT_log_only 33
+#define OPT_log_only 31
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
