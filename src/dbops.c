@@ -87,36 +87,33 @@ static void initialize_database(sqlite3 * dbh)
                         "each_size INTEGER, paths TEXT)");
 
   single_statement(dbh, "CREATE TABLE meta "
-                        "(separator TEXT, hidden INTEGER, version TEXT, "
+                        "(hidden INTEGER, version TEXT, "
                         "dbtime INTEGER, hardlinks TEXT)");
 
   // Save settings to meta table for future reference
 
   static sqlite3_stmt * stmt;
-  const char * sql = "INSERT INTO meta (separator, hidden, version, "
+  const char * sql = "INSERT INTO meta (hidden, version, "
                      "dbtime, hardlinks) "
-                     "VALUES (?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?)";
 
   int rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
 
-  rv = sqlite3_bind_text(stmt, 1, path_sep_string, -1, SQLITE_STATIC);
-  rvchk(rv, SQLITE_OK, "Can't bind separator: %s\n", dbh);
-
-  rv = sqlite3_bind_int(stmt, 2, scan_hidden);
+  rv = sqlite3_bind_int(stmt, 1, scan_hidden);
   rvchk(rv, SQLITE_OK, "Can't bind hidden: %s\n", dbh);
 
-  rv = sqlite3_bind_text(stmt, 3, DUPD_VERSION, -1, SQLITE_STATIC);
+  rv = sqlite3_bind_text(stmt, 2, DUPD_VERSION, -1, SQLITE_STATIC);
   rvchk(rv, SQLITE_OK, "Can't bind version: %s\n", dbh);
 
   uint64_t now = get_current_time_millis();
-  rv = sqlite3_bind_int64(stmt, 4, now);
+  rv = sqlite3_bind_int64(stmt, 3, now);
   rvchk(rv, SQLITE_OK, "Can't bind current dbtime: %s\n", dbh);
 
   if (hardlink_is_unique) {
-    rv = sqlite3_bind_text(stmt, 5, "ignore", -1, SQLITE_STATIC);
+    rv = sqlite3_bind_text(stmt, 4, "ignore", -1, SQLITE_STATIC);
   } else {
-    rv = sqlite3_bind_text(stmt, 5, "normal", -1, SQLITE_STATIC);
+    rv = sqlite3_bind_text(stmt, 4, "normal", -1, SQLITE_STATIC);
   }
   rvchk(rv, SQLITE_OK, "Can't bind hardlinks: %s\n", dbh);
 
@@ -164,7 +161,7 @@ sqlite3 * open_database(char * path, int newdb)
   // Load meta info from database
 
   sqlite3_stmt * statement = NULL;
-  char * sql = "SELECT separator, hidden, version, dbtime, hardlinks "
+  char * sql = "SELECT hidden, version, dbtime, hardlinks "
                "FROM meta";
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
@@ -176,23 +173,10 @@ sqlite3 * open_database(char * path, int newdb)
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
-  char * sep = (char *)sqlite3_column_text(statement, 0);
-
-  if (strlen(sep) != 1) {                                    // LCOV_EXCL_START
-    printf("error: meta.separator not a single char: %s\n", sep);
-    exit(1);
-  }                                                          // LCOV_EXCL_STOP
-
-  strcpy(path_sep_string, sep);
-  path_separator = (int)path_sep_string[0];
-
-  LOG(L_PROGRESS, "Set path_separator from db to %c (%s)\n",
-      path_separator, path_sep_string);
-
-  scan_hidden = sqlite3_column_int(statement, 1);
+  scan_hidden = sqlite3_column_int(statement, 0);
   LOG(L_PROGRESS, "Set scan_hidden from db to %d\n", scan_hidden);
 
-  char * db_version = (char *)sqlite3_column_text(statement, 2);
+  char * db_version = (char *)sqlite3_column_text(statement, 1);
   if (strcmp(db_version, DUPD_VERSION)) {                    // LCOV_EXCL_START
     printf("\n\n");
     printf("*** WARNING: database version %s\n", db_version);
@@ -203,7 +187,7 @@ sqlite3 * open_database(char * path, int newdb)
     printf("\n\n");
   }                                                          // LCOV_EXCL_STOP
 
-  uint64_t db_create_time = (uint64_t)sqlite3_column_int64(statement, 3);
+  uint64_t db_create_time = (uint64_t)sqlite3_column_int64(statement, 2);
   LOG(L_PROGRESS, "database create time %" PRIu64 "\n", db_create_time);
 
   uint64_t expiration = db_create_time + 1000L * db_warn_age_seconds;
@@ -218,7 +202,7 @@ sqlite3 * open_database(char * path, int newdb)
   // cause confusing output for the file operations (file|ls|dups|uniques).
 
   if (!newdb && hardlink_is_unique) {
-    char * hardlinks = (char *)sqlite3_column_text(statement, 4);
+    char * hardlinks = (char *)sqlite3_column_text(statement, 3);
     if (!strcmp(hardlinks, "ignore")) {
       printf("error: scan was already performed with --hardlink-is-unique\n");
       exit(1);
