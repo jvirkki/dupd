@@ -44,7 +44,7 @@
 // ab..e.g.ijkl.no..rstu.w.yzABCDE.G..JK.MNOPQRSTU.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 35
+#define COUNT_OPTIONS 34
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -97,59 +97,56 @@
 // avg_size (--avg-size) : deprecated
 #define OPT_avg_size 16
 
-// no_thread_hash (--no-thread-hash) : obsoleted
-#define OPT_no_thread_hash 17
-
 // sort_by (--sort-by) NAME : testing
-#define OPT_sort_by 18
+#define OPT_sort_by 17
 
 // x_nofie (--x-nofie) : testing
-#define OPT_x_nofie 19
+#define OPT_x_nofie 18
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 20
+#define OPT_cut 19
 
 // format (--format) NAME : report output format (text, csv, json)
-#define OPT_format 21
+#define OPT_format 20
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 22
+#define OPT_file 21
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 23
+#define OPT_exclude_path 22
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 24
+#define OPT_link 23
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 25
+#define OPT_hardlink 24
 
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 26
+#define OPT_hash 25
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 27
+#define OPT_verbose 26
 
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
-#define OPT_verbose_level 28
+#define OPT_verbose_level 27
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 29
+#define OPT_quiet 28
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 30
+#define OPT_db 29
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 31
+#define OPT_help 30
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 32
+#define OPT_x_small_buffers 31
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 33
+#define OPT_x_testing 32
 
 // log_only (--log-only) : log only messages at chosen level
-#define OPT_log_only 34
+#define OPT_log_only 33
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
