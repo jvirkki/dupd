@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+HASHDB=/tmp/test_hash_db
+TMPFILE=files4/tmp.test.85
+
+source common
+
+rm -f $HASHDB
+
+cp files4/1 $TMPFILE
+
+DESC="hash command first time"
+$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f $TMPFILE | sed 's/.*:\(.*\)/\1/' > nreport
+checkrv $?
+check_nreport output.84
+
+echo hello >> $TMPFILE
+
+DESC="hash command file was changed"
+$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f $TMPFILE | sed 's/.*:\(.*\)/\1/' > nreport
+checkrv $?
+check_nreport output.85
+
+DESC="hash command file now same"
+$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f $TMPFILE | sed 's/.*:\(.*\)/\1/' > nreport
+checkrv $?
+check_nreport output.85
+
+rm -f $HASHDB
+rm -f $TMPFILE
+
+tdone

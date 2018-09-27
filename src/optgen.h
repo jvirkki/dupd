@@ -41,10 +41,10 @@
 
 //
 // The following short options are NOT yet taken:
-// ab..e.g.ijkl.no..rstu.w.yzABCDE.G..JK.MNOPQRSTU.W.YZ0123456789
+// ab..e.g.ijkl.no..rstu.w.yzAB.DE.G..JK.MNOPQRSTU.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 30
+#define COUNT_OPTIONS 33
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -124,17 +124,26 @@
 // db (-d,--db) PATH : path to dupd database file
 #define OPT_db 25
 
+// cache (-C,--cache) PATH : path to dupd hash cache file
+#define OPT_cache 26
+
 // help (-h,--help) : show brief usage info
-#define OPT_help 26
+#define OPT_help 27
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 27
+#define OPT_x_small_buffers 28
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 28
+#define OPT_x_testing 29
 
 // log_only (--log-only) : log only messages at chosen level
-#define OPT_log_only 29
+#define OPT_log_only 30
+
+// x_no_cache (--x-no-cache) : for testing only, not useful otherwise
+#define OPT_x_no_cache 31
+
+// x_cache_min_size (--x-cache-min-size) N : for testing only, not useful otherwise
+#define OPT_x_cache_min_size 32
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
@@ -157,32 +166,35 @@
 // ls: based on report, list info about every file seen
 #define COMMAND_ls 7
 
+// hash: just hash one file, no duplicate detection
+#define COMMAND_hash 8
+
 // rmsh: create shell script to delete all duplicates
-#define COMMAND_rmsh 8
+#define COMMAND_rmsh 9
 
 // validate: revalidate all duplicates in db
-#define COMMAND_validate 9
+#define COMMAND_validate 10
 
 // help: show brief usage info
-#define COMMAND_help 10
+#define COMMAND_help 11
 
 // usage: show more extensive documentation
-#define COMMAND_usage 11
+#define COMMAND_usage 12
 
 // man: show more extensive documentation
-#define COMMAND_man 12
+#define COMMAND_man 13
 
 // license: show license info
-#define COMMAND_license 13
+#define COMMAND_license 14
 
 // version: show version and exit
-#define COMMAND_version 14
+#define COMMAND_version 15
 
 // testing: testing only, ignore
-#define COMMAND_testing 15
+#define COMMAND_testing 16
 
 // GLOBAL: 
-#define COMMAND_GLOBAL 16
+#define COMMAND_GLOBAL 17
 
 /**
  * Function to parse the arguments.

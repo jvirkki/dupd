@@ -81,6 +81,9 @@ int get_file_info(const char * path, STRUCT_STAT * info)
     return -1;
   }                                                          // LCOV_EXCL_STOP
 
+  LOG(L_EVEN_MORE_TRACE, "stat: %s: size: %" PRIu64 " m_time: %" PRIu64 "\n",
+      path, info->st_size, (uint64_t)info->st_mtime);
+
   return 0;
 }
 

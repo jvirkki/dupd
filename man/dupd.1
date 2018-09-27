@@ -239,6 +239,12 @@ Create symlinks for deleted files.
 .BR \-\-hardlink
 Create hard links for deleted files.
 .PP
+.B hash - Hash a single file and display result.
+.PP
+.TP
+.BR \-\-file " " PATH
+Required: The file to check
+.PP
 .B Additional global options
 .TP
 .BR \-q
@@ -256,6 +262,9 @@ Show brief help summary.
 .TP
 .BR \-\-db " " PATH
 Override the default database file location.
+.TP
+.BR \-C ", " \-\-cache " " PATH
+Override the default hash cache database file location.
 .TP
 .BR \-F ", " \-\-hash " " NAME
 Specify an different hash function.

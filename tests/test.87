@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+HASHDB=/tmp/test_hash_db
+source common
+
+rm -f $HASHDB
+
+DESC="hash command first time"
+$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f files4/1 | sed 's/.*:\(.*\)/\1/' > nreport
+checkrv $?
+check_nreport output.84
+
+echo "update hashes set hash='XXXXXX' where id=1;" | sqlite3 $HASHDB
+
+DESC="hash command hash corrupted"
+$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f files4/1 > /dev/null
+checkerr $?
+
+rm -f $HASHDB
+tdone

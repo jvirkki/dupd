@@ -240,6 +240,11 @@ OPTIONS
        --hardlink
               Create hard links for deleted files.
 
+       hash - Hash a single file and display result.
+
+       --file PATH
+              Required: The file to check
+
        Additional global options
 
        -q     Quiet, suppress all output.
@@ -254,6 +259,9 @@ OPTIONS
 
        --db PATH
               Override the default database file location.
+
+       -C, --cache PATH
+              Override the default hash cache database file location.
 
        -F, --hash NAME
               Specify an different hash function.  This applies to any command

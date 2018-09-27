@@ -50,12 +50,14 @@ static int operation = -1;
 static int start_path_count = 0;
 static int start_path_state = 0;
 static int free_db_path = 0;
+static int free_cache_db_path = 0;
 static int free_file_path = 0;
 int log_level = 1;
 int log_only = 0;
 char * start_path[MAX_START_PATH];
 char * file_path = NULL;
 char * db_path = NULL;
+char * cache_db_path = NULL;
 char * cut_path = NULL;
 char * exclude_path = NULL;
 int exclude_path_len = 0;
@@ -87,6 +89,9 @@ uint64_t buffer_limit = 0;
 int one_file_system = 0;
 int using_fiemap = 0;
 int max_open_files = 0;
+uint64_t cache_min_size = MB8;
+sqlite3 * cache_dbh = NULL;
+int no_hash_cache = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -102,6 +107,7 @@ char * log_level_name[] = {
   "TRACE ",
   "FILES ",
   "MORE_TRACE ",
+  "EVEN_MORE_TRACE"
 };
 
 
@@ -298,12 +304,23 @@ static int process_args(int argc, char * argv[])
     snprintf(db_path, DUPD_PATH_MAX, "%s/.dupd_sqlite", getenv("HOME"));
   }
 
+  cache_db_path = options[OPT_cache];
+  if (cache_db_path == NULL) {
+    cache_db_path = (char *)malloc(DUPD_PATH_MAX);
+    free_cache_db_path = 1;
+    snprintf(cache_db_path, DUPD_PATH_MAX, "%s/.dupd_cache", getenv("HOME"));
+  }
+
   if (options[OPT_link]) { rmsh_link = RMSH_LINK_SOFT; }
   if (options[OPT_hardlink]) { rmsh_link = RMSH_LINK_HARD; }
   if (options[OPT_hidden]) { scan_hidden = 1; }
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }
   if (options[OPT_one_file_system]) { one_file_system = 1; }
+  if (options[OPT_x_no_cache]) { no_hash_cache = 1; }
+
+  cache_min_size =
+    (uint64_t)opt_int(options[OPT_x_cache_min_size], cache_min_size);
 
   hash_one_block_size = opt_int(options[OPT_firstblocksize],
                                 hash_one_block_size);
@@ -490,6 +507,7 @@ int main(int argc, char * argv[])
     case COMMAND_man:       show_usage();                break;
     case COMMAND_help:      show_help();                 break;
     case COMMAND_testing:   testing();                   break;
+    case COMMAND_hash:      operation_hash_file();       break;
     case OPTGEN_NO_COMMAND: show_help();                 rv = 1; break;
 
     default:                                                 // LCOV_EXCL_START
@@ -500,6 +518,7 @@ int main(int argc, char * argv[])
  DONE:
   if (free_file_path) { free(file_path); }
   if (free_db_path) { free(db_path); }
+  if (free_cache_db_path) { free(cache_db_path); }
   if (path_sep_string) { free(path_sep_string); }
   free_size_tree();
   free_size_list();

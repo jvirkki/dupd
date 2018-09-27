@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -100,6 +100,18 @@ void operation_ls();
  *
  */
 int operation_validate();
+
+
+/** ***************************************************************************
+ * Operation 'hash', hash a single file and display result.
+ * If applicable, saves hash in cache.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void operation_hash_file();
 
 
 #endif

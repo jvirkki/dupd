@@ -669,3 +669,55 @@ int operation_validate()
   close_database(dbh);
   return(errors != 0);
 }
+
+
+/** ***************************************************************************
+ * Public function, see hash.h
+ *
+ */
+void operation_hash_file()
+{
+  char hashbuf[HASH_MAX_BUFSIZE];
+  STRUCT_STAT info;
+  uint64_t file_id;
+  uint64_t size;
+  uint32_t timestamp;
+  int rv = 0;
+
+  if (get_file_info(file_path, &info)) {
+    printf("error: unable to get file info\n");
+    exit(1);
+  }
+
+  size = (uint64_t)info.st_size;
+  timestamp = (uint32_t)info.st_mtime;
+
+  // If cache enabled and file large enough, check cache first
+  if (!no_hash_cache && size > cache_min_size) {
+    open_cache_database(cache_db_path);
+    rv = cache_db_find_entry(file_path, hash_function, &file_id,
+                             hashbuf, &size, &timestamp);
+    if (rv == CACHE_HASH_FOUND) {
+      LOG(L_INFO, "Found hash in cache for %s\n", file_path);
+      memdump(file_path, hashbuf, hash_bufsize);
+      close_cache_database();
+      return;
+    }
+  }
+
+  // Need to compute hash...
+  if (hash_fn(file_path, hashbuf, 0, 0, 0)) {
+    printf("error: unable to compute hash on %s\n", file_path);
+    exit(1);
+  }
+
+  memdump(file_path, hashbuf, hash_bufsize);
+
+  // If cache enabled and file large enough, save the hash
+  if (!no_hash_cache && size > cache_min_size) {
+    cache_db_add_entry(file_path, size, timestamp, hash_function,
+                       hashbuf, hash_bufsize);
+    close_cache_database();
+    LOG(L_INFO, "Saved hash in cache for %s\n", file_path);
+  }
+}

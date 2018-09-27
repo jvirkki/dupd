@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <sqlite3.h>
 
 #define K512 (1024 * 512)
 #define MB1 (1024 * 1024)
@@ -130,6 +131,13 @@ extern char * file_path;
  *
  */
 extern char * db_path;
+
+
+/** ***************************************************************************
+ * Path to the sqlite hash cache database.
+ *
+ */
+extern char * cache_db_path;
 
 
 /** ***************************************************************************
@@ -334,6 +342,27 @@ extern int one_file_system;
  *
  */
 extern int max_open_files;
+
+
+/** ***************************************************************************
+ * Minimum size of files considered for hash cache.
+ *
+ */
+extern uint64_t cache_min_size;
+
+
+/** ***************************************************************************
+ * If true, ignore hash cache.
+ *
+ */
+extern int no_hash_cache;
+
+
+/** ***************************************************************************
+ * Database connections.
+ *
+ */
+extern sqlite3 * cache_dbh;
 
 
 /** ***************************************************************************

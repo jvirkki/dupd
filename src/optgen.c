@@ -65,19 +65,22 @@ int option_sort_by[] = { 1 };
 int option_x_nofie[] = { 1 };
 int option_cut[] = { 3, 4, 5, 6, 7 };
 int option_format[] = { 3 };
-int option_file[] = { 4 };
+int option_file[] = { 4, 8 };
 int option_exclude_path[] = { 4, 5, 6, 7 };
-int option_link[] = { 8 };
-int option_hardlink[] = { 8 };
-int option_hash[] = { 16 };
-int option_verbose[] = { 16 };
-int option_verbose_level[] = { 16 };
-int option_quiet[] = { 16 };
-int option_db[] = { 16 };
-int option_help[] = { 16 };
-int option_x_small_buffers[] = { 16 };
-int option_x_testing[] = { 16 };
-int option_log_only[] = { 16 };
+int option_link[] = { 9 };
+int option_hardlink[] = { 9 };
+int option_hash[] = { 17 };
+int option_verbose[] = { 17 };
+int option_verbose_level[] = { 17 };
+int option_quiet[] = { 17 };
+int option_db[] = { 17 };
+int option_cache[] = { 17 };
+int option_help[] = { 17 };
+int option_x_small_buffers[] = { 17 };
+int option_x_testing[] = { 17 };
+int option_log_only[] = { 17 };
+int option_x_no_cache[] = { 17 };
+int option_x_cache_min_size[] = { 17 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -125,36 +128,40 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
     *command = 7;
     goto OPTS;
   }
-  if (l == 4 && !strncmp("rmsh", argv[1], 4)) {
+  if (l == 4 && !strncmp("hash", argv[1], 4)) {
     *command = 8;
     goto OPTS;
   }
-  if (l == 8 && !strncmp("validate", argv[1], 8)) {
+  if (l == 4 && !strncmp("rmsh", argv[1], 4)) {
     *command = 9;
     goto OPTS;
   }
-  if (l == 4 && !strncmp("help", argv[1], 4)) {
+  if (l == 8 && !strncmp("validate", argv[1], 8)) {
     *command = 10;
     goto OPTS;
   }
-  if (l == 5 && !strncmp("usage", argv[1], 5)) {
+  if (l == 4 && !strncmp("help", argv[1], 4)) {
     *command = 11;
     goto OPTS;
   }
-  if (l == 3 && !strncmp("man", argv[1], 3)) {
+  if (l == 5 && !strncmp("usage", argv[1], 5)) {
     *command = 12;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("license", argv[1], 7)) {
+  if (l == 3 && !strncmp("man", argv[1], 3)) {
     *command = 13;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("version", argv[1], 7)) {
+  if (l == 7 && !strncmp("license", argv[1], 7)) {
     *command = 14;
     goto OPTS;
   }
-  if (l == 7 && !strncmp("testing", argv[1], 7)) {
+  if (l == 7 && !strncmp("version", argv[1], 7)) {
     *command = 15;
+    goto OPTS;
+  }
+  if (l == 7 && !strncmp("testing", argv[1], 7)) {
+    *command = 16;
     goto OPTS;
   }
 
@@ -772,13 +779,35 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       continue;
     }
+    if ((l == 7 && !strncmp("--cache", argv[pos], 7))||
+        (l == 2 && !strncmp("-C", argv[pos], 2))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --cache\n");
+        exit(1);
+      }
+      options[26] = argv[pos+1];
+      pos += 2;
+      // strict_options: is cache allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_cache) / sizeof(option_cache)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_cache[cc] == *command) { ok = 1; }
+        if (option_cache[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'cache' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
     if ((l == 6 && !strncmp("--help", argv[pos], 6))||
         (l == 2 && !strncmp("-h", argv[pos], 2))) {
-      if (options[26] == NULL) {
-        options[26] = numstring[0];
+      if (options[27] == NULL) {
+        options[27] = numstring[0];
       } else {
-        options[26] = numstring[atoi(options[26])];
-        if (!strcmp(options[26], "X")) {
+        options[27] = numstring[atoi(options[27])];
+        if (!strcmp(options[27], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -799,11 +828,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 17 && !strncmp("--x-small-buffers", argv[pos], 17))) {
-      if (options[27] == NULL) {
-        options[27] = numstring[0];
+      if (options[28] == NULL) {
+        options[28] = numstring[0];
       } else {
-        options[27] = numstring[atoi(options[27])];
-        if (!strcmp(options[27], "X")) {
+        options[28] = numstring[atoi(options[28])];
+        if (!strcmp(options[28], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -824,11 +853,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 11 && !strncmp("--x-testing", argv[pos], 11))) {
-      if (options[28] == NULL) {
-        options[28] = numstring[0];
+      if (options[29] == NULL) {
+        options[29] = numstring[0];
       } else {
-        options[28] = numstring[atoi(options[28])];
-        if (!strcmp(options[28], "X")) {
+        options[29] = numstring[atoi(options[29])];
+        if (!strcmp(options[29], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -849,11 +878,11 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       continue;
     }
     if ((l == 10 && !strncmp("--log-only", argv[pos], 10))) {
-      if (options[29] == NULL) {
-        options[29] = numstring[0];
+      if (options[30] == NULL) {
+        options[30] = numstring[0];
       } else {
-        options[29] = numstring[atoi(options[29])];
-        if (!strcmp(options[29], "X")) {
+        options[30] = numstring[atoi(options[30])];
+        if (!strcmp(options[30], "X")) {
           printf("error: option %s repeated too many times!\n", argv[pos]);
           exit(1);
         }
@@ -869,6 +898,52 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'log_only' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 12 && !strncmp("--x-no-cache", argv[pos], 12))) {
+      if (options[31] == NULL) {
+        options[31] = numstring[0];
+      } else {
+        options[31] = numstring[atoi(options[31])];
+        if (!strcmp(options[31], "X")) {
+          printf("error: option %s repeated too many times!\n", argv[pos]);
+          exit(1);
+        }
+      }
+      pos++;
+      // strict_options: is x_no_cache allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_x_no_cache) / sizeof(option_x_no_cache)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_x_no_cache[cc] == *command) { ok = 1; }
+        if (option_x_no_cache[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'x_no_cache' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 18 && !strncmp("--x-cache-min-size", argv[pos], 18))) {
+      if (argv[pos+1] == NULL) {
+        printf("error: no value for arg --x-cache-min-size\n");
+        exit(1);
+      }
+      options[32] = argv[pos+1];
+      pos += 2;
+      // strict_options: is x_cache_min_size allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_x_cache_min_size) / sizeof(option_x_cache_min_size)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_x_cache_min_size[cc] == *command) { ok = 1; }
+        if (option_x_cache_min_size[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'x_cache_min_size' not compatible with given command\n");
         exit(1);
       }
       continue;
@@ -959,6 +1034,9 @@ void opt_show_help()
   printf("  -x --exclude-path PATH      ignore duplicates under this path\n");
   printf("  -I --hardlink-is-unique     ignore hard links as duplicates\n");
   printf("\n");
+  printf("hash      just hash one file, no duplicate detection\n");
+  printf("  -f --file PATH     check this file\n");
+  printf("\n");
   printf("rmsh      create shell script to delete all duplicates\n");
   printf("  -L --link         create symlinks for deleted files\n");
   printf("  -H --hardlink     create hard links for deleted files\n");
@@ -981,6 +1059,7 @@ void opt_show_help()
   printf("  -V --verbose-level N     set verbosity level to N\n");
   printf("  -q --quiet               quiet, supress all output except fatal errors\n");
   printf("  -d --db PATH             path to dupd database file\n");
+  printf("  -C --cache PATH          path to dupd hash cache file\n");
   printf("  -h --help                show brief usage info\n");
   printf("\n");
 }

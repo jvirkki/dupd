@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "dbops.h"
+#include "hash.h"
 #include "main.h"
 #include "stats.h"
 #include "utils.h"
@@ -68,6 +69,29 @@ static void single_statement(sqlite3 * dbh, const char * sql)
   rvchk(rv, SQLITE_DONE, "Can't step: (rv=%d) %s\n", dbh);
 
   sqlite3_finalize(statement);
+}
+
+
+/** ***************************************************************************
+ * Create the hash cache tables.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+static void initialize_cache_database()
+{
+  single_statement(cache_dbh, "CREATE TABLE files "
+                              "(id INTEGER PRIMARY KEY, "
+                              "path TEXT NOT NULL UNIQUE, size INTEGER, "
+                              "timestamp INTEGER)");
+
+  single_statement(cache_dbh, "CREATE TABLE hashes "
+                              "(id INTEGER, alg INTEGER, hash BLOB, "
+                              "PRIMARY KEY(id,alg), "
+                              "FOREIGN KEY(id) REFERENCES files(id) "
+                              ")");
 }
 
 
@@ -121,6 +145,62 @@ static void initialize_database(sqlite3 * dbh)
   rvchk(rv, SQLITE_DONE, "tried to set meta data: %s\n", dbh);
 
   sqlite3_finalize(stmt);
+}
+
+
+/** ***************************************************************************
+ * Delete all hash entries for a path and update size/timestamp info.
+ *
+ * Called when the file has changed, which means all the stored hashes are
+ * now invalid.
+ *
+ * Parameters:
+ *    path      - Path of the file to add hash.
+ *    file_id   - The row id of path in the db.
+ *    size      - Current size of the file.
+ *    timestamp - Current modified time (st_mtime) of the file.
+ *
+ * Return: none
+ *
+ */
+static void cache_db_scrub_entry(char * path, uint64_t file_id,
+                                 uint64_t size, uint32_t timestamp)
+{
+  static char * sql = "DELETE FROM hashes WHERE id=?";
+  static char * sqlu = "UPDATE files SET size=?, timestamp=? WHERE id=?";
+  sqlite3_stmt * statement = NULL;
+  int rv;
+
+  LOG(L_MORE_INFO, "cache_db_scrub_entry: delete all hashes for file_id: %"
+      PRIu64 " [%s]\n", file_id, path);
+
+  // Delete all hash entries for this file
+
+  rv = sqlite3_prepare_v2(cache_dbh, sql, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(statement, 1, file_id);
+  rvchk(rv, SQLITE_OK, "Can't bind file_id: %s\n", cache_dbh);
+
+  rv = sqlite3_step(statement);
+  sqlite3_finalize(statement);
+
+  // Update the size and timestamp to new values
+
+  rv = sqlite3_prepare_v2(cache_dbh, sqlu, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(statement, 1, size);
+  rvchk(rv, SQLITE_OK, "Can't bind size: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(statement, 2, timestamp);
+  rvchk(rv, SQLITE_OK, "Can't bind timestamp: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(statement, 3, file_id);
+  rvchk(rv, SQLITE_OK, "Can't bind id: %s\n", cache_dbh);
+
+  rv = sqlite3_step(statement);
+  sqlite3_finalize(statement);
 }
 
 
@@ -219,6 +299,27 @@ sqlite3 * open_database(char * path, int newdb)
  * Public function, see header file.
  *
  */
+void open_cache_database(char * path)
+{
+  int rv;
+  int newdb = 0;
+
+  if (!file_exists(path)) { newdb = 1; }
+
+  rv = sqlite3_open(path, &cache_dbh);
+  rvchk(rv, SQLITE_OK, "Can't open database: %s\n", cache_dbh);
+
+  if (newdb) {
+    initialize_cache_database(cache_dbh);
+    LOG(L_INFO, "Done initializing new cache database [%s]\n", path);
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void close_database(sqlite3 * dbh)
 {
   if (dbh == NULL) {                                         // LCOV_EXCL_START
@@ -254,6 +355,28 @@ void close_database(sqlite3 * dbh)
 
   LOG(L_PROGRESS, "warning: unable to close database!\n");
 }
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void close_cache_database()
+{
+  if (cache_dbh == NULL) {                                   // LCOV_EXCL_START
+    return;
+  }                                                          // LCOV_EXCL_STOP
+
+  int rv = sqlite3_close(cache_dbh);
+  cache_dbh = NULL;
+  if (rv == SQLITE_OK) {
+    LOG(L_MORE_INFO, "closed cache database\n");
+    return;
+  }
+
+  LOG(L_PROGRESS, "warning: unable to close cache database!\n");
+}
+
 
 /** ***************************************************************************
  * Public function, see header file.
@@ -533,4 +656,182 @@ void free_get_known_duplicates()
   }
   free(known_dup_path_list);
   known_dup_path_list = NULL;
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
+                        char * hash, uint64_t * size, uint32_t * timestamp)
+{
+  static char * sqlf = "SELECT id, size, timestamp FROM files WHERE path=?";
+  static char * sqlh = "SELECT hash FROM hashes WHERE id=? AND alg=?";
+  sqlite3_stmt * statement = NULL;
+  uint64_t size_from_db = 0;
+  uint32_t timestamp_from_db = 0;
+  int found_hash = 0;
+  int rv;
+
+  *file_id = 0;
+
+  LOG(L_FILES, "Attempting to find hash from cache for %s\n", path);
+
+  rv = sqlite3_prepare_v2(cache_dbh, sqlf, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_text(statement, 1, path, -1, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind path: %s\n", cache_dbh);
+
+  rv = sqlite3_step(statement);
+  if (rv == SQLITE_ROW) {
+    *file_id = (uint64_t)sqlite3_column_int64(statement, 0);
+    size_from_db = (uint64_t)sqlite3_column_int64(statement, 1);
+    timestamp_from_db = (uint32_t)sqlite3_column_int64(statement, 2);
+  }
+
+  sqlite3_finalize(statement);
+  if (*file_id == 0) {
+    LOG(L_FILES, "%s: CACHE_FILE_NOT_PRESENT\n", path);
+    return CACHE_FILE_NOT_PRESENT;
+  }
+
+  // If size or timestamp don't match, hashes are invalid
+  if (*timestamp != timestamp_from_db || *size != size_from_db) {
+    LOG(L_MORE_TRACE, "Invalidating hashes for %s (timestamp: %" PRIu32
+        " from_db: %" PRIu32 " ; size: %" PRIu64 " from_db: %" PRIu64 ")\n",
+        path, *timestamp, timestamp_from_db, *size, size_from_db);
+    cache_db_scrub_entry(path, *file_id, *size, *timestamp);
+    LOG(L_FILES, "%s: CACHE_HASH_NOT_PRESENT\n", path);
+    return CACHE_HASH_NOT_PRESENT;
+  }
+
+  LOG(L_MORE_TRACE, "cache db: file found, id=%" PRIu64 ", timestamp=%"
+      PRIu32 ", size=%" PRIu64 "\n", *file_id, *timestamp, *size);
+
+  rv = sqlite3_prepare_v2(cache_dbh, sqlh, -1, &statement, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(statement, 1, *file_id);
+  rvchk(rv, SQLITE_OK, "Can't bind file_id: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(statement, 2, hash_alg);
+  rvchk(rv, SQLITE_OK, "Can't bind hash_alg: %s\n", cache_dbh);
+
+  rv = sqlite3_step(statement);
+
+  if (rv == SQLITE_ROW) {
+    int bytes = sqlite3_column_bytes(statement, 0);
+    if (bytes != hash_bufsize) {
+      printf("error: cache_db hash for alg %d has size %d, expected %d\n",
+             hash_alg, bytes, hash_bufsize);
+      exit(1);
+    }
+    memcpy(hash, sqlite3_column_blob(statement, 0), hash_bufsize);
+    found_hash = 1;
+  }
+
+  sqlite3_finalize(statement);
+
+  if (found_hash) {
+    LOG(L_FILES, "%s: CACHE_HASH_FOUND\n", path);
+    return CACHE_HASH_FOUND;
+  } else {
+    LOG(L_FILES, "%s: CACHE_HASH_NOT_PRESENT\n", path);
+    return CACHE_HASH_NOT_PRESENT;
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void cache_db_add_entry(char * path, uint64_t size, uint32_t timestamp,
+                        int hash_alg, char * hash, int hash_len)
+{
+  char hash_from_db[HASH_MAX_BUFSIZE];
+  uint64_t size_from_db;
+  uint32_t time_from_db;
+  uint64_t file_id = 0;
+  int rv;
+
+  LOG(L_FILES, "cache_db_add_entry (hash_alg=%d): %s\n", hash_alg, path);
+
+  // This file may or may not be in the table already.
+  // If the file has changed, size and/or timestamp may not match.
+  // If it is in the table and is current, it may or may not have a hash
+  // for the current hash_alg.
+
+  // So, first let's retrieve whatever we have on this file...
+  rv = cache_db_find_entry(path, hash_alg, &file_id, hash_from_db,
+                           &size_from_db, &time_from_db);
+
+  // If the hash was found then we're done, the intended hash is already there.
+  // If it doesn't match, something is very wrong...
+
+  if (rv == CACHE_HASH_FOUND) {
+    if (memcmp(hash, hash_from_db, hash_len)) {
+      printf("error: hash from cache db does not match hash for %s\n", path);
+      memdump(" hash from db", hash_from_db, hash_len);
+      memdump("computed hash", hash, hash_len);
+      exit(1);
+    }
+    return;
+  }
+
+  // We're here, so the desired hash entry is not present.
+  // The file entry may or may not. If not, let's add it first.
+
+  if (rv == CACHE_FILE_NOT_PRESENT) {
+    sqlite3_stmt * stmt1;
+    const char * sqlf = "INSERT INTO files (path, size, timestamp) "
+                        "VALUES (?, ?, ?)";
+    rv = sqlite3_prepare_v2(cache_dbh, sqlf, -1, &stmt1, NULL);
+    rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
+
+    rv = sqlite3_bind_text(stmt1, 1, path, -1, SQLITE_STATIC);
+    rvchk(rv, SQLITE_OK, "Can't bind path: %s\n", cache_dbh);
+
+    rv = sqlite3_bind_int64(stmt1, 2, size);
+    rvchk(rv, SQLITE_OK, "Can't bind size: %s\n", cache_dbh);
+
+    rv = sqlite3_bind_int64(stmt1, 3, timestamp);
+    rvchk(rv, SQLITE_OK, "Can't bind size: %s\n", cache_dbh);
+
+    rv = sqlite3_step(stmt1);
+    rvchk(rv, SQLITE_DONE, "tried to insert file: %s\n", cache_dbh);
+
+    sqlite3_finalize(stmt1);
+
+    // Need file_id of new file row we just added
+
+    file_id = sqlite3_last_insert_rowid(cache_dbh);
+    LOG(L_FILES, "Added file to cache db: file_id=%" PRIu64 ": %s\n",
+        file_id, path);
+  }
+
+  // And then finally save the hash
+
+  sqlite3_stmt * stmt2;
+  const char * sqlh = "INSERT INTO hashes (id, alg, hash) "
+                      "VALUES (?, ?, ?)";
+  rv = sqlite3_prepare_v2(cache_dbh, sqlh, -1, &stmt2, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(stmt2, 1, file_id);
+  rvchk(rv, SQLITE_OK, "Can't bind id: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_int(stmt2, 2, hash_alg);
+  rvchk(rv, SQLITE_OK, "Can't bind alg: %s\n", cache_dbh);
+
+  rv = sqlite3_bind_blob(stmt2, 3, hash,
+                         (sqlite3_uint64)hash_len, SQLITE_STATIC);
+  rvchk(rv, SQLITE_OK, "Can't bind hash: %s\n", cache_dbh);
+
+  rv = sqlite3_step(stmt2);
+  rvchk(rv, SQLITE_DONE, "tried to insert hash: %s\n", cache_dbh);
+
+  sqlite3_finalize(stmt2);
 }

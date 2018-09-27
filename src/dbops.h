@@ -24,6 +24,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#define CACHE_FILE_NOT_PRESENT 5
+#define CACHE_HASH_NOT_PRESENT 6
+#define CACHE_HASH_FOUND 7
+
 
 /** ***************************************************************************
  * Open the sqlite database.
@@ -39,6 +43,18 @@ sqlite3 * open_database(char * path, int newdb);
 
 
 /** ***************************************************************************
+ * Open the sqlite hash cache database.
+ *
+ * Parameters:
+ *    path  - path to the file containing the hash database
+ *
+ * Return: none
+ *
+ */
+void open_cache_database(char * path);
+
+
+/** ***************************************************************************
  * Close the sqlite database.
  *
  * Parameters:
@@ -48,6 +64,17 @@ sqlite3 * open_database(char * path, int newdb);
  *
  */
 void close_database(sqlite3 * dbh);
+
+
+/** ***************************************************************************
+ * Close the sqlite hash cache database.
+ *
+ * Parameters: none
+ *
+ * Return: none
+ *
+ */
+void close_cache_database();
 
 
 /** ***************************************************************************
@@ -155,6 +182,67 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups);
  *
  */
 void free_get_known_duplicates();
+
+
+/** ***************************************************************************
+ * Find the hash of a given path in the hash cache.
+ *
+ * If the path is not in the db, just returns CACHE_FILE_NOT_PRESENT.
+ *
+ * If the path is present but either the size or timestamp given do not
+ * match the values in the db (that is, the file has been modified after
+ * the db entry was created) then all the hash values present in the db
+ * are deleted (as they are no longer valid) and the size and timestamp
+ * are updated to the current values. Function returns CACHE_HASH_NOT_PRESENT.
+ *
+ * If the path is present and up to date but no matching hash_alg hash is
+ * present, returns CACHE_HASH_NOT_PRESENT.
+ *
+ * If path is present and up to date and desired hash_alg is found, the
+ * hash is copied into 'hash' buffer (which caller must have allocated)
+ * and CACHE_HASH_FOUND is returned.
+ *
+ * Parameters:
+ *    path      - Path of the file to check.
+ *    hash_alg  - Which hash type to find (should always be 'hash_function').
+ *    file_id   - On success, the file_id (db row) is set here.
+ *    hash      - On success, the hash is copied here (caller allocated).
+ *    size      - Must contain the current size of the file.
+ *    timestamp - Must contain current modified time (st_mtime) of the file.
+ *
+ * Return:
+ *    CACHE_FILE_NOT_PRESENT - If path not in cache db.
+ *    CACHE_HASH_NOT_PRESENT - If path is present but desired hash is not.
+ *    CACHE_HASH_FOUND       - Hash found (populated into 'hash' buffer).
+ *
+ */
+int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
+                        char * hash, uint64_t * size, uint32_t * timestamp);
+
+
+/** ***************************************************************************
+ * Add hash for a path to the hash cache db.
+ *
+ * If the corresponding hash is already in the db and up to date, do nothing.
+ *
+ * If data in the db is not up to date, it is removed and replaced.
+ *
+ * Otherwise, adds the path to the db if not already there and then adds
+ * the given hash/hash_alg pair to the db.
+ *
+ * Parameters:
+ *    path      - Path of the file to add hash.
+ *    size      - Must contain the current size of the file.
+ *    timestamp - Must contain current modified time (st_mtime) of the file.
+ *    hash_alg  - Which hash type to find (should always be 'hash_function').
+ *    hash      - The hash to save is here.
+ *    hash_len  - Lenght of 'hash' (bytes).
+ *
+ * Return: none
+ *
+ */
+void cache_db_add_entry(char * path, uint64_t size, uint32_t timestamp,
+                        int hash_alg, char * hash, int hash_len);
 
 
 #endif
