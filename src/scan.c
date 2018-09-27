@@ -385,6 +385,8 @@ void scan()
   init_dirtree();
   init_read_list();
 
+  open_cache_database(cache_db_path);
+
   dbh = open_database(db_path, 1);
   begin_transaction(dbh);
 
@@ -454,6 +456,7 @@ void scan()
   if (s_total_files_seen == 0) {
     commit_transaction(dbh);
     close_database(dbh);
+    close_cache_database(dbh);
     stats_process_duration = 0;
     return;
   }
@@ -479,6 +482,7 @@ void scan()
 
   commit_transaction(dbh);
   close_database(dbh);
+  close_cache_database(dbh);
 
   LOG_RESOURCES {
     report_path_block_usage();

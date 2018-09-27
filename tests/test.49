@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+HASHDB=/tmp/test_hash_db
+
 source common
 
 DESC="scan(files3): 20K files"
@@ -11,7 +13,7 @@ do
     echo $i > files3/tmp.$i
 done
 
-$DUPD_CMD scan --path `pwd`/files3 --x-small-buffers -v > /dev/null
+$DUPD_CMD scan --cache $HASHDB --path `pwd`/files3 --x-small-buffers -v > /dev/null
 checkrv $?
 
 DESC="generate report"

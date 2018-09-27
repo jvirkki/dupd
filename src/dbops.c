@@ -678,6 +678,11 @@ int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
 
   LOG(L_FILES, "Attempting to find hash from cache for %s\n", path);
 
+  if (*size == 0 || *timestamp == 0) {
+    printf("error: cache_db_find_entry: size/timestamp can't be zero.\n");
+    exit(1);
+  }
+
   rv = sqlite3_prepare_v2(cache_dbh, sqlf, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
 
@@ -752,12 +757,25 @@ void cache_db_add_entry(char * path, uint64_t size, uint32_t timestamp,
                         int hash_alg, char * hash, int hash_len)
 {
   char hash_from_db[HASH_MAX_BUFSIZE];
-  uint64_t size_from_db;
-  uint32_t time_from_db;
+  uint64_t size_from_db = size;
+  uint32_t time_from_db = timestamp;
   uint64_t file_id = 0;
   int rv;
 
   LOG(L_FILES, "cache_db_add_entry (hash_alg=%d): %s\n", hash_alg, path);
+
+  // If timestamp is not set, do so now.
+  if (timestamp == 0) {
+    STRUCT_STAT info;
+
+    if (get_file_info(path, &info)) {
+      printf("error: unable to stat %s\n", path);
+      exit(1);
+    }
+
+    timestamp = (uint32_t)info.st_mtime;
+    time_from_db = timestamp;
+  }
 
   // This file may or may not be in the table already.
   // If the file has changed, size and/or timestamp may not match.
