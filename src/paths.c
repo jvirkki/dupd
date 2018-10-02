@@ -23,6 +23,7 @@
 #include <strings.h>
 #include <unistd.h>
 
+#include "dbops.h"
 #include "dirtree.h"
 #include "hash.h"
 #include "main.h"
@@ -67,6 +68,7 @@ void dump_path_list(const char * line, uint64_t size,
   printf("  buffer_ready: %d\n", head->buffer_ready);
   printf("  state: %s\n", pls_state(head->state));
   printf("  hash_passes: %d\n", head->hash_passes);
+  printf("  have_cached_hashes: %d\n", head->have_cached_hashes);
   printf("  sizelist back ptr: %p\n", head->sizelist);
 
   if (head->sizelist != NULL) {
@@ -143,7 +145,7 @@ static struct path_block_list * alloc_path_block(int bsize)
   next->next = NULL;
   next->ptr = (char *)malloc(bsize);
 
-  if (next->ptr == NULL) {                                  // LCOV_EXCL_START
+  if (next->ptr == NULL) {                                   // LCOV_EXCL_START
     printf("Unable to allocate new path block!\n");
     exit(1);
   }                                                          // LCOV_EXCL_STOP
@@ -306,6 +308,7 @@ struct path_list_head * insert_first_path(char * filename,
   // Haven't read anything yet
   head->buffer_ready = 0;
   head->hash_passes = 0;
+  head->have_cached_hashes = 1;
 
   // New path list
   head->state = PLS_NEED_DATA;
@@ -417,12 +420,26 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
     block_list = get_block_info_from_path(pathbuf, info.st_ino, size,fiemap);
     prior->blocks = block_list;
     add_to_read_list(head, prior, info.st_ino);
+
+    if (use_hash_cache && size > cache_min_size) {
+      if (cache_db_check_entry(pathbuf) != CACHE_HASH_FOUND) {
+        head->have_cached_hashes = 0;
+      }
+    } else {
+      head->have_cached_hashes = 0;
+    }
   }
 
   build_path_from_string(filename, dir_entry, pathbuf);
   block_list = get_block_info_from_path(pathbuf, inode, size, fiemap);
   entry->blocks = block_list;
   add_to_read_list(head, entry, inode);
+
+  if (use_hash_cache && size > cache_min_size) {
+    if (cache_db_check_entry(pathbuf) != CACHE_HASH_FOUND) {
+      head->have_cached_hashes = 0;
+    }
+  }
 
   LOG_EVEN_MORE_TRACE {
     dump_path_list("AFTER insert_end_path", size, head, 0);
@@ -495,11 +512,12 @@ int mark_path_entry_invalid(struct path_list_head * head,
   if (entry->state != FS_INVALID) {
 
     if (head->list_size == 0) {
+                                                             // LCOV_EXCL_START
       printf("error: called to invalidate entry (not already invalid) "
              "but list size is zero!!\n");
       dump_path_list("bad state", head->sizelist->size, head, 1);
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
 
     entry->state = FS_INVALID;
     head->list_size--;
@@ -545,20 +563,22 @@ int mark_path_entry_invalid(struct path_list_head * head,
         break;
 
       default:
+                                                             // LCOV_EXCL_START
         printf("error: invalid state seen in mark_path_entry_invalid\n");
         dump_path_list("bad state", head->sizelist->size, head, 1);
         exit(1);
         break;
-      }
+      }                                                      // LCOV_EXCL_STOP
 
       e = e->next;
     }
 
     if (good != 1) {
+                                                             // LCOV_EXCL_START
       printf("error: mark_path_entry_invalid wrong count of good paths\n");
       dump_path_list("bad state", head->sizelist->size, head, 1);
       exit(1);
-    }
+    }                                                        // LCOV_EXCL_STOP
   }
 
   return head->list_size;

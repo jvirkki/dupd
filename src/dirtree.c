@@ -84,7 +84,7 @@ void init_dirtree()
 {
   int init_size = 64 * MB1;
 
-  if (x_small_buffers) { init_size = 1024; }
+  if (x_small_buffers) { init_size = 128; }
 
   first_dirbuf = (struct dirbuf_list *)malloc(sizeof(struct dirbuf_list));
   first_dirbuf->ptr = (char *)malloc(init_size);

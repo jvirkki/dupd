@@ -120,6 +120,9 @@ extern uint32_t s_files_completed_unique;
 extern int current_open_files;
 
 
+extern uint32_t stats_size_list_done_from_cache;
+
+
 /** ***************************************************************************
  * Print some stats to stdout depending on verbosity.
  *

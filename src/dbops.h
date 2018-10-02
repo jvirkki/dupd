@@ -189,7 +189,7 @@ void free_get_known_duplicates();
  *
  * If the path is not in the db, just returns CACHE_FILE_NOT_PRESENT.
  *
- * If the path is present but either the size or timestamp given do not
+ * If the path is present but either the size or timestamp do not
  * match the values in the db (that is, the file has been modified after
  * the db entry was created) then all the hash values present in the db
  * are deleted (as they are no longer valid) and the size and timestamp
@@ -204,11 +204,8 @@ void free_get_known_duplicates();
  *
  * Parameters:
  *    path      - Path of the file to check.
- *    hash_alg  - Which hash type to find (should always be 'hash_function').
  *    file_id   - On success, the file_id (db row) is set here.
- *    hash      - On success, the hash is copied here (caller allocated).
- *    size      - Must contain the current size of the file.
- *    timestamp - Must contain current modified time (st_mtime) of the file.
+ *    hashbuf   - On success, the hash is copied here (caller allocated).
  *
  * Return:
  *    CACHE_FILE_NOT_PRESENT - If path not in cache db.
@@ -216,8 +213,43 @@ void free_get_known_duplicates();
  *    CACHE_HASH_FOUND       - Hash found (populated into 'hash' buffer).
  *
  */
-int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
-                        char * hash, uint64_t * size, uint32_t * timestamp);
+int cache_db_find_entry_id(char * path, uint64_t * file_id, char * hashbuf);
+
+
+/** ***************************************************************************
+ * Find the hash of a given path in the hash cache.
+ *
+ * Same as cache_db_find_entry_id() but the file_id is not returned.
+ *
+ * Parameters:
+ *    path      - Path of the file to check.
+ *    hashbuf   - On success, the hash is copied here (caller allocated).
+ *
+ * Return:
+ *    CACHE_FILE_NOT_PRESENT - If path not in cache db.
+ *    CACHE_HASH_NOT_PRESENT - If path is present but desired hash is not.
+ *    CACHE_HASH_FOUND       - Hash found (populated into 'hash' buffer).
+ *
+ */
+int cache_db_find_entry(char * path, char * hashbuf);
+
+
+/** ***************************************************************************
+ * Find if the hash of a given path is in the hash cache.
+ *
+ * Same as cache_db_find_entry_id() but neither file_id nor the hash
+ * is returned.
+ *
+ * Parameters:
+ *    path      - Path of the file to check.
+ *
+ * Return:
+ *    CACHE_FILE_NOT_PRESENT - If path not in cache db.
+ *    CACHE_HASH_NOT_PRESENT - If path is present but desired hash is not.
+ *    CACHE_HASH_FOUND       - Hash found (populated into 'hash' buffer).
+ *
+ */
+int cache_db_check_entry(char * path);
 
 
 /** ***************************************************************************
@@ -232,17 +264,12 @@ int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
  *
  * Parameters:
  *    path      - Path of the file to add hash.
- *    size      - Must contain the current size of the file.
- *    timestamp - Must contain current modified time (st_mtime) of the file.
- *    hash_alg  - Which hash type to find (should always be 'hash_function').
  *    hash      - The hash to save is here.
  *    hash_len  - Lenght of 'hash' (bytes).
  *
  * Return: none
  *
  */
-void cache_db_add_entry(char * path, uint64_t size, uint32_t timestamp,
-                        int hash_alg, char * hash, int hash_len);
-
+void cache_db_add_entry(char * path, char * hash, int hash_len);
 
 #endif

@@ -138,12 +138,8 @@ static int build_hash_list_round(sqlite3 * dbh,
 
   if (!completed) {
     // Will be reading more, so increase buffer size for next time around
+    size_node->path_list->wanted_bufsize = K512;
 
-    if (size_node->path_list->hash_passes == 1) {
-      size_node->path_list->wanted_bufsize = MB2;
-    } else if (size_node->path_list->hash_passes > 2) {
-      size_node->path_list->wanted_bufsize = MB16;
-    }
     if (size_node->path_list->wanted_bufsize > size_node->size) {
       size_node->path_list->wanted_bufsize = size_node->size;
     }

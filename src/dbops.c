@@ -158,7 +158,7 @@ static void initialize_database(sqlite3 * dbh)
  *    path      - Path of the file to add hash.
  *    file_id   - The row id of path in the db.
  *    size      - Current size of the file.
- *    timestamp - Current modified time (st_mtime) of the file.
+ *    timestamp - Current modified time.
  *
  * Return: none
  *
@@ -663,14 +663,41 @@ void free_get_known_duplicates()
  * Public function, see header file.
  *
  */
-int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
-                        char * hash, uint64_t * size, uint32_t * timestamp)
+int cache_db_check_entry(char * path)
+{
+  static char buf[HASH_MAX_BUFSIZE];
+  uint64_t file_id;
+
+  return cache_db_find_entry_id(path, &file_id, buf);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int cache_db_find_entry(char * path, char * hashbuf)
+{
+  uint64_t file_id;
+
+  return cache_db_find_entry_id(path, &file_id, hashbuf);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int cache_db_find_entry_id(char * path, uint64_t * file_id, char * hashbuf)
 {
   static char * sqlf = "SELECT id, size, timestamp FROM files WHERE path=?";
   static char * sqlh = "SELECT hash FROM hashes WHERE id=? AND alg=?";
+  STRUCT_STAT info;
   sqlite3_stmt * statement = NULL;
   uint64_t size_from_db = 0;
+  uint64_t size = 0;
   uint32_t timestamp_from_db = 0;
+  uint32_t timestamp = 0;
   int found_hash = 0;
   int rv;
 
@@ -678,10 +705,13 @@ int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
 
   LOG(L_FILES, "Attempting to find hash from cache for %s\n", path);
 
-  if (*size == 0 || *timestamp == 0) {
-    printf("error: cache_db_find_entry: size/timestamp can't be zero.\n");
+  if (get_file_info(path, &info)) {
+    printf("error: unable to stat %s\n", path);
     exit(1);
   }
+
+  timestamp = (uint32_t)info.st_ctime;
+  size = (uint64_t)info.st_size;
 
   rv = sqlite3_prepare_v2(cache_dbh, sqlf, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
@@ -703,17 +733,17 @@ int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
   }
 
   // If size or timestamp don't match, hashes are invalid
-  if (*timestamp != timestamp_from_db || *size != size_from_db) {
+  if (timestamp != timestamp_from_db || size != size_from_db) {
     LOG(L_MORE_TRACE, "Invalidating hashes for %s (timestamp: %" PRIu32
         " from_db: %" PRIu32 " ; size: %" PRIu64 " from_db: %" PRIu64 ")\n",
-        path, *timestamp, timestamp_from_db, *size, size_from_db);
-    cache_db_scrub_entry(path, *file_id, *size, *timestamp);
+        path, timestamp, timestamp_from_db, size, size_from_db);
+    cache_db_scrub_entry(path, *file_id, size, timestamp);
     LOG(L_FILES, "%s: CACHE_HASH_NOT_PRESENT\n", path);
     return CACHE_HASH_NOT_PRESENT;
   }
 
   LOG(L_MORE_TRACE, "cache db: file found, id=%" PRIu64 ", timestamp=%"
-      PRIu32 ", size=%" PRIu64 "\n", *file_id, *timestamp, *size);
+      PRIu32 ", size=%" PRIu64 "\n", *file_id, timestamp, size);
 
   rv = sqlite3_prepare_v2(cache_dbh, sqlh, -1, &statement, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", cache_dbh);
@@ -721,7 +751,7 @@ int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
   rv = sqlite3_bind_int(statement, 1, *file_id);
   rvchk(rv, SQLITE_OK, "Can't bind file_id: %s\n", cache_dbh);
 
-  rv = sqlite3_bind_int(statement, 2, hash_alg);
+  rv = sqlite3_bind_int(statement, 2, hash_function);
   rvchk(rv, SQLITE_OK, "Can't bind hash_alg: %s\n", cache_dbh);
 
   rv = sqlite3_step(statement);
@@ -730,10 +760,10 @@ int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
     int bytes = sqlite3_column_bytes(statement, 0);
     if (bytes != hash_bufsize) {
       printf("error: cache_db hash for alg %d has size %d, expected %d\n",
-             hash_alg, bytes, hash_bufsize);
+             hash_function, bytes, hash_bufsize);
       exit(1);
     }
-    memcpy(hash, sqlite3_column_blob(statement, 0), hash_bufsize);
+    memcpy(hashbuf, sqlite3_column_blob(statement, 0), hash_bufsize);
     found_hash = 1;
   }
 
@@ -753,29 +783,24 @@ int cache_db_find_entry(char * path, int hash_alg, uint64_t * file_id,
  * Public function, see header file.
  *
  */
-void cache_db_add_entry(char * path, uint64_t size, uint32_t timestamp,
-                        int hash_alg, char * hash, int hash_len)
+void cache_db_add_entry(char * path, char * hash, int hash_len)
 {
   char hash_from_db[HASH_MAX_BUFSIZE];
-  uint64_t size_from_db = size;
-  uint32_t time_from_db = timestamp;
   uint64_t file_id = 0;
+  uint64_t size;
+  uint32_t timestamp;
+  STRUCT_STAT info;
   int rv;
 
-  LOG(L_FILES, "cache_db_add_entry (hash_alg=%d): %s\n", hash_alg, path);
+  LOG(L_FILES, "cache_db_add_entry (hash_alg=%d): %s\n", hash_function, path);
 
-  // If timestamp is not set, do so now.
-  if (timestamp == 0) {
-    STRUCT_STAT info;
-
-    if (get_file_info(path, &info)) {
-      printf("error: unable to stat %s\n", path);
-      exit(1);
-    }
-
-    timestamp = (uint32_t)info.st_mtime;
-    time_from_db = timestamp;
+  if (get_file_info(path, &info)) {
+    printf("error: unable to stat %s\n", path);
+    exit(1);
   }
+
+  timestamp = (uint32_t)info.st_ctime;
+  size = (uint64_t)info.st_size;
 
   // This file may or may not be in the table already.
   // If the file has changed, size and/or timestamp may not match.
@@ -783,8 +808,7 @@ void cache_db_add_entry(char * path, uint64_t size, uint32_t timestamp,
   // for the current hash_alg.
 
   // So, first let's retrieve whatever we have on this file...
-  rv = cache_db_find_entry(path, hash_alg, &file_id, hash_from_db,
-                           &size_from_db, &time_from_db);
+  rv = cache_db_find_entry_id(path, &file_id, hash_from_db);
 
   // If the hash was found then we're done, the intended hash is already there.
   // If it doesn't match, something is very wrong...
@@ -841,7 +865,7 @@ void cache_db_add_entry(char * path, uint64_t size, uint32_t timestamp,
   rv = sqlite3_bind_int(stmt2, 1, file_id);
   rvchk(rv, SQLITE_OK, "Can't bind id: %s\n", cache_dbh);
 
-  rv = sqlite3_bind_int(stmt2, 2, hash_alg);
+  rv = sqlite3_bind_int(stmt2, 2, hash_function);
   rvchk(rv, SQLITE_OK, "Can't bind alg: %s\n", cache_dbh);
 
   rv = sqlite3_bind_blob(stmt2, 3, hash,

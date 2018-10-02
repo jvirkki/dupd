@@ -110,6 +110,8 @@ uint32_t s_files_processed = 0;         // Files entered to path list
 uint32_t s_files_completed_dups = 0;    // Files processed, found to be dups
 uint32_t s_files_completed_unique = 0;  // Files processed, found to be unique
 
+uint32_t stats_size_list_done_from_cache = 0; // Size sets done from cache
+
 int current_open_files = 0;
 
 
@@ -180,6 +182,10 @@ void save_stats()
   fprintf(fp, "fiemap_zero_blocks %" PRIu32 "\n", stats_fiemap_zero_blocks);
   fprintf(fp, "duplicate_files %" PRIu32 "\n", s_files_completed_dups);
   fprintf(fp, "duplicate_groups %" PRIu32 "\n", stats_duplicate_groups);
+
+
+  fprintf(fp, "size_list_done_from_cache %" PRIu32 "\n",
+          stats_size_list_done_from_cache);
 
   fprintf(fp, "\n");
   fclose(fp);

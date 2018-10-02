@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "dbops.h"
 #include "dirtree.h"
 #include "filecompare.h"
 #include "hash.h"
@@ -663,6 +664,75 @@ static void * read_list_reader(void * arg)
 
 
 /** ***************************************************************************
+ * Look for size list entries for which all hashes are already known from
+ * the cache and process them.
+ *
+ * This is called before regular size list processing begins and we're
+ * single-threaded at this point. Hasher/reader threads not started yet.
+ *
+ * Parameters:
+ *    dbh - Database pointer.
+ *
+ * Return: none
+ *
+ */
+void process_cached_hashes(sqlite3 * dbh)
+{
+  char pathbuf[DUPD_PATH_MAX];
+  char hashbuf[HASH_MAX_BUFSIZE];
+  struct path_list_entry * entry = NULL;
+  struct size_list * size_node = size_list_head;
+  struct hash_table * hl = init_hash_table();
+  int path_count;
+
+  while (size_node != NULL) {
+
+    if (size_node->path_list->have_cached_hashes) {
+
+      path_count = size_node->path_list->list_size;
+
+      LOG(L_MORE_INFO, "Processing from hash cache: %d files of size %" PRIu64
+          "\n", path_count, size_node->size);
+
+      entry = pb_get_first_entry(size_node->path_list);
+      while (entry != NULL) {
+
+        build_path(entry, pathbuf);
+
+        if (cache_db_find_entry(pathbuf, hashbuf) != CACHE_HASH_FOUND) {
+                                                             // LCOV_EXCL_START
+          printf("error: cache entry for [%s] disappeared!\n", pathbuf);
+          exit(1);
+        }                                                    // LCOV_EXCL_STOP
+
+        add_to_hash_table(hl, entry, hashbuf);
+        entry->state = FS_DONE;
+        entry = entry->next;
+      }
+
+      size_node->path_list->state = PLS_DONE;
+      stats_size_list_done_from_cache++;
+
+      skim_uniques(size_node->path_list, hl);
+
+      if (hash_table_has_dups(hl)) {
+        publish_duplicate_hash_table(dbh, hl, size_node->size);
+        increase_dup_counter(size_node->path_list->list_size);
+      }
+
+      show_processed(s_stats_size_list_count, path_count, size_node->size);
+
+      reset_hash_table(hl);
+    }
+
+    size_node = size_node->next;
+  }
+
+  free_hash_table(hl);
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
  *
  */
@@ -732,6 +802,10 @@ void process_size_list(sqlite3 * dbh)
 
   if (size_list_head == NULL) {
     return;
+  }
+
+  if (use_hash_cache) {
+    process_cached_hashes(dbh);
   }
 
   if (x_small_buffers) { initial_size = 2; }

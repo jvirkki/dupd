@@ -63,6 +63,7 @@ struct path_list_head {
   uint16_t buffer_ready;
   uint8_t state;
   uint8_t hash_passes;
+  uint8_t have_cached_hashes;
   // first_entry follows
 };
 

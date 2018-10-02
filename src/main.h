@@ -352,10 +352,10 @@ extern uint64_t cache_min_size;
 
 
 /** ***************************************************************************
- * If true, ignore hash cache.
+ * If false, ignore hash cache.
  *
  */
-extern int no_hash_cache;
+extern int use_hash_cache;
 
 
 /** ***************************************************************************

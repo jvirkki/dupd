@@ -81,8 +81,8 @@ int get_file_info(const char * path, STRUCT_STAT * info)
     return -1;
   }                                                          // LCOV_EXCL_STOP
 
-  LOG(L_EVEN_MORE_TRACE, "stat: %s: size: %" PRIu64 " m_time: %" PRIu64 "\n",
-      path, info->st_size, (uint64_t)info->st_mtime);
+  LOG(L_EVEN_MORE_TRACE, "stat: %s: size: %" PRIu64 " c_time: %" PRIu64 "\n",
+      path, info->st_size, (uint64_t)info->st_ctime);
 
   return 0;
 }
@@ -323,7 +323,7 @@ char * get_thread_name()
   if (log_level >= L_THREADS) {
     char * name = pthread_getspecific(thread_name);
     if (name == NULL) {
-      return "*** UNNAMED THREAD ***";
+      return "*** UNNAMED THREAD ***";                        // LCOV_EXCL_LINE
     } else {
       return name;
     }

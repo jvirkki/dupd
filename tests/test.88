@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+HASHDB=/tmp/test_hash_db
+
+source common
+
+rm -f $HASHDB stx
+
+DESC="scan(files) w/empty cache"
+$DUPD_CMD scan --cache $HASHDB --path `pwd`/files -q --x-cache-min-size 1000 --stats-file stx
+checkrv $?
+
+grep size_list_done_from_cache stx > nreport
+check_nreport output.88a
+
+rm stx
+
+DESC="scan(files) w/populated cache"
+$DUPD_CMD scan --cache $HASHDB --path `pwd`/files -q --x-cache-min-size 1000 --stats-file stx
+checkrv $?
+
+grep size_list_done_from_cache stx > nreport
+check_nreport output.88b
+
+tdone

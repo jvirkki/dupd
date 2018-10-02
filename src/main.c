@@ -89,9 +89,9 @@ uint64_t buffer_limit = 0;
 int one_file_system = 0;
 int using_fiemap = 0;
 int max_open_files = 0;
-uint64_t cache_min_size = MB8;
+uint64_t cache_min_size = MB1;
 sqlite3 * cache_dbh = NULL;
-int no_hash_cache = 0;
+int use_hash_cache = 1;
 
 char * log_level_name[] = {
   "NONE",
@@ -317,7 +317,7 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_no_thread_scan]) { threaded_sizetree = 0; }
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }
   if (options[OPT_one_file_system]) { one_file_system = 1; }
-  if (options[OPT_x_no_cache]) { no_hash_cache = 1; }
+  if (options[OPT_x_no_cache]) { use_hash_cache = 0; }
 
   cache_min_size =
     (uint64_t)opt_int(options[OPT_x_cache_min_size], cache_min_size);

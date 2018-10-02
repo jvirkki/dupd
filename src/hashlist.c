@@ -336,22 +336,21 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
           sprintf(path_buffer + pos, "%s%c", file, 0);
         }
 
-        if (!no_hash_cache && size > cache_min_size) {
-          cache_db_add_entry(file, size, 0, hash_function,
-                             p->hash, hash_bufsize);
+        if (use_hash_cache && size > cache_min_size) {
+          cache_db_add_entry(file, p->hash, hash_bufsize);
         }
 
-        LOG_INFO {
+        LOG_MORE_INFO {
           int hsize = hash_get_bufsize(hash_function);
           char hash_out[HASH_MAX_BUFSIZE];
           hash_fn(file, hash_out, 0, 0, 0);
-          if (memcmp(hash_out, p->hash, hsize)) {
+          if (memcmp(hash_out, p->hash, hsize)) {            // LCOV_EXCL_START
             printf("file [%s] ", file);
             memdump("hash", p->hash, hsize);
             printf("error: computed hash differs from hash! [%s]\n", file);
             memdump("hash", hash_out, hsize);
             exit(1);
-          }
+          }                                                  // LCOV_EXCL_STOP
         }
 
         entry->state = FS_DONE;
