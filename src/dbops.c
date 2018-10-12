@@ -42,6 +42,7 @@ static sqlite3_stmt * stmt_unique_to_db = NULL;
 static sqlite3_stmt * stmt_get_known_duplicates = NULL;
 
 static pthread_mutex_t dbh_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cache_dbh_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /** ***************************************************************************
@@ -802,6 +803,9 @@ void cache_db_add_entry(char * path, char * hash, int hash_len)
   timestamp = (uint32_t)info.st_ctime;
   size = (uint64_t)info.st_size;
 
+  d_mutex_lock(&cache_dbh_lock);
+  begin_transaction(cache_dbh);
+
   // This file may or may not be in the table already.
   // If the file has changed, size and/or timestamp may not match.
   // If it is in the table and is current, it may or may not have a hash
@@ -820,6 +824,8 @@ void cache_db_add_entry(char * path, char * hash, int hash_len)
       memdump("computed hash", hash, hash_len);
       exit(1);
     }
+    commit_transaction(cache_dbh);
+    d_mutex_unlock(&cache_dbh_lock);
     return;
   }
 
@@ -876,4 +882,7 @@ void cache_db_add_entry(char * path, char * hash, int hash_len)
   rvchk(rv, SQLITE_DONE, "tried to insert hash: %s\n", cache_dbh);
 
   sqlite3_finalize(stmt2);
+
+  commit_transaction(cache_dbh);
+  d_mutex_unlock(&cache_dbh_lock);
 }
