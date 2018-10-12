@@ -43,14 +43,14 @@ void free_hash_table(struct hash_table * hl);
 
 
 /** ***************************************************************************
- * Free any remaining buffers.
+ * Free thread-local path buffer.
  *
  * Parameters: none
  *
  * Return: none
  *
  */
-void free_hashlist();
+void free_path_buffer();
 
 
 /** ***************************************************************************

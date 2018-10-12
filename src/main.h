@@ -324,6 +324,13 @@ extern pthread_key_t thread_name;
 
 
 /** ***************************************************************************
+ * Pointer to thread local path buffer.
+ *
+ */
+extern pthread_key_t duplicate_path_buffer;
+
+
+/** ***************************************************************************
  * Size limit (bytes) used for data buffers when reading files.
  *
  */

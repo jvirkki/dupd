@@ -40,9 +40,11 @@
 #define DEFAULT_PATH_CAPACITY 4
 #define DEFAULT_HASHLIST_ENTRIES 6
 
-static char * path_buffer = NULL;
-static int path_buffer_size = 0;
-static pthread_mutex_t publish_lock = PTHREAD_MUTEX_INITIALIZER;
+struct path_buffer_info {
+  int size;
+  char * buf;
+};
+
 
 
 /** ***************************************************************************
@@ -243,16 +245,6 @@ void free_hash_table(struct hash_table * hl)
  * Public function, see header file.
  *
  */
-void free_hashlist()
-{
-  if (path_buffer != NULL) { free(path_buffer); }
-}
-
-
-/** ***************************************************************************
- * Public function, see header file.
- *
- */
 void add_hash_table(struct hash_table * hl, struct path_list_entry * file,
                     uint64_t blocks, int bsize, uint64_t skip)
 {
@@ -286,7 +278,44 @@ void add_hash_table_from_mem(struct hash_table * hl,
 
 
 /** ***************************************************************************
+ * Retrieve the thread-local path buffer.
+ *
+ * If not allocated yet, first do so.
+ *
+ */
+static struct path_buffer_info * get_path_buffer_info()
+{
+  struct path_buffer_info * pbi = pthread_getspecific(duplicate_path_buffer);
+
+  if (pbi == NULL) {
+    pbi = (struct path_buffer_info *)malloc(sizeof(struct path_buffer_info));
+    pbi->size = DUPD_PATH_MAX * 4;
+    pbi->buf = (char *)malloc(pbi->size);
+    pthread_setspecific(duplicate_path_buffer, pbi);
+  }
+
+  return pbi;
+}
+
+
+/** ***************************************************************************
  * Public function, see header file.
+ *
+ */
+void free_path_buffer()
+{
+  struct path_buffer_info * pbi = pthread_getspecific(duplicate_path_buffer);
+
+  if (pbi != NULL) {
+    pthread_setspecific(duplicate_path_buffer, NULL);
+    free(pbi->buf);
+    free(pbi);
+  }
+}
+
+
+/** ***************************************************************************
+ * Publish a hash list to the database (see publish_duplicate_hash_table()).
  *
  */
 static void publish_duplicate_hash_list(sqlite3 * dbh,
@@ -296,7 +325,7 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
   struct path_list_entry * entry;
   char file[DUPD_PATH_MAX];
 
-  pthread_mutex_lock(&publish_lock);
+  struct path_buffer_info * pbi = get_path_buffer_info();
 
   while (p != NULL && p->hash_valid) {
 
@@ -320,20 +349,19 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
       for (int i = 0; i < p->next_index; i++) {
 
         // if not enough space (conservatively) in path_buffer, increase
-        if (pos + DUPD_PATH_MAX > path_buffer_size) {
-          path_buffer_size += DUPD_PATH_MAX * 10;
-          path_buffer = (char *)realloc(path_buffer, path_buffer_size);
-          path_buffer_realloc++;
-          LOG(L_RESOURCES, "Increased path_buffer %d\n", path_buffer_size);
+        if (pos + DUPD_PATH_MAX > pbi->size) {
+          pbi->size += DUPD_PATH_MAX * 10;
+          pbi->buf = (char *)realloc(pbi->buf, pbi->size);
+          LOG(L_RESOURCES, "Increased path_buffer %d\n", pbi->size);
         }
 
         entry = *(p->entries + i);
         build_path(entry, file);
 
         if (i + 1 < p->next_index) {
-          pos += sprintf(path_buffer + pos, "%s%c", file, path_separator);
+          pos += sprintf(pbi->buf + pos, "%s%c", file, path_separator);
         } else{
-          sprintf(path_buffer + pos, "%s%c", file, 0);
+          sprintf(pbi->buf + pos, "%s%c", file, 0);
         }
 
         if (use_hash_cache && size > cache_min_size) {
@@ -358,12 +386,11 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
       }
 
       // go publish to db
-      duplicate_to_db(dbh, p->next_index, size, path_buffer);
+      duplicate_to_db(dbh, p->next_index, size, pbi->buf);
 
     }
     p = p->next;
   }
-  pthread_mutex_unlock(&publish_lock);
 }
 
 

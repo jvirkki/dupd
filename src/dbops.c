@@ -803,7 +803,7 @@ void cache_db_add_entry(char * path, char * hash, int hash_len)
   timestamp = (uint32_t)info.st_ctime;
   size = (uint64_t)info.st_size;
 
-  d_mutex_lock(&cache_dbh_lock);
+  d_mutex_lock(&cache_dbh_lock, "cache_db_add_entry");
   begin_transaction(cache_dbh);
 
   // This file may or may not be in the table already.

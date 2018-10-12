@@ -234,6 +234,7 @@ void * round1_hasher(void * arg)
   } while (!done);
 
   free_hash_table(ht);
+  free_path_buffer();
 
   LOG(L_THREADS, "DONE\n");
 

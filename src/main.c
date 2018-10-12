@@ -83,6 +83,7 @@ int hash_bufsize = -1;
 long db_warn_age_seconds = 60 * 60 * 24 * 3; /* 3 days */
 int report_format = REPORT_FORMAT_TEXT;
 pthread_key_t thread_name;
+pthread_key_t duplicate_path_buffer;
 pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 int sort_bypass = 0;
 uint64_t buffer_limit = 0;
@@ -465,6 +466,8 @@ int main(int argc, char * argv[])
   pthread_key_create(&thread_name, NULL);
   pthread_setspecific(thread_name, (char *)"[MAIN] ");
 
+  pthread_key_create(&duplicate_path_buffer, NULL);
+
   rv = process_args(argc, argv);
 
   LOG(L_PROGRESS, "Log level: %s\n", log_level_name[log_level]);
@@ -528,7 +531,7 @@ int main(int argc, char * argv[])
   free_start_paths();
   free_read_list();
   free_dirtree();
-  free_hashlist();
+  free_path_buffer();
 
   stats_time_total = get_current_time_millis() - stats_main_start;
 
