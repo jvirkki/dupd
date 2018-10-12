@@ -413,13 +413,18 @@ void publish_duplicate_hash_table(sqlite3 * dbh,
  * Print a hash list for diagnostics.
  *
  */
-static void print_hash_list_entry(struct hash_list * src)
+static void print_hash_list_entry(int n, struct hash_list * src)
 {
   char file[DUPD_PATH_MAX];
   struct path_list_entry * entry;
   struct hash_list * p = src;
+  int header = 0;
 
   while (p != NULL && p->hash_valid) {
+    if (!header) {
+      LOG(L_TRACE, "  ---[ %d ]\n", n);
+      header = 1;
+    }
     LOG(L_TRACE, "hash_valid: %d, next_index: %d   ",
         p->hash_valid, p->next_index);
     LOG_TRACE {
@@ -446,8 +451,7 @@ void print_hash_table(struct hash_table * src)
 
   for (int n = 0; n < 256; n++) {
     if (src->table[n] != NULL) {
-      LOG(L_TRACE, "  ---[ %d ]\n", n);
-      print_hash_list_entry(src->table[n]);
+      print_hash_list_entry(n, src->table[n]);
     }
   }
 }
