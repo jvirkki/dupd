@@ -311,7 +311,7 @@ void open_cache_database(char * path)
   rvchk(rv, SQLITE_OK, "Can't open database: %s\n", cache_dbh);
 
   if (newdb) {
-    initialize_cache_database(cache_dbh);
+    initialize_cache_database();
     LOG(L_INFO, "Done initializing new cache database [%s]\n", path);
   }
 }
