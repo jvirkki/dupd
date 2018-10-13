@@ -282,25 +282,29 @@ HARD LINKS
        either  during scan or to the interactive reporting commands (file, ls,
        uniques, dups).
 
+SIGNALS
+       Sending SIGUSR1 to dupd will toggle between the default progress  coun‐
+       ters and highly verbose debug output (equivalent to -V 10).
+
 EXAMPLES
-       Scan all files in your home directory and then show the sets of  dupli‐
+       Scan  all files in your home directory and then show the sets of dupli‐
        cates found:
 
               % dupd scan --path $HOME
 
               % dupd report
 
-       Show  duplicate status (duplicate or unique) for all files in docs sub‐
+       Show duplicate status (duplicate or unique) for all files in docs  sub‐
        directory:
 
               % dupd ls --path docs
 
-       I'm about to delete docs/old.doc but want to check one last  time  that
+       I'm  about  to delete docs/old.doc but want to check one last time that
        it is a duplicate and I want to review where those duplicates are:
 
               % dupd file --file docs/old.doc -v
 
-       Read  the documentation in the dupd 'docs' directory or online documen‐
+       Read the documentation in the dupd 'docs' directory or online  documen‐
        tation for more usage examples.
 
 EXIT

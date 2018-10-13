@@ -373,6 +373,13 @@ extern sqlite3 * cache_dbh;
 
 
 /** ***************************************************************************
+ * If true, dump current state (set via SIGUSR2).
+ *
+ */
+extern int dump_state;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

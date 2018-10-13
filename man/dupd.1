@@ -284,6 +284,9 @@ By default dupd considers hardlinks as duplicates. You can switch this
 around with the --hardlink-is-unique option.
 This option can be given either during scan or to the interactive
 reporting commands (file, ls, uniques, dups).
+.SH SIGNALS
+Sending SIGUSR1 to dupd will toggle between the default progress
+counters and highly verbose debug output (equivalent to -V 10).
 .SH EXAMPLES
 .PP
 Scan all files in your home directory and then show the sets of duplicates

@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -93,6 +94,7 @@ int max_open_files = 0;
 uint64_t cache_min_size = MB1;
 sqlite3 * cache_dbh = NULL;
 int use_hash_cache = 1;
+int dump_state = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -455,6 +457,25 @@ static int process_args(int argc, char * argv[])
 
 
 /** ***************************************************************************
+ * Signal handler.
+ *
+ */
+void handle_signal(int sig)
+{
+  if (sig == SIGUSR1) {
+    if (log_level < L_TRACE) {
+      log_level = L_TRACE;
+    } else {
+      log_level = L_BASE;
+    }
+
+  } else if (sig == SIGUSR2) {
+    dump_state = 1;
+  }
+}
+
+
+/** ***************************************************************************
  * main() ;-)
  *
  */
@@ -492,6 +513,9 @@ int main(int argc, char * argv[])
   LOG(L_INFO, "Claimed CPU cores: %d\n", cpu_cores());
   max_open_files = get_file_limit() - 10;
   LOG(L_INFO, "Max open files: %d\n", max_open_files);
+
+  signal(SIGUSR1, &handle_signal);
+  signal(SIGUSR2, &handle_signal);
 
   switch (operation) {
 
