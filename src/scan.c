@@ -54,8 +54,8 @@ static struct scan_list_entry * scan_list = NULL;
 static int scan_list_capacity = 0;
 static int scan_list_pos = -1;
 static int scan_completed = 0;
-static long scan_phase_started;
-static long read_phase_started;
+static long scan_phase_started = 0;
+static long read_phase_started = 0;
 static int fiemap_ok = 1;
 pthread_mutex_t status_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t status_cond = PTHREAD_COND_INITIALIZER;
@@ -135,7 +135,11 @@ static void * scan_status(void * arg)
 
   do {
     printf("\033[%dD", c);
-    delta = get_current_time_millis() - read_phase_started;
+    if (read_phase_started > 0) {
+      delta = get_current_time_millis() - read_phase_started;
+    } else {
+      delta = 0;
+    }
     time_string(timebuf, 20, delta);
     delta = delta / 1000;
     kread = stats_total_bytes_read / 1024;
