@@ -1,3 +1,39 @@
+201X-XX-XX  Jyri J. Virkki  <jyri@virkki.com>
+
+	* Version 2.0 - A new major release.
+	* NOTE: A major release means incompatible interface changes,
+	    see below for details on what has changed.
+	* Removed the --nodb option of scan.
+	    The underlying SQLite database is fundamental to dupd operation.
+	    Not generating it doesn't really fit with the dupd way.
+	* Removed the --cmp-three option of scan.
+	    The three-way compare never showed performance benefits.
+	* Removed the --skip-three option of scan.
+	    With three-way comparison removed, this has no use.
+	* Removed the --ssd and --hdd options of scan.
+	    The SSD mode was removed in 1.7, so these are not used anymore.
+	* Removed the --uniques and --no-unique options.
+	    The unique file table seemed like a good idea but was never
+	    really useful.
+	* Removed the --intblocks option of scan.
+	    The intermediate pass hasn't been used in a long while so
+	    this option wasn't doing anything.
+	* Removed the --no-thread-hash option of scan.
+	    The single-threaded hashing was removed earlier.
+	* Removed the --file-count and --avg-size options of scan.
+	    These go back to early times when dupd didn't dynamically
+	    resize the available buffers. Haven't been used in a long
+	    time, now finally removed.
+	* Removed the --skip-two option of scan.
+	    Direct pair comparison hasn't been a default in a long time,
+	    removing option to skip it.
+	* Removed the --pathsep option of scan.
+	* Added new 'hash' command.
+	    It hashes one file and displays the result.
+	* The scan operation now makes use of the hash cache if available.
+	* Support toggling between verbose debug output and default progress
+	    output via SIGUSR1. Can be useful to diagnose long running scans.
+
 2018-07-18  Jyri J. Virkki  <jyri@virkki.com>
 
 	* Version 1.7
