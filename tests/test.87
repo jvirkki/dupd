@@ -12,6 +12,10 @@ check_nreport output.84
 
 echo "update hashes set hash='XXXXXX' where id=1;" | sqlite3 $HASHDB
 
+# NOTE this is expected to exit with an error because we just corrupted the
+# database. When run in valgrind mode it will show lots of areas still
+# allocated. That is normal in this case.
+
 DESC="hash command hash corrupted"
 $DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f files4/1 > /dev/null
 checkerr $?
