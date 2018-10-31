@@ -309,6 +309,7 @@ struct path_list_head * insert_first_path(char * filename,
   head->buffer_ready = 0;
   head->hash_passes = 0;
   head->have_cached_hashes = 1;
+  head->wanted_bufsize = 0;
 
   // New path list
   head->state = PLS_NEED_DATA;
