@@ -45,7 +45,7 @@
 #include "stats.h"
 #include "utils.h"
 
-static struct size_list * size_list_head;
+struct size_list * size_list_head;
 static struct size_list * size_list_tail;
 static int avg_read_time = 0;
 static int read_count = 0;
@@ -521,10 +521,10 @@ static void * read_list_reader(void * arg)
   struct size_list * sizelist;
   struct read_list_entry * rlentry;
   uint64_t size;
-  int rlpos = 0;
+  uint64_t rlpos = 0;
   int done;
   int needy;
-  int done_files = 0;
+  uint64_t done_files = 0;
   int waiting_hash;
   int loop = 0;
   int submit_this_one;
@@ -586,8 +586,8 @@ static void * read_list_reader(void * arg)
           build_path(pathlist_entry, path);
           size = sizelist->size;
 
-          LOG(L_MORE_THREADS, "[%d] Entry %d (%d files of size %" PRIu64
-              " in state %s): (reading pos %" PRIu64 " block %d) %s\n",
+          LOG(L_MORE_THREADS, "[%d] Entry %" PRIu64 " (%d files of size %"
+              PRIu64 " in state %s): (reading pos %" PRIu64 " block %d) %s\n",
               loop, rlpos, pathlist_head->list_size, size,
               file_state(pathlist_entry->state),
               pathlist_entry->next_read_byte, block, path);
@@ -639,8 +639,8 @@ static void * read_list_reader(void * arg)
 
     } while (rlpos < read_list_end);
 
-    LOG(L_THREADS, "Completed loop %d: list size: %d worked: %d "
-        "(NEED_DATA %d, NEED_HASH %d, INVALID %d, DONE %d)\n",
+    LOG(L_THREADS, "Completed loop %d: list size: %" PRIu64 " worked: %d "
+        "(NEED_DATA %d, NEED_HASH %d, INVALID %d, DONE %" PRIu64 ")\n",
         loop, rlpos, did_something, needy, waiting_hash, invalid, done_files);
 
     done = done_files >= rlpos;

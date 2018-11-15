@@ -32,6 +32,8 @@ struct size_list {
   pthread_mutex_t lock;
 };
 
+extern struct size_list * size_list_head;
+
 
 /** ***************************************************************************
  * Print progress on set processing.

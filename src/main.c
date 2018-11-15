@@ -63,10 +63,10 @@ char * cut_path = NULL;
 char * exclude_path = NULL;
 int exclude_path_len = 0;
 uint32_t minimum_file_size = 1;
-int hash_one_max_blocks = 16;
+int hash_one_max_blocks = 8;
+uint32_t DEF_HDD_hash_one_block_size = 1024 * 64;
 uint32_t hash_one_block_size = 0;
 uint32_t round1_max_bytes = 0;
-uint32_t DEF_HDD_hash_one_block_size = 1024*128;
 int hash_block_size = 8192;
 int filecmp_block_size = 131072;
 int opt_compare_two = 0;
@@ -91,7 +91,7 @@ uint64_t buffer_limit = 0;
 int one_file_system = 0;
 int using_fiemap = 0;
 int max_open_files = 0;
-uint64_t cache_min_size = MB1;
+uint64_t cache_min_size = 0;
 sqlite3 * cache_dbh = NULL;
 int use_hash_cache = 1;
 int dump_state = 0;
@@ -407,6 +407,15 @@ static int process_args(int argc, char * argv[])
   }
 
   round1_max_bytes = hash_one_block_size * hash_one_max_blocks;
+
+  // If user hasn't provided a cache_min_size, do something reasonable
+  if (cache_min_size == 0) {
+    if (round1_max_bytes < K512) {
+      cache_min_size = K512;
+    } else {
+      cache_min_size = round1_max_bytes;
+    }
+  }
 
   char * sortby = opt_string(options[OPT_sort_by], "def");
   if (!strcmp("inode", sortby)) {

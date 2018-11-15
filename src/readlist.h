@@ -34,7 +34,7 @@ struct read_list_entry {
 };
 
 extern struct read_list_entry * read_list;
-extern long read_list_end;
+extern uint64_t read_list_end;
 
 
 /** ***************************************************************************

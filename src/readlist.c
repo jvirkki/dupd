@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -27,18 +28,23 @@
 #include "dirtree.h"
 #include "main.h"
 #include "readlist.h"
+#include "sizelist.h"
 #include "stats.h"
 #include "utils.h"
 
 #define INITIAL_READ_LIST_SIZE 100000
 
+#define SMALL_GROUP_SMALL_FILES_LIMIT 512
+#define SMALL_GROUP_LARGE_FILES_LIMIT 8
+
+static uint64_t read_block_counter = 0;
+
 struct read_list_entry * read_list = NULL;
-long read_list_end;
-static long read_list_size;
+uint64_t read_list_end;
 
 struct read_list_entry * inode_read_list = NULL;
-static long inode_read_list_end;
-static long inode_read_list_size;
+static uint64_t inode_read_list_end;
+static uint64_t inode_read_list_size;
 
 
 /** ***************************************************************************
@@ -48,10 +54,17 @@ static long inode_read_list_size;
                                                              // LCOV_EXCL_START
 static void dump_read_list(int with_path_list)
 {
+  char path[DUPD_PATH_MAX];
+
   printf("--- dumping read_list ---\n");
-  for (int i = 0; i < read_list_end; i++) {
-    printf("[%d] inode: %8ld  %" PRIu64 "\n",
-           i, (long)read_list[i].inode, read_list[i].block);
+  for (uint64_t i = 0; i < read_list_end; i++) {
+    build_path(read_list[i].pathlist_self, path);
+    printf("[%" PRIu64 "] inode: %8ld  %" PRIu64 " (%d of size %" PRIu64
+           ") %s\n",
+           i, (long)read_list[i].inode, read_list[i].block,
+           read_list[i].pathlist_head->list_size,
+           read_list[i].pathlist_head->sizelist->size,
+           path);
     if (with_path_list) {
       dump_path_list("---", 0, read_list[i].pathlist_head, 1);
     }
@@ -94,15 +107,6 @@ static int rl_compare_b(const void * a, const void * b)
  */
 void init_read_list()
 {
-  read_list_size = INITIAL_READ_LIST_SIZE;
-
-  if (x_small_buffers) { read_list_size = 8; }
-
-  read_list_end = 0;
-
-  read_list = (struct read_list_entry *)calloc(read_list_size,
-                                               sizeof(struct read_list_entry));
-
   if (hardlink_is_unique) {
     inode_read_list_size = INITIAL_READ_LIST_SIZE;
     if (x_small_buffers) { inode_read_list_size = 8; }
@@ -123,7 +127,6 @@ void free_read_list()
   if (read_list != NULL) {
     free(read_list);
     read_list = NULL;
-    read_list_size = 0;
     read_list_end = 0;
   }
 }
@@ -140,29 +143,6 @@ static void free_inode_read_list()
     inode_read_list = NULL;
     inode_read_list_size = 0;
     inode_read_list_end = 0;
-  }
-}
-
-
-/** ***************************************************************************
- * Add a single entry to the read list.
- *
- */
-static void add_one_to_read_list(struct path_list_head * head,
-                                 struct path_list_entry * entry,
-                                 ino_t inode, uint64_t block)
-{
-  read_list[read_list_end].pathlist_head = head;
-  read_list[read_list_end].pathlist_self = entry;
-  read_list[read_list_end].block = block;
-  read_list[read_list_end].inode = inode;
-  read_list[read_list_end].done = 0;
-
-  read_list_end++;
-  if (read_list_end == read_list_size) {
-    read_list_size *= 2;
-    read_list = (struct read_list_entry *)
-      realloc(read_list, sizeof(struct read_list_entry) * read_list_size);
   }
 }
 
@@ -209,9 +189,7 @@ void add_to_read_list(struct path_list_head * head,
   // If using_fiemap, may add multiple entries for the same file, one for
   // each block. If not, there is only one "block", the inode.
 
-  for (int b = 0; b < entry->blocks->count; b++) {
-    add_one_to_read_list(head, entry, inode, entry->blocks->entry[b].block);
-  }
+  read_block_counter += entry->blocks->count;
 
   // When hardlink_is_unique, keep a separate inode_read_list which can
   // only have one entry per file. It might seem we can filter out
@@ -219,9 +197,61 @@ void add_to_read_list(struct path_list_head * head,
   // (see get_block_info_from_path()) sometimes block can be zero even
   // if it isn't, so this may fail. Easiest reliable way is to keep this
   // separate inode list.
+
   if (hardlink_is_unique) {
     add_one_to_inode_read_list(head, entry, inode);
   }
+}
+
+
+/** ***************************************************************************
+ * Add all blocks of all files (in FS_NEED_DATA state) in a given path list
+ * to the tmp_read_list provided.
+ *
+ */
+static uint64_t
+add_all_blocks_from_group(struct path_list_head * plhead,
+                          struct read_list_entry * tmp_read_list,
+                          uint64_t * tmp_index)
+{
+  uint64_t n = 0;
+  struct path_list_entry * entry = pb_get_first_entry(plhead);
+
+  while (entry != NULL) {
+    if (entry->state == FS_NEED_DATA) {
+      for (uint8_t i = 0; i < entry->blocks->count; i++) {
+        tmp_read_list[*tmp_index].pathlist_head = plhead;
+        tmp_read_list[*tmp_index].pathlist_self = entry;
+        tmp_read_list[*tmp_index].block = entry->blocks->entry[i].block;
+        tmp_read_list[*tmp_index].inode = 0;
+        tmp_read_list[*tmp_index].done = 0;
+        (*tmp_index)++;
+        n++;
+      }
+    }
+    entry = entry->next;
+  }
+
+  return n;
+}
+
+
+/** ***************************************************************************
+ * Sort the blocks in tmp_read_list and append to the new_read_list.
+ *
+ */
+static void sort_and_transfer(struct read_list_entry * tmp_read_list,
+                              uint64_t * tmp_index,
+                              struct read_list_entry * new_read_list,
+                              uint64_t * new_index)
+{
+  qsort(tmp_read_list, *tmp_index,
+        sizeof(struct read_list_entry), rl_compare_b);
+
+  memcpy(&(new_read_list[*new_index]), tmp_read_list,
+         sizeof(struct read_list_entry) * (*tmp_index));
+
+  (*new_index) += *tmp_index;
 }
 
 
@@ -231,29 +261,15 @@ void add_to_read_list(struct path_list_head * head,
  */
 void sort_read_list()
 {
-  switch (sort_bypass) {
-  case SORT_BY_NONE:
-    return;
-  case SORT_BY_INODE:
-    qsort(read_list, read_list_end,
-          sizeof(struct read_list_entry), rl_compare_i);
-    return;
-  case SORT_BY_BLOCK:
-    qsort(read_list, read_list_end,
-          sizeof(struct read_list_entry), rl_compare_b);
-    return;
-  }
-
   if (hardlink_is_unique) {
-
     qsort(inode_read_list, inode_read_list_end,
           sizeof(struct read_list_entry), rl_compare_i);
 
     // Now that the inode_read_list is ordered, remove any paths which
-    // are duplicate inode given that we don't care about them.
+    // are duplicate inodes given that we don't care about them.
 
     char path[DUPD_PATH_MAX];
-    long i;
+    uint64_t i;
     ino_t p_inode = 0;
 
     for (i = 0; i < inode_read_list_end; i++) {
@@ -274,8 +290,158 @@ void sort_read_list()
     free_inode_read_list();
   }
 
+
+  // For the normal case we don't have a block list yet so let's build one.
+  // We know there are 'read_block_counter' blocks to sort (might be inodes
+  // or extent blocks). The list will be built in groups into 'the_read_list'.
+
+  struct read_list_entry * the_read_list = (struct read_list_entry *)
+    malloc(sizeof(struct read_list_entry) * read_block_counter);
+  uint64_t read_list_index = 0;
+
+  struct read_list_entry * tmp_read_list = (struct read_list_entry *)
+    malloc(sizeof(struct read_list_entry) * read_block_counter);
+  uint64_t tmp_index = 0;
+
+  uint64_t block_counter = 0;
+  uint64_t set_counter = 0;
+  struct size_list * szl = NULL;
+
+  // So, need to select an order for reading the blocks. For best HDD
+  // performance we can read the blocks in strict disk order (on Linux
+  // we know this via the extent blocks, elsewhere the inode order is a
+  // good approximation). However.. this can lead to extremely high memory
+  // usage if the blocks are scattered just right(wrong) so that we end
+  // up buffering lots of partial files which we can't hash quite yet.
+  // (The memory usage is ultimately capped and the relief valve is
+  // size_list_flusher(), but having to rely on that is very slow.)
+  //
+  // To reduce (not eliminate) this we can do several passes by grouping
+  // files with similar size characteristics. The selections below may
+  // need some tuning, but ultimately there isn't any one optimal order
+  // as it will depend on the file set being scanned.
+
+  // 1: Handle all groups of files smaller than a single read block.
+  // All these files will be read in a single read() so for each file there
+  // can't be any further pending reads.
+
+  tmp_index = 0;
+  block_counter = 0;
+  set_counter = 0;
+  szl = size_list_head;
+  while (szl != NULL) {
+    if (szl->size <= hash_one_block_size) {
+      block_counter +=
+        add_all_blocks_from_group(szl->path_list, tmp_read_list, &tmp_index);
+      set_counter++;
+    }
+    szl = szl->next;
+  }
+  sort_and_transfer(tmp_read_list, &tmp_index,the_read_list, &read_list_index);
+  if (set_counter > 0) {
+    LOG(L_INFO, "read_list: (#1 small files): "
+        "SETS %" PRIu64 ", BLOCKS %" PRIu64 "\n", set_counter, block_counter);
+  }
+
+  // 2: Handle groups of files larger than a single read block but still
+  // smaller than the size limit we're willing to hash at once, but only
+  // if the group is not too large. This cap is to prevent the edge case
+  // where there are many thousands of relatively large files of the same
+  // size, which would lead to the high memory consumption we're trying
+  // to prevent.
+
+  tmp_index = 0;
+  block_counter = 0;
+  set_counter = 0;
+  szl = size_list_head;
+  while (szl != NULL) {
+    if (szl->path_list->list_size <= SMALL_GROUP_SMALL_FILES_LIMIT &&
+        szl->size > hash_one_block_size && szl->size <= round1_max_bytes) {
+      block_counter +=
+        add_all_blocks_from_group(szl->path_list, tmp_read_list, &tmp_index);
+      set_counter++;
+    }
+    szl = szl->next;
+  }
+  sort_and_transfer(tmp_read_list, &tmp_index,the_read_list, &read_list_index);
+  if (set_counter > 0) {
+    LOG(L_INFO, "read_list: (#2 medium files): "
+        "SETS %" PRIu64 ", BLOCKS %" PRIu64 "\n", set_counter, block_counter);
+  }
+
+  // 3: Then, for the very large groups we excluded above, add them
+  // individually for each given size group. The groups may still be very
+  // large but by grouping them at least we'll be progressing faster within
+  // each group, usually leading to less buffering.
+
+  tmp_index = 0;
+  szl = size_list_head;
+  while (szl != NULL) {
+    if (szl->path_list->list_size > SMALL_GROUP_SMALL_FILES_LIMIT &&
+        szl->size > hash_one_block_size && szl->size <= round1_max_bytes) {
+      tmp_index = 0;
+      block_counter =
+        add_all_blocks_from_group(szl->path_list, tmp_read_list, &tmp_index);
+      sort_and_transfer(tmp_read_list, &tmp_index,
+                        the_read_list, &read_list_index);
+      LOG(L_INFO, "read_list: (#3 large set, size: %" PRIu64 "): "
+          "SETS 1, BLOCKS %" PRIu64 "\n", szl->size, block_counter);
+    }
+    szl = szl->next;
+  }
+
+  // 4: Next, include blocks for all large files in reasonably small sets.
+
+  tmp_index = 0;
+  block_counter = 0;
+  set_counter = 0;
+  szl = size_list_head;
+  while (szl != NULL) {
+    if (szl->path_list->list_size <= SMALL_GROUP_LARGE_FILES_LIMIT &&
+        szl->size > round1_max_bytes) {
+      block_counter +=
+        add_all_blocks_from_group(szl->path_list, tmp_read_list, &tmp_index);
+      set_counter++;
+    }
+    szl = szl->next;
+  }
+  sort_and_transfer(tmp_read_list, &tmp_index,the_read_list, &read_list_index);
+  if (set_counter > 0) {
+    LOG(L_INFO, "read_list: (#4 large files): "
+        "SETS %" PRIu64 ", BLOCKS %" PRIu64 "\n", set_counter, block_counter);
+  }
+
+  // 5: And finally, large sets of large files. Had to tackle it at some
+  // point. These are added individually per set to try to limit memory usage.
+
+  tmp_index = 0;
+  szl = size_list_head;
+  while (szl != NULL) {
+    if (szl->path_list->list_size > SMALL_GROUP_LARGE_FILES_LIMIT &&
+        szl->size > round1_max_bytes) {
+      tmp_index = 0;
+      block_counter =
+        add_all_blocks_from_group(szl->path_list, tmp_read_list, &tmp_index);
+      sort_and_transfer(tmp_read_list, &tmp_index,
+                        the_read_list, &read_list_index);
+      LOG(L_INFO, "read_list: (#5 large set, size: %" PRIu64 "): "
+          "SETS 1, BLOCKS %" PRIu64 "\n", szl->size, block_counter);
+    }
+    szl = szl->next;
+  }
+
+  // Done! All blocks should be accounted for.
+
+  free(tmp_read_list);
+  tmp_read_list = NULL;
+  tmp_index = 0;
+
+  read_list = the_read_list;
+  read_list_end = read_list_index;
+
   // If we ran into a substantial number of files where the physical block(s)
-  // were reported as zero, give up on using fiemap ordering.
+  // were reported as zero, give up on using fiemap ordering. Shouldn't
+  // happen but if it does, revert to inodes.
 
   if (using_fiemap) {
     int zeropct = (100 * stats_fiemap_zero_blocks) / stats_fiemap_total_blocks;
@@ -283,14 +449,6 @@ void sort_read_list()
       using_fiemap = 0;
       LOG(L_PROGRESS, "Turning off using_fiemap, %d%% zero blocks\n", zeropct);
     }
-  }
-
-  if (using_fiemap) {
-    qsort(read_list, read_list_end,
-          sizeof(struct read_list_entry), rl_compare_b);
-  } else {
-    qsort(read_list, read_list_end,
-          sizeof(struct read_list_entry), rl_compare_i);
   }
 
   LOG_MORE_TRACE {
