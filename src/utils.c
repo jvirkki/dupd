@@ -301,13 +301,14 @@ uint64_t total_ram()
 void memdump(char * text, char * ptr, int bytes)
 {
   int i;
+  unsigned char * p = (unsigned char *)ptr;
 
   if (text != NULL) {
     printf("%s: ", text);
   }
 
   for (i=0; i<bytes; i++) {
-    printf("%02x ", *((unsigned char *)ptr+i));
+    printf("%02x ", *p++);
   }
 
   printf("\n");
