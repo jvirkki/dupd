@@ -707,6 +707,7 @@ void process_cached_hashes(sqlite3 * dbh)
 
         add_to_hash_table(hl, entry, hashbuf);
         entry->state = FS_DONE;
+        stats_files_done_from_cache++;
         entry = entry->next;
       }
 

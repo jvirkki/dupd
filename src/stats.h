@@ -121,6 +121,7 @@ extern int current_open_files;
 
 
 extern uint32_t stats_size_list_done_from_cache;
+extern uint32_t stats_files_done_from_cache;
 
 
 /** ***************************************************************************
