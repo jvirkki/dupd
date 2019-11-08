@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files2)"
-$DUPD_CMD scan --path `pwd`/files2 -q
+$DUPD_CMD scan --path `pwd`/files2 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="file with relative --exclude-path"
-$DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ --exclude-path files2/path1 > /dev/null
+$DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ --exclude-path files2/path1 $DUPD_CACHEOPT > /dev/null
 checkerr $?
 
 tdone

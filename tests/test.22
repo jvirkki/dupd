@@ -3,7 +3,7 @@
 source common
 
 DESC="scan nonexistent path"
-$DUPD_CMD scan --path /nosuchdirectory -v > nreport
+$DUPD_CMD scan --path /nosuchdirectory -v $DUPD_CACHEOPT > nreport
 checkerr $?
 
 tdone

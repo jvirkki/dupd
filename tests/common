@@ -1,5 +1,5 @@
 #
-#  Copyright 2014-2018 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2014-2019 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -67,5 +67,5 @@ check_nreport () {
 }
 
 tdone () {
-    rm -f report nreport stx
+    rm -f report nreport stx $DUPD_CACHE_FILE
 }

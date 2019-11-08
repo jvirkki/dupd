@@ -5,11 +5,11 @@ source common
 rm -f rmsh.sh
 
 DESC="scan(files2)"
-$DUPD_CMD scan --path `pwd`/files2 -q
+$DUPD_CMD scan --path `pwd`/files2 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="generate rmsh, hard links"
-$DUPD_CMD rmsh --hardlink > rmsh.sh
+$DUPD_CMD rmsh --hardlink $DUPD_CACHEOPT > rmsh.sh
 
 if [ -e rmsh.sh ]; then
     echo "OK ${DESC}"

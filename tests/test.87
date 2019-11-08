@@ -1,24 +1,20 @@
 #!/usr/bin/env bash
 
-HASHDB=/tmp/test_hash_db
 source common
 
-rm -f $HASHDB
-
 DESC="hash command first time"
-$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f files4/1 | sed 's/.*:\(.*\)/\1/' > nreport
+$DUPD_CMD hash -q --x-cache-min-size 1000 -f files4/1 $DUPD_CACHEOPT | sed 's/.*:\(.*\)/\1/' > nreport
 checkrv $?
 check_nreport output.84
 
-echo "update hashes set hash='XXXXXX' where id=1;" | sqlite3 $HASHDB
+echo "update hashes set hash='XXXXXX' where id=1;" | sqlite3 $DUPD_CACHE_FILE
 
 # NOTE this is expected to exit with an error because we just corrupted the
 # database. When run in valgrind mode it will show lots of areas still
 # allocated. That is normal in this case.
 
 DESC="hash command hash corrupted"
-$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f files4/1 > /dev/null
+$DUPD_CMD hash -q --x-cache-min-size 1000 -f files4/1 $DUPD_CACHEOPT > /dev/null
 checkerr $?
 
-rm -f $HASHDB
 tdone

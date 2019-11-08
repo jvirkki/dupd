@@ -6,16 +6,16 @@ DESC="scan(files7) with hard links"
 
 (cd ./files7 && ./create_files)
 
-$DUPD_CMD scan --path `pwd`/files7 -q
+$DUPD_CMD scan --path `pwd`/files7 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="uniques with hard links"
-$DUPD_CMD uniques -v --path `pwd`/files7/ --cut `pwd`/files7/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD uniques -v --path `pwd`/files7/ --cut `pwd`/files7/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 check_nreport output.60a
 
 DESC="uniques with hard links --hardlink-is-unique"
-$DUPD_CMD uniques -v --hardlink-is-unique --path `pwd`/files7/ --cut `pwd`/files7/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD uniques -v --hardlink-is-unique --path `pwd`/files7/ --cut `pwd`/files7/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 check_nreport output.60b
 

@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 
-HASHDB=/tmp/test_hash_db
 source common
 
-rm -f $HASHDB
-
 DESC="hash command first time"
-$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f files4/1 | sed 's/.*:\(.*\)/\1/' > nreport
+$DUPD_CMD hash -q --x-cache-min-size 1000 -f files4/1 $DUPD_CACHEOPT | sed 's/.*:\(.*\)/\1/' > nreport
 checkrv $?
 check_nreport output.84
 
 DESC="hash command find in cache"
-$DUPD_CMD hash -q --cache $HASHDB --x-cache-min-size 1000 -f files4/1 | sed 's/.*:\(.*\)/\1/' > nreport
+$DUPD_CMD hash -q --x-cache-min-size 1000 -f files4/1 $DUPD_CACHEOPT | sed 's/.*:\(.*\)/\1/' > nreport
 checkrv $?
 check_nreport output.84
 
-rm -f $HASHDB
 tdone

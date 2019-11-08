@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files2)"
-$DUPD_CMD scan --path `pwd`/files2 -q
+$DUPD_CMD scan --path `pwd`/files2 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="cut doesn't match any part of path"
-$DUPD_CMD ls -p `pwd`/files2 --cut not/in/path > /dev/null
+$DUPD_CMD ls -p `pwd`/files2 --cut not/in/path $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 tdone

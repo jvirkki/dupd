@@ -4,11 +4,11 @@ source common
 
 DESC="scan from two paths"
 
-$DUPD_CMD scan --path `pwd`/files2/path1 -p `pwd`/files2/path2 -q
+$DUPD_CMD scan --path `pwd`/files2/path1 -p `pwd`/files2/path2 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="dups report"
-$DUPD_CMD dups --cut `pwd`/files2/ --path `pwd`/files2/ > nreport
+$DUPD_CMD dups --cut `pwd`/files2/ --path `pwd`/files2/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 check_nreport output.23

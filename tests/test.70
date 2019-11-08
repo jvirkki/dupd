@@ -3,11 +3,11 @@
 source common
 
 DESC="scan with duplicate directory"
-$DUPD_CMD scan --path /tmp -p /tmp > /dev/null
+$DUPD_CMD scan --path /tmp -p /tmp $DUPD_CACHEOPT > /dev/null
 checkerr $?
 
 DESC="scan with bad hash"
-$DUPD_CMD scan --path /tmp -F myhash > /dev/null
+$DUPD_CMD scan --path /tmp -F myhash $DUPD_CACHEOPT > /dev/null
 checkerr $?
 
 tdone

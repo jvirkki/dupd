@@ -16,11 +16,11 @@ else
     exit 0
 fi
 
-$DUPD_CMD scan --cache $HASHDB --path `pwd`/files3 -v -v > /dev/null
+$DUPD_CMD scan --cache $HASHDB --path `pwd`/files3 -v -v $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files3/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.55

@@ -6,11 +6,11 @@ DESC="scan(files7) with scan-time --hardlinks-is-unique"
 
 (cd ./files7 && ./create_files)
 
-$DUPD_CMD scan --path `pwd`/files7 -q -I
+$DUPD_CMD scan --path `pwd`/files7 -q -I $DUPD_CACHEOPT
 checkrv $?
 
 DESC="report(files7) with redundant --hardlinks-is-unique"
-$DUPD_CMD report --cut `pwd`/files7/ -I > /dev/null
+$DUPD_CMD report --cut `pwd`/files7/ -I $DUPD_CACHEOPT > /dev/null
 checkerr $?
 
 rm -f files7/?

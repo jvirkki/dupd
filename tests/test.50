@@ -4,11 +4,11 @@ source common
 
 DESC="scan(files4): 2-compare differentiates"
 
-$DUPD_CMD scan --path `pwd`/files4 -v -v -v > /dev/null
+$DUPD_CMD scan --path `pwd`/files4 -v -v -v $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files4/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files4/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.50

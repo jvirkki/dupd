@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files2)"
-$DUPD_CMD scan --path `pwd`/files2 -q
+$DUPD_CMD scan --path `pwd`/files2 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="file with relative --file"
-$DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ > nreport
+$DUPD_CMD file --file files2/lonely/unique_size --cut `pwd`/files2/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 FAILOK=FreeBSD

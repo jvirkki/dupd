@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-#  Copyright 2014-2015 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2014-2019 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -34,6 +34,11 @@ if ($ENV{'DUPD_VALGRIND'}) {
 } else {
     $ENV{'DUPD_CMD'} = "../dupd";
 }
+
+$cache_file = "/tmp/dupd.test.cache.$$";
+$ENV{'DUPD_CACHE_FILE'} = $cache_file;
+unlink $cache_file;
+$ENV{'DUPD_CACHEOPT'} = " --cache $cache_file";
 
 # Needed for sort to work correctly
 $ENV{'LC_ALL'} = "C";

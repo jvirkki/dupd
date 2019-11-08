@@ -4,11 +4,11 @@ source common
 
 DESC="scan(files2) hidden files"
 
-$DUPD_CMD scan --path `pwd`/files2  --hidden -q
+$DUPD_CMD scan --path `pwd`/files2  --hidden -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="dups report"
-$DUPD_CMD dups --cut `pwd`/files2/ --path `pwd`/files2/ > nreport
+$DUPD_CMD dups --cut `pwd`/files2/ --path `pwd`/files2/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 check_nreport output.24

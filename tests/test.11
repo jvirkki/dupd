@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files) SHA1"
-$DUPD_CMD scan --path `pwd`/files -q -F sha1
+$DUPD_CMD scan --path `pwd`/files -q -F sha1 $DUPD_CACHEOPT
 checkrv $?
 
 DESC="dups"
-$DUPD_CMD dups --cut `pwd`/files/ --path `pwd`/files/ > nreport
+$DUPD_CMD dups --cut `pwd`/files/ --path `pwd`/files/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 check_nreport output.10

@@ -3,15 +3,15 @@
 source common
 
 DESC="help command"
-$DUPD_CMD help > /dev/null
+$DUPD_CMD help $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="scan -q"
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.01

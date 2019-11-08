@@ -4,11 +4,11 @@ source common
 
 DESC="scan(files)"
 
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="file: excluding path of its duplicates"
-$DUPD_CMD file --file `pwd`/files/many/ma.1 --cut `pwd`/files/ --exclude-path `pwd`/files/many/ > nreport
+$DUPD_CMD file --file `pwd`/files/many/ma.1 --cut `pwd`/files/ --exclude-path `pwd`/files/many/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 check_nreport output.17

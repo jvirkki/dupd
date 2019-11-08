@@ -3,15 +3,15 @@
 source common
 
 DESC="scan(files2)"
-$DUPD_CMD scan --path `pwd`/files2 -q
+$DUPD_CMD scan --path `pwd`/files2 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="ls report (verbose)"
-$DUPD_CMD ls -p `pwd`/files2 -v -v -v -v -v > /dev/null
+$DUPD_CMD ls -p `pwd`/files2 -v -v -v -v -v $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="file report (verbose)"
-$DUPD_CMD file --file `pwd`/files2/lonely/unique_size -v -v -v -v -v -v > /dev/null
+$DUPD_CMD file --file `pwd`/files2/lonely/unique_size -v -v -v -v -v -v $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 tdone

@@ -3,12 +3,12 @@
 source common
 
 DESC="scan(files)"
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="file: on a new file"
 echo hi > files/many/ma
-$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ > nreport
+$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 rm -f files/many/ma

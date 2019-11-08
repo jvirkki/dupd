@@ -6,41 +6,41 @@ DESC="scan larger files (files9)"
 
 (cd ./files9 && cat files.tar.gz | gunzip | tar xf -)
 
-$DUPD_CMD scan --path `pwd`/files9 -q --buflimit 1G
+$DUPD_CMD scan --path `pwd`/files9 -q --buflimit 1G $DUPD_CACHEOPT
 checkrv $?
 
 DESC="report"
-$DUPD_CMD report --cut `pwd`/files9/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files9/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 check_nreport output.76
 
 DESC="scan larger files w/SHA512 (files9)"
 
-$DUPD_CMD scan --path `pwd`/files9 -q --hash sha512 --buflimit 20
+$DUPD_CMD scan --path `pwd`/files9 -q --hash sha512 --buflimit 20 $DUPD_CACHEOPT
 checkrv $?
 
 DESC="report"
-$DUPD_CMD report --cut `pwd`/files9/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files9/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 check_nreport output.76
 
 DESC="scan larger files w/SHA1 verbose (files9)"
 
-$DUPD_CMD scan --path `pwd`/files9 --hash sha1 -V 3 --buflimit 40G > /dev/null
+$DUPD_CMD scan --path `pwd`/files9 --hash sha1 -V 3 --buflimit 40G $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="report"
-$DUPD_CMD report --cut `pwd`/files9/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files9/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 check_nreport output.76
 
 DESC="scan larger files w/xxHash verbose (files9)"
 
-$DUPD_CMD scan --path `pwd`/files9 --hash xxhash -V 3 > /dev/null
+$DUPD_CMD scan --path `pwd`/files9 --hash xxhash -V 3 $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="report"
-$DUPD_CMD report --cut `pwd`/files9/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files9/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 check_nreport output.76
 

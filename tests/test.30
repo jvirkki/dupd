@@ -4,7 +4,7 @@ source common
 
 DESC="usage option"
 
-$DUPD_CMD usage > /dev/null
+$DUPD_CMD usage $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 tdone

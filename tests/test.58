@@ -10,11 +10,11 @@ cd ..
 # First just extract files and check baseline
 
 DESC="scan(files6): prepare to test refresh"
-$DUPD_CMD scan --path `pwd`/files6 > /dev/null
+$DUPD_CMD scan --path `pwd`/files6 $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files6/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.58a
@@ -23,11 +23,11 @@ check_nreport output.58a
 # Run refresh, shouldn't change anything yet
 
 DESC="scan(files6): refresh (nothing changed yet)"
-$DUPD_CMD refresh -v > /dev/null
+$DUPD_CMD refresh -v $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files6/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.58a
@@ -38,11 +38,11 @@ check_nreport output.58a
 rm files6/1
 
 DESC="scan(files6): refresh (removed 1)"
-$DUPD_CMD refresh -v -v -v > /dev/null
+$DUPD_CMD refresh -v -v -v $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files6/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.58b
@@ -53,11 +53,11 @@ check_nreport output.58b
 rm files6/2
 
 DESC="scan(files6): refresh (removed 2)"
-$DUPD_CMD refresh > /dev/null
+$DUPD_CMD refresh $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files6/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files6/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.58c

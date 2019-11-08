@@ -3,7 +3,7 @@
 source common
 
 DESC="man page"
-$DUPD_CMD man > nreport
+$DUPD_CMD man $DUPD_CACHEOPT > nreport
 checkrv $?
 
 tdone

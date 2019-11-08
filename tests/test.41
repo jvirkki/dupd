@@ -4,11 +4,11 @@ source common
 
 DESC="scan(files) higher --minsize"
 
-$DUPD_CMD scan --path `pwd`/files --minsize 10000 -q
+$DUPD_CMD scan --path `pwd`/files --minsize 10000 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.41

@@ -4,7 +4,7 @@ source common
 
 # Exercises very verbose scan output code paths
 DESC="scan(files2) (very verbose)"
-$DUPD_CMD scan --x-small-buffers -v -v -v -v -p `pwd`/files > /dev/null
+$DUPD_CMD scan --x-small-buffers -v -v -v -v -p `pwd`/files $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 tdone

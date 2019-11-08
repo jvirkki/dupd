@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files)"
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="csv report"
-$DUPD_CMD report --format csv --cut `pwd`/files/ | tr ',' '\n'  > nreport
+$DUPD_CMD report --format csv --cut `pwd`/files/ $DUPD_CACHEOPT | tr ',' '\n'  > nreport
 checkrv $?
 
 # The CSV output was split into lines above, not entirely realistic,

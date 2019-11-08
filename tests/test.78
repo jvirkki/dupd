@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files)"
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="json report"
-$DUPD_CMD report --format json --cut `pwd`/files/  | tr ',' '\n' | sed -e s/\ ]$//g > nreport
+$DUPD_CMD report --format json --cut `pwd`/files/ $DUPD_CACHEOPT | tr ',' '\n' | sed -e s/\ ]$//g > nreport
 checkrv $?
 
 #

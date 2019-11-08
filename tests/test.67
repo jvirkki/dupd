@@ -3,11 +3,11 @@
 source common
 
 DESC="scan"
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="validate"
-$DUPD_CMD validate > /dev/null
+$DUPD_CMD validate $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 tdone

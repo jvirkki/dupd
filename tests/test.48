@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files) with small buffers"
-$DUPD_CMD scan --path `pwd`/files -q --x-small-buffers
+$DUPD_CMD scan --path `pwd`/files -q --x-small-buffers $DUPD_CACHEOPT
 checkrv $?
 
 DESC="verbose ls with small buffers"
-$DUPD_CMD ls -v -v -v -v -v --x-small-buffers -v --cut `pwd`/files/ --path `pwd`/files/ > /dev/null
+$DUPD_CMD ls -v -v -v -v -v --x-small-buffers -v --cut `pwd`/files/ --path `pwd`/files/ $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 tdone

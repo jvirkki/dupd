@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files)"
-$DUPD_CMD scan --path `pwd`/files -q
+$DUPD_CMD scan --path `pwd`/files -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="file: non-existent file"
-$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ > nreport
+$DUPD_CMD file --file `pwd`/files/many/ma --cut `pwd`/files/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 check_nreport output.15

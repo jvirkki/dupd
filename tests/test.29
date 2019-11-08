@@ -3,11 +3,11 @@
 source common
 
 DESC="scan(files2)"
-$DUPD_CMD scan --path `pwd`/files -q --x-small-buffers
+$DUPD_CMD scan --path `pwd`/files -q --x-small-buffers $DUPD_CACHEOPT
 checkrv $?
 
 DESC="ls"
-$DUPD_CMD ls --x-small-buffers -v --cut `pwd`/files/ --path `pwd`/files/ > nreport
+$DUPD_CMD ls --x-small-buffers -v --cut `pwd`/files/ --path `pwd`/files/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 check_nreport output.29

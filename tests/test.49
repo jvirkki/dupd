@@ -13,11 +13,11 @@ do
     echo $i > files3/tmp.$i
 done
 
-$DUPD_CMD scan --cache $HASHDB --buflimit 1M --path `pwd`/files3 --x-small-buffers -v > /dev/null
+$DUPD_CMD scan --cache $HASHDB --buflimit 1M --path `pwd`/files3 --x-small-buffers -v $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files3/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.40
@@ -26,11 +26,11 @@ check_nreport output.40
 # refresh shouldn't change anything
 
 DESC="nothing changed, try refresh"
-$DUPD_CMD refresh > /dev/null
+$DUPD_CMD refresh $DUPD_CACHEOPT > /dev/null
 checkrv $?
 
 DESC="generate report"
-$DUPD_CMD report --cut `pwd`/files3/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files3/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 
 check_nreport output.40

@@ -6,11 +6,11 @@ DESC="scan(files8)"
 
 (cd ./files8 && ./create_files)
 
-$DUPD_CMD scan --path `pwd`/files8 -q
+$DUPD_CMD scan --path `pwd`/files8 -q $DUPD_CACHEOPT
 checkrv $?
 
 DESC="report"
-$DUPD_CMD report --cut `pwd`/files8/ | grep -v "Duplicate report from database" > nreport
+$DUPD_CMD report --cut `pwd`/files8/ $DUPD_CACHEOPT | grep -v "Duplicate report from database" > nreport
 checkrv $?
 FAILUSEROK=root
 check_nreport output.72

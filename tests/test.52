@@ -5,13 +5,13 @@ source common
 cp files5/afile files5/b
 
 DESC="scan(files5)"
-$DUPD_CMD scan --path `pwd`/files5 -q
+$DUPD_CMD scan --path `pwd`/files5 -q $DUPD_CACHEOPT
 checkrv $?
 
 rm -f files5/b
 
 DESC="file command where dup has been deleted"
-$DUPD_CMD file --file files5/afile -v -v | grep UNIQUE
+$DUPD_CMD file --file files5/afile -v -v $DUPD_CACHEOPT | grep UNIQUE
 checkrv $?
 
 tdone

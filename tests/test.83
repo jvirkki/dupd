@@ -3,7 +3,7 @@
 source common
 
 DESC="internal unit tests"
-$DUPD_CMD testing
+$DUPD_CMD testing $DUPD_CACHEOPT
 checkrv $?
 
 tdone

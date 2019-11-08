@@ -4,11 +4,11 @@ source common
 
 DESC="scan(files) SHA512"
 
-$DUPD_CMD scan --path `pwd`/files -q -F sha512
+$DUPD_CMD scan --path `pwd`/files -q -F sha512 $DUPD_CACHEOPT
 checkrv $?
 
 DESC="dups without --uniques"
-$DUPD_CMD dups --cut `pwd`/files/ --path `pwd`/files/ > nreport
+$DUPD_CMD dups --cut `pwd`/files/ --path `pwd`/files/ $DUPD_CACHEOPT > nreport
 checkrv $?
 
 check_nreport output.10

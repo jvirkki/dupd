@@ -5,7 +5,7 @@ source common
 rm -f stx
 
 DESC="scan(files) testing count stats"
-$DUPD_CMD scan --path `pwd`/files -q --stats-file stx
+$DUPD_CMD scan --path `pwd`/files -q --stats-file stx $DUPD_CACHEOPT
 checkrv $?
 
 rm -f nreport report

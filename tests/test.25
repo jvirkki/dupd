@@ -6,7 +6,7 @@ DESC="scan(files2): generate stats"
 
 rm -f stats.out
 
-$DUPD_CMD scan --path `pwd`/files2 -q --stats-file stats.out
+$DUPD_CMD scan --path `pwd`/files2 -q --stats-file stats.out $DUPD_CACHEOPT
 checkrv $?
 
 if [ -e stats.out ]; then

@@ -5,13 +5,13 @@ source common
 DESC="scan(files5)"
 cp files5/afile files5/b
 
-$DUPD_CMD scan --path `pwd`/files5 -q
+$DUPD_CMD scan --path `pwd`/files5 -q $DUPD_CACHEOPT
 checkrv $?
 
 echo more >> files5/b
 
 DESC="file command where dup has changed"
-$DUPD_CMD file --file files5/afile -v -v -v  | grep UNIQUE
+$DUPD_CMD file --file files5/afile -v -v -v $DUPD_CACHEOPT | grep UNIQUE
 checkrv $?
 
 rm -f files5/b

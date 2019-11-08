@@ -7,7 +7,7 @@ source common
 mkdir -p empty
 
 DESC="scan -q empty dir"
-$DUPD_CMD scan --path `pwd`/empty -q
+$DUPD_CMD scan --path `pwd`/empty -q $DUPD_CACHEOPT
 checkrv $?
 
 rmdir empty
