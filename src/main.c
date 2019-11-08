@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2019 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -24,6 +24,7 @@
 #include <strings.h>
 #include <unistd.h>
 
+#include "cache.h"
 #include "copying.h"
 #include "filecompare.h"
 #include "hash.h"
@@ -95,6 +96,7 @@ uint64_t cache_min_size = 0;
 sqlite3 * cache_dbh = NULL;
 int use_hash_cache = 1;
 int dump_state = 0;
+int cache_delete = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -321,6 +323,7 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_hardlink_is_unique]) { hardlink_is_unique = 1; }
   if (options[OPT_one_file_system]) { one_file_system = 1; }
   if (options[OPT_x_no_cache]) { use_hash_cache = 0; }
+  if (options[OPT_delete]) { cache_delete = 1; }
 
   cache_min_size =
     (uint64_t)opt_int(options[OPT_x_cache_min_size], cache_min_size);
@@ -466,6 +469,16 @@ static int process_args(int argc, char * argv[])
 
 
 /** ***************************************************************************
+ * Check which cache operation was requested.
+ *
+ */
+static void operation_cache()
+{
+  if (cache_delete) { operation_cache_delete(cache_db_path); }
+}
+
+
+/** ***************************************************************************
  * Signal handler.
  *
  */
@@ -544,6 +557,7 @@ int main(int argc, char * argv[])
     case COMMAND_help:      show_help();                 break;
     case COMMAND_testing:   testing();                   break;
     case COMMAND_hash:      operation_hash_file();       break;
+    case COMMAND_cache:     operation_cache();           break;
     case OPTGEN_NO_COMMAND: show_help();                 rv = 1; break;
 
     default:                                                 // LCOV_EXCL_START
