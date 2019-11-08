@@ -1,5 +1,5 @@
 #
-#  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2012-2019 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -167,7 +167,7 @@ lcov: gcov
 # that optgen.c is checked in although it really should not be.
 src/optgen.c src/optgen.h: src/options.conf
 ifeq (/,$(OPTGEN))
-	(cd src; optgen options.conf)
+	(cd src; optgen options.conf && cd .. && $(MAKE) clean)
 else
 	@echo optgen not found, unable to regenerate option code
 endif
