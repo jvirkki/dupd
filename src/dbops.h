@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014,2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -271,5 +271,13 @@ int cache_db_check_entry(char * path);
  *
  */
 void cache_db_add_entry(char * path, char * hash, int hash_len);
+
+
+/** ***************************************************************************
+ * List cache entries to stdout.
+ *
+ */
+int cache_db_list_entries();
+
 
 #endif

@@ -1,5 +1,5 @@
 /*
-  Copyright 2019 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "cache.h"
+#include "dbops.h"
 #include "main.h"
 
 
@@ -38,4 +39,16 @@ void operation_cache_delete(char * path)
     perror(line);
     exit(1);
   }                                                          // LCOV_EXCL_STOP
+}
+
+
+/** ***************************************************************************
+ * Public function, see report.h
+ *
+ */
+void operation_cache_ls(char * path)
+{
+  open_cache_database(path);
+  cache_db_list_entries();
+  close_cache_database();
 }

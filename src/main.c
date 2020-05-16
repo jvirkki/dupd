@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2019 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -97,6 +97,8 @@ sqlite3 * cache_dbh = NULL;
 int use_hash_cache = 1;
 int dump_state = 0;
 int cache_delete = 0;
+int cache_ls = 0;
+uint32_t debug_size = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -324,6 +326,7 @@ static int process_args(int argc, char * argv[])
   if (options[OPT_one_file_system]) { one_file_system = 1; }
   if (options[OPT_x_no_cache]) { use_hash_cache = 0; }
   if (options[OPT_delete]) { cache_delete = 1; }
+  if (options[OPT_ls]) { cache_ls = 1; }
 
   cache_min_size =
     (uint64_t)opt_int(options[OPT_x_cache_min_size], cache_min_size);
@@ -336,6 +339,8 @@ static int process_args(int argc, char * argv[])
   filecmp_block_size = opt_int(options[OPT_fileblocksize], filecmp_block_size);
 
   hash_one_max_blocks = opt_int(options[OPT_firstblocks], hash_one_max_blocks);
+
+
 
   cut_path = options[OPT_cut];
 
@@ -475,6 +480,7 @@ static int process_args(int argc, char * argv[])
 static void operation_cache()
 {
   if (cache_delete) { operation_cache_delete(cache_db_path); }
+  if (cache_ls) { operation_cache_ls(cache_db_path); }
 }
 
 

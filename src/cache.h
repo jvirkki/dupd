@@ -1,5 +1,5 @@
 /*
-  Copyright 2019 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -31,6 +31,18 @@
  *
  */
 void operation_cache_delete(char * path);
+
+
+/** ***************************************************************************
+ * List files in cache and their status.
+ *
+ * Parameters:
+ *    path - path to the cache file
+ *
+ * Return: none
+ *
+ */
+void operation_cache_ls(char * path);
 
 
 #endif

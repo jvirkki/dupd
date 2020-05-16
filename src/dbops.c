@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -885,4 +885,15 @@ void cache_db_add_entry(char * path, char * hash, int hash_len)
 
   commit_transaction(cache_dbh);
   d_mutex_unlock(&cache_dbh_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+int cache_db_list_entries()
+{
+
+
 }
