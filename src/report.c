@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -287,7 +287,7 @@ static int reverify_duplicates(char * path, int dups, char * * duplicates,
  */
 void operation_report()
 {
-  const char * sql = "SELECT paths, count*each_size AS total "
+  const char * sql = "SELECT paths, count*each_size AS total, each_size "
                      "FROM duplicates ORDER BY total";
   sqlite3_stmt * statement = NULL;
   int rv;
@@ -319,6 +319,7 @@ void operation_report()
 
     path_list = (char *)sqlite3_column_text(statement, 0);
     uint64_t total = sqlite3_column_int64(statement, 1);
+    uint64_t each_size = sqlite3_column_int64(statement, 2);
 
     if (total >= minimum_file_size) {
 
@@ -329,10 +330,17 @@ void operation_report()
 
       switch (report_format) {
       case REPORT_FORMAT_TEXT:
-        printf("%" PRIu64" total bytes used by duplicates:\n", total);
+        printf("%" PRIu64" total bytes used by duplicates of size %" PRIu64
+               ":\n", total, each_size);
         break;
-      case REPORT_FORMAT_CSV:  printf("%" PRIu64 ",", total); break;
-      case REPORT_FORMAT_JSON: printf("[ %" PRIu64 ",", total); break;
+      case REPORT_FORMAT_CSV:
+        printf("%" PRIu64 ",", total);
+        printf("%" PRIu64 ",", each_size);
+        break;
+      case REPORT_FORMAT_JSON:
+        printf("[ %" PRIu64 ",", total);
+        printf(" %" PRIu64 ",", each_size);
+        break;
       }
 
       used += (uint64_t)total;

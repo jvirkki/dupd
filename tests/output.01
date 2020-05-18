@@ -555,13 +555,13 @@
   small2
   small2copy1
   small2copy2
-1545 total bytes used by duplicates:
-16384 total bytes used by duplicates:
-16470 total bytes used by duplicates:
-24576 total bytes used by duplicates:
-28 total bytes used by duplicates:
-294912 total bytes used by duplicates:
-32944 total bytes used by duplicates:
-49152 total bytes used by duplicates:
-90 total bytes used by duplicates:
+1545 total bytes used by duplicates of size 3:
+16384 total bytes used by duplicates of size 8192:
+16470 total bytes used by duplicates of size 8235:
+24576 total bytes used by duplicates of size 8192:
+28 total bytes used by duplicates of size 14:
+294912 total bytes used by duplicates of size 73728:
+32944 total bytes used by duplicates of size 8236:
+49152 total bytes used by duplicates of size 16384:
+90 total bytes used by duplicates of size 30:
 Total used: 436101 bytes (425 KiB, 0 MiB, 0 GiB)

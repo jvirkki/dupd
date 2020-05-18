@@ -10,6 +10,6 @@
   file6a
   file6b
   file6c
-294912 total bytes used by duplicates:
-49152 total bytes used by duplicates:
+294912 total bytes used by duplicates of size 73728:
+49152 total bytes used by duplicates of size 16384:
 Total used: 344064 bytes (336 KiB, 0 MiB, 0 GiB)
