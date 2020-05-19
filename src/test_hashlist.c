@@ -48,7 +48,7 @@ static void test_hash_table_basics()
 
   LOG(L_PROGRESS, "--- add one entry---\n");
   struct direntry * tmpdir = new_child_dir("tmp", NULL);
-  struct path_list_head * path_head = insert_first_path("foo", tmpdir);
+  struct path_list_head * path_head = insert_first_path("foo", tmpdir, 1);
   struct path_list_entry * file_entry = pb_get_first_entry(path_head);
 
   memset(hash, 0, hash_bufsize);

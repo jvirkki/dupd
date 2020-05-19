@@ -143,12 +143,14 @@ void free_path_entry(struct path_list_entry * entry);
  * Parameters:
  *    filename  - The filename of this first file.
  *    dir_entry - Directory containing filename.
+ *    size      - Size of the file.
  *
  * Return: Pointer to the head of this path list.
  *
  */
 struct path_list_head * insert_first_path(char * filename,
-                                          struct direntry * dir_entry);
+                                          struct direntry * dir_entry,
+                                          uint64_t size);
 
 
 /** ***************************************************************************

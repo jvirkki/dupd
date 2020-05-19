@@ -136,6 +136,11 @@ static struct size_node * new_node(uint64_t size, char * filename,
   n->filename = (char *)malloc(l + 1);
   strlcpy(n->filename, filename, l + 1);
 
+  if (debug_size == size) {
+    LOG(L_PROGRESS, "new_node: size tree node created for size %" PRIu64
+        " by file [%s]\n", size, filename);
+  }
+
   return n;
 }
 
@@ -169,7 +174,7 @@ static void add_below(struct size_node * node, ino_t inode,
       // to add both the previous and current to the path list.
 
       if (p->paths == NULL) {
-        p->paths = insert_first_path(p->filename, p->dir_entry);
+        p->paths = insert_first_path(p->filename, p->dir_entry, size);
         p->dir_entry = NULL;
         free(p->filename);
         p->filename = NULL;
@@ -358,6 +363,11 @@ int add_file(sqlite3 * dbh,
 
     size = new_stat_info.st_size;
     inode = new_stat_info.st_ino;
+
+    if (debug_size == size) {
+      LOG(L_PROGRESS, "add_file: SCAN_SIZE_UNKNOWN resolved to %" PRIu64
+          " for [%s]\n", size, path);
+    }
   }
 
   if (size < minimum_file_size) {
@@ -389,6 +399,10 @@ int add_queue(sqlite3 * dbh,
   (void)dbh;                    /* not used */
 
   LOG(L_MORE_TRACE, "add_queue (%d): %s\n", current_producer_queue, path);
+
+  if (debug_size == size) {
+    LOG(L_PROGRESS, "add_queue (%d): %s\n", current_producer_queue, path);
+  }
 
   // Just add it to the end of the queue producer currently owns.
   producer_next->size = size;

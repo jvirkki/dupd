@@ -98,7 +98,7 @@ int use_hash_cache = 1;
 int dump_state = 0;
 int cache_delete = 0;
 int cache_ls = 0;
-uint32_t debug_size = 0;
+uint64_t debug_size = 0;
 
 char * log_level_name[] = {
   "NONE",
@@ -340,7 +340,7 @@ static int process_args(int argc, char * argv[])
 
   hash_one_max_blocks = opt_int(options[OPT_firstblocks], hash_one_max_blocks);
 
-
+  debug_size = opt_int(options[OPT_debug_size], debug_size);
 
   cut_path = options[OPT_cut];
 
@@ -468,6 +468,12 @@ static int process_args(int argc, char * argv[])
   int ramm = ram / (1024 * 1024);
   int blim = buffer_limit / (1024 * 1024);
   LOG(L_INFO, "Reported RAM: %dMB  buffer limit: %dMB\n", ramm, blim);
+
+  // If debug_size is set, enforce minimum log_level so it won't interfere
+  // with animated status updates.
+  if (debug_size) {
+    if (log_level < L_PROGRESS) { log_level = L_PROGRESS; }
+  }
 
   return 0;
 }

@@ -273,7 +273,8 @@ void free_path_entry(struct path_list_entry * entry)
  *
  */
 struct path_list_head * insert_first_path(char * filename,
-                                          struct direntry * dir_entry)
+                                          struct direntry * dir_entry,
+                                          uint64_t size)
 {
   int filename_len = strlen(filename);
 
@@ -333,7 +334,11 @@ struct path_list_head * insert_first_path(char * filename,
   memcpy(filebuf, filename, filename_len);
 
   LOG_EVEN_MORE_TRACE {
-    dump_path_list("AFTER insert_first_path", -1, head, 0);
+    dump_path_list("AFTER insert_first_path", size, head, 0);
+  }
+
+  if (debug_size == size) {
+    dump_path_list("AFTER insert_first_path", size, head, 1);
   }
 
   stats_path_list_entries++;
@@ -446,6 +451,10 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
     dump_path_list("AFTER insert_end_path", size, head, 0);
   }
 
+  if (debug_size == size) {
+    dump_path_list("AFTER insert_end_path", size, head, 1);
+  }
+
   if (head->list_size > stats_max_pathlist) {
     stats_max_pathlist = head->list_size;
     stats_max_pathlist_size = size;
@@ -510,6 +519,11 @@ const char * file_state(int state)
 int mark_path_entry_invalid(struct path_list_head * head,
                             struct path_list_entry * entry)
 {
+
+  if (debug_size == head->sizelist->size) {
+    dump_path_list("mark_path_entry_invalid", head->sizelist->size, head, 1);
+  }
+
   if (entry->state != FS_INVALID) {
 
     if (head->list_size == 0) {

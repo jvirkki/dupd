@@ -299,6 +299,12 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
       if (type == D_OTHER) {
         rv = get_file_info(newpath, &new_stat_info);
         size = (uint64_t)new_stat_info.st_size;
+
+        if (debug_size == size) {
+          LOG(L_PROGRESS, "walk_dir found file is size %" PRIu64 " [%s]\n",
+              size, newpath);
+        }
+
         inode = new_stat_info.st_ino;
         if (rv != 0) {
           type = D_ERROR;

@@ -380,6 +380,13 @@ extern int dump_state;
 
 
 /** ***************************************************************************
+ * Increase debug logging for this file size.
+ *
+ */
+uint64_t debug_size;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */
