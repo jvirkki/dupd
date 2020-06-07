@@ -28,11 +28,13 @@
 	    Direct pair comparison hasn't been a default in a long time,
 	    removing option to skip it.
 	* Removed the --pathsep option of scan.
+	* Changed output of csv and json report format to include file size.
 	* Added new 'hash' command.
 	    It hashes one file and displays the result.
 	* The scan operation now makes use of the hash cache if available.
 	* Support toggling between verbose debug output and default progress
 	    output via SIGUSR1. Can be useful to diagnose long running scans.
+	* Added new 'cache' command to manipulate hash cache.
 
 2018-07-18  Jyri J. Virkki  <jyri@virkki.com>
 
