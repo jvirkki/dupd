@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -71,8 +71,11 @@ struct path_list_head {
 // File State used in path_list_entry
 #define FS_NEED_DATA 51
 #define FS_BUFFER_READY 53
-#define FS_INVALID 55
 #define FS_DONE 57
+#define FS_CACHE_DONE 58
+#define FS_UNIQUE 59
+#define FS_IGNORE 60
+#define FS_IGNORE_HL 62
 
 // Path List State in path_list_head
 #define PLS_NEED_DATA 14
@@ -219,9 +222,7 @@ static inline char * pb_get_filename(struct path_list_entry * entry)
 
 
 /** ***************************************************************************
- * Mark the given path list entry invalid. This is done if it wasn't possible
- * to read from it. If this reduces the path list to one remaining file,
- * mark the whole path list done and update file states to match.
+ * Mark the given path list entry unique.
  *
  * Parameters:
  *    head  - Head of the path list containing entry.
@@ -230,8 +231,38 @@ static inline char * pb_get_filename(struct path_list_entry * entry)
  * Return: remaining size of this path list (may be down to zero)
  *
  */
-int mark_path_entry_invalid(struct path_list_head * head,
+void mark_path_entry_unique(struct path_list_head * head,
                             struct path_list_entry * entry);
+
+
+/** ***************************************************************************
+ * Mark the given path list entry as ignored. This is done when file cannot
+ * be read or was truncated.
+ *
+ * Parameters:
+ *    head  - Head of the path list containing entry.
+ *    entry - The entry to mark invalid.
+ *
+ * Return: remaining size of this path list (may be down to zero)
+ *
+ */
+int mark_path_entry_ignore(struct path_list_head * head,
+                           struct path_list_entry * entry);
+
+
+/** ***************************************************************************
+ * Mark the given path list entry as ignored because it is a hardlink.
+ * Only relevant when --hardlink-is-unique option is used.
+ *
+ * Parameters:
+ *    head  - Head of the path list containing entry.
+ *    entry - The entry to mark invalid.
+ *
+ * Return: remaining size of this path list (may be down to zero)
+ *
+ */
+int mark_path_entry_ignore_hardlink(struct path_list_head * head,
+                                    struct path_list_entry * entry);
 
 
 /** ***************************************************************************

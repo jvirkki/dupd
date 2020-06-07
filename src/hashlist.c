@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -34,6 +34,8 @@
 #include "hashlist.h"
 #include "hashlist_priv.h"
 #include "main.h"
+#include "paths.h"
+#include "sizelist.h"
 #include "stats.h"
 #include "utils.h"
 
@@ -467,6 +469,10 @@ int skim_uniques(struct path_list_head * head, struct hash_table * src)
   int skimmed = 0;
   struct hash_list * p;
 
+  if (debug_size == head->sizelist->size) {
+    dump_path_list("ENTER skim_uniques", head->sizelist->size, head, 1);
+  }
+
   for (int n = 0; n <= 255; n++) {
 
     if (src->table[n] != NULL) {
@@ -474,11 +480,15 @@ int skim_uniques(struct path_list_head * head, struct hash_table * src)
       p = src->table[n];
       while (p != NULL && p->hash_valid) {
 
+        if (debug_size == head->sizelist->size) {
+          dump_path_list("skim_uniques", head->sizelist->size, head, 1);
+        }
+
         // If this list has only one entry, it was unique.
         if (p->next_index == 1) {
           entry = *(p->entries);
-          LOG(L_TRACE, "skim_uniques: marking a single entry list invalid\n");
-          mark_path_entry_invalid(head, entry);
+          LOG(L_TRACE, "skim_uniques: marking a single entry list unique\n");
+          mark_path_entry_unique(head, entry);
           skimmed++;
           increase_unique_counter(1);
         }

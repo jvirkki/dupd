@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -114,7 +114,11 @@ void dump_path_list(const char * line, uint64_t size,
       bzero(buffer, DUPD_PATH_MAX);
       build_path(entry, buffer);
       printf("   built path: [%s]\n", buffer);
-      if (entry->state != FS_INVALID) { valid++; }
+      if (entry->state != FS_UNIQUE &&
+          entry->state != FS_IGNORE &&
+          entry->state != FS_IGNORE_HL) {
+        valid++;
+      }
     }
     counted++;
     entry = entry->next;
@@ -185,6 +189,98 @@ inline static void check_space(int needed)
   if (path_block_end - next_entry - 2 <= needed) {
     add_path_block();
   }
+}
+
+
+/** ***************************************************************************
+ * Clear remaining entry in a path list by marking it FS_UNIQUE.
+ *
+ */
+static int clear_remaining_entry(struct path_list_head * head)
+{
+  head->state = PLS_DONE;
+  head->list_size = 0;
+  d_mutex_lock(&stats_lock, "mark invalid stats");
+  stats_sets_dup_not[ROUND1]++;
+  d_mutex_unlock(&stats_lock);
+  LOG(L_TRACE, "Reduced list size to %d, state now DONE\n", head->list_size);
+
+  struct path_list_entry * e = pb_get_first_entry(head);
+  int good = 0;
+
+  while (e != NULL) {
+    switch (e->state) {
+
+    case FS_NEED_DATA:
+    case FS_BUFFER_READY:
+    case FS_CACHE_DONE:
+      free_path_entry(e);
+      good++;
+      e->state = FS_UNIQUE;
+      break;
+
+    case FS_UNIQUE:
+    case FS_IGNORE:
+    case FS_IGNORE_HL:
+      break;
+
+    default:
+                                                             // LCOV_EXCL_START
+      printf("error: invalid state %s seen in clear_remaining_entry\n",
+             file_state(e->state));
+      dump_path_list("bad state", head->sizelist->size, head, 1);
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
+
+    e = e->next;
+  }
+  return good;
+}
+
+
+/** ***************************************************************************
+ * Shared internal implementation used by mark_path_entry_ignore() and
+ * mark_path_entry_ignore_hl().
+ *
+ */
+static int mark_path_entry_ignore_int(struct path_list_head * head,
+                                      struct path_list_entry * entry,
+                                      int ignore_state)
+{
+  entry->state = ignore_state;
+  head->list_size--;
+  free_path_entry(entry);
+  LOG(L_TRACE, "ignore: reduced list size to %d\n", head->list_size);
+
+  // If list is down to one entry, it's also unique and no more work remains
+  if (head->list_size == 1) {
+    int found = clear_remaining_entry(head);
+    if (found != 1) {
+      printf("error: clear_remaining_entry in mark_path_entry_ignore expected "
+             " one remaining entry but saw %d\n", found);
+      dump_path_list("", head->sizelist->size, head, 1);
+      exit(1);
+    }
+  }
+
+  // After shrinking list_size, we might now have all remaining entries ready
+  if (head->list_size > 1 && head->list_size == head->buffer_ready) {
+    head->state = PLS_ALL_BUFFERS_READY;
+    LOG(L_TRACE, "After shrinking list_size to %d, state now %s\n",
+        head->list_size, pls_state(head->state));
+  }
+
+  if (debug_size == head->sizelist->size) {
+    dump_path_list("OUT mark_path_entry_ignore", head->sizelist->size, head,1);
+  }
+
+  if (head->list_size == UINT16_MAX) {
+    printf("error: mark_path_entry_ignore_int list_size=-1\n");
+    dump_path_list("", head->sizelist->size, head, 1);
+    exit(1);
+  }
+
+  return head->list_size;
 }
 
 
@@ -503,8 +599,11 @@ const char * file_state(int state)
   switch(state) {
   case FS_NEED_DATA:                  return "FS_NEED_DATA";
   case FS_BUFFER_READY:               return "FS_BUFFER_READY";
-  case FS_INVALID:                    return "FS_INVALID";
   case FS_DONE:                       return "FS_DONE";
+  case FS_CACHE_DONE:                 return "FS_CACHE_DONE";
+  case FS_UNIQUE:                     return "FS_UNIQUE";
+  case FS_IGNORE:                     return "FS_IGNORE";
+  case FS_IGNORE_HL:                  return "FS_IGNORE_HL";
   default:
     printf("\nerror: unknown file_state %d\n", state);
     exit(1);
@@ -516,87 +615,118 @@ const char * file_state(int state)
  * Public function, see paths.h
  *
  */
-int mark_path_entry_invalid(struct path_list_head * head,
+void mark_path_entry_unique(struct path_list_head * head,
                             struct path_list_entry * entry)
 {
-
   if (debug_size == head->sizelist->size) {
-    dump_path_list("mark_path_entry_invalid", head->sizelist->size, head, 1);
+    dump_path_list("IN mark_path_entry_unique", head->sizelist->size, head, 1);
   }
 
-  if (entry->state != FS_INVALID) {
+  if (entry->state == FS_UNIQUE) {
+    LOG(L_TRACE, "mark_path_entry_unique: entry is already FS_UNIQUE, skip\n");
+    return;
+  }
 
-    if (head->list_size == 0) {
+  // XXX check different preconditions for each acceptable input state?
+
+  // States which can transition to FS_UNIQUE
+  if (entry->state != FS_NEED_DATA && entry->state != FS_CACHE_DONE) {
                                                              // LCOV_EXCL_START
-      printf("error: called to invalidate entry (not already invalid) "
-             "but list size is zero!!\n");
-      dump_path_list("bad state", head->sizelist->size, head, 1);
-      exit(1);
-    }                                                        // LCOV_EXCL_STOP
+    printf("error: set entry state FS_UNIQUE but current state is %s\n",
+           file_state(entry->state));
+    dump_path_list("bad state", head->sizelist->size, head, 1);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
-    entry->state = FS_INVALID;
-    head->list_size--;
-    LOG(L_TRACE, "Reduced list size to %d\n", head->list_size);
-  } else {
-    LOG(L_TRACE, "Entry already FS_INVALID, list size still %d\n",
-        head->list_size);
-  }
+  if (head->list_size == 0) {
+                                                             // LCOV_EXCL_START
+    printf("error: set entry state FS_UNIQUE but list size is zero!!\n");
+    dump_path_list("bad state", head->sizelist->size, head, 1);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
 
+  entry->state = FS_UNIQUE;
+  head->list_size--;
   free_path_entry(entry);
+  LOG(L_TRACE, "unique: reduced list size to %d\n", head->list_size);
 
   // After shrinking list_size, we might now have all remaining entries ready
   if (head->list_size == head->buffer_ready) {
-    head->state = PLS_ALL_BUFFERS_READY;
-    LOG(L_TRACE, "After shrinking list_size to %d, state now %s\n",
-        head->list_size, pls_state(head->state));
+    printf("XXXX setUNIQUE need to deal with all buffers full\n");
+    exit(1);
   }
 
-  // If this path list is down to one file, nothing to see here.
-  // But need to find that remaining file to mark it invalid as well.
   if (head->list_size == 1) {
-    head->state = PLS_DONE;
-    head->list_size = 0;
-    d_mutex_lock(&stats_lock, "mark invalid stats");
-    stats_sets_dup_not[ROUND1]++;
-    d_mutex_unlock(&stats_lock);
-    LOG(L_TRACE, "Reduced list size to %d, state now DONE\n", head->list_size);
-
-    struct path_list_entry * e = pb_get_first_entry(head);
-    int good = 0;
-
-    while (e != NULL) {
-      switch (e->state) {
-
-      case FS_NEED_DATA:
-      case FS_BUFFER_READY:
-        free_path_entry(e);
-        good++;
-        e->state = FS_INVALID;
-        break;
-
-      case FS_INVALID:
-        break;
-
-      default:
-                                                             // LCOV_EXCL_START
-        printf("error: invalid state seen in mark_path_entry_invalid\n");
-        dump_path_list("bad state", head->sizelist->size, head, 1);
-        exit(1);
-        break;
-      }                                                      // LCOV_EXCL_STOP
-
-      e = e->next;
+    int found = clear_remaining_entry(head);
+    if (found != 1) {
+      printf("error: clear_remaining_entry in mark_path_entry_unique expected "
+             " one remaining entry but saw %d\n", found);
+      dump_path_list("", head->sizelist->size, head, 1);
     }
-
-    if (good != 1) {
-                                                             // LCOV_EXCL_START
-      printf("error: mark_path_entry_invalid wrong count of good paths\n");
-      dump_path_list("bad state", head->sizelist->size, head, 1);
-      exit(1);
-    }                                                        // LCOV_EXCL_STOP
   }
 
-  return head->list_size;
+  if (debug_size == head->sizelist->size) {
+    dump_path_list("OUT mark_path_entry_unique", head->sizelist->size, head,1);
+  }
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
+int mark_path_entry_ignore(struct path_list_head * head,
+                           struct path_list_entry * entry)
+{
+  if (debug_size == head->sizelist->size) {
+    dump_path_list("IN mark_path_entry_ignore", head->sizelist->size, head, 1);
+  }
+
+  if (entry->state != FS_NEED_DATA) {
+                                                             // LCOV_EXCL_START
+    printf("error: set entry state FS_IGNORE but current state is %s\n",
+           file_state(entry->state));
+    dump_path_list("bad state", head->sizelist->size, head, 1);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
+  if (head->list_size == 0) {
+                                                             // LCOV_EXCL_START
+    printf("error: set entry state FS_IGNORE but list size is zero!!\n");
+    dump_path_list("bad state", head->sizelist->size, head, 1);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
+  return mark_path_entry_ignore_int(head, entry, FS_IGNORE);
+}
+
+
+/** ***************************************************************************
+ * Public function, see paths.h
+ *
+ */
+int mark_path_entry_ignore_hardlink(struct path_list_head * head,
+                                    struct path_list_entry * entry)
+{
+  if (debug_size == head->sizelist->size) {
+    dump_path_list("IN mark_path_entry_ignore", head->sizelist->size, head, 1);
+  }
+
+  // For FS_IGNORE_HL it is possible that this list is already empty when
+  // hardlinks are dropped in sort_read_list(). In those cases, we're done.
+  if (head->list_size == 0) {
+    return 0;
+  }
+
+  if (entry->state != FS_NEED_DATA && entry->state != FS_UNIQUE) {
+                                                             // LCOV_EXCL_START
+    printf("error: set entry state FS_IGNORE_HL but current state is %s\n",
+           file_state(entry->state));
+    dump_path_list("bad state", head->sizelist->size, head, 1);
+    exit(1);
+  }                                                          // LCOV_EXCL_STOP
+
+  return mark_path_entry_ignore_int(head, entry, FS_IGNORE_HL);
 }
 
 
@@ -639,7 +769,5 @@ void mark_path_entry_ready(struct path_list_head * head,
         exit(1);
       }
     }
-
   }
-
 }

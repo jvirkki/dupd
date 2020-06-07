@@ -1,5 +1,5 @@
 /*
-  Copyright 2016-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -280,8 +280,9 @@ void sort_read_list()
         LOG(L_SKIPPED, "Skipping [%s] due to duplicate inode.\n", path);
 
         int before = inode_read_list[i].pathlist_head->list_size;
-        int after = mark_path_entry_invalid(inode_read_list[i].pathlist_head,
-                                            inode_read_list[i].pathlist_self);
+        int after =
+          mark_path_entry_ignore_hardlink(inode_read_list[i].pathlist_head,
+                                          inode_read_list[i].pathlist_self);
         s_files_hl_skip += (before - after);
       }
       p_inode = inode_read_list[i].inode;

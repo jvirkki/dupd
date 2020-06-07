@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -266,7 +266,9 @@ static void * size_list_flusher(void * arg)
           add_hash_table(ht, entry, 0, 0, 0);
           break;
 
-        case FS_INVALID:
+        case FS_IGNORE:
+        case FS_IGNORE_HL:
+        case FS_UNIQUE:
           break;
 
         default:
@@ -437,7 +439,7 @@ static int fill_data_block(struct path_list_head * head,
     LOG(L_PROGRESS, "error: read %" PRIu64 " bytes from [%s] but wanted %"
         PRIu32 " (%s)\n", bytes_read, path, want_bytes, strerror(errno));
     int before = head->list_size;
-    int after = mark_path_entry_invalid(head, entry);
+    int after = mark_path_entry_ignore(head, entry);
     int additional = before - 1 - after;
     if (additional > 0) {
       LOG(L_SKIPPED, "Defaulting %d additional files as unique\n", additional);
@@ -528,7 +530,8 @@ static void * read_list_reader(void * arg)
   int waiting_hash;
   int loop = 0;
   int submit_this_one;
-  int invalid;
+  int ignore;
+  int unique;
   int did_something;
   struct path_list_entry * pathlist_entry;
   struct path_list_head * pathlist_head;
@@ -552,7 +555,8 @@ static void * read_list_reader(void * arg)
     needy = 0;
     done_files = 0;
     waiting_hash = 0;
-    invalid = 0;
+    ignore = 0;
+    unique = 0;
     did_something = 0;
 
     loop++;
@@ -611,9 +615,14 @@ static void * read_list_reader(void * arg)
         waiting_hash++;
         break;
 
-      case FS_INVALID:
+      case FS_IGNORE:
         done_files++;
-        invalid++;
+        ignore++;
+        break;
+
+      case FS_UNIQUE:
+        done_files++;
+        unique++;
         break;
 
       default:                                               // LCOV_EXCL_START
@@ -640,8 +649,9 @@ static void * read_list_reader(void * arg)
     } while (rlpos < read_list_end);
 
     LOG(L_THREADS, "Completed loop %d: list size: %" PRIu64 " worked: %d "
-        "(NEED_DATA %d, NEED_HASH %d, INVALID %d, DONE %" PRIu64 ")\n",
-        loop, rlpos, did_something, needy, waiting_hash, invalid, done_files);
+        "(NEED_DATA %d, NEED_HASH %d, IGNORE %d, UNIQUE %d, DONE %"PRIu64")\n",
+        loop, rlpos, did_something, needy, waiting_hash, ignore, unique,
+        done_files);
 
     done = done_files >= rlpos;
 
@@ -706,7 +716,7 @@ void process_cached_hashes(sqlite3 * dbh)
         }                                                    // LCOV_EXCL_STOP
 
         add_to_hash_table(hl, entry, hashbuf);
-        entry->state = FS_DONE;
+        entry->state = FS_CACHE_DONE;
         stats_files_done_from_cache++;
         entry = entry->next;
       }
