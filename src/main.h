@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -383,7 +383,7 @@ extern int dump_state;
  * Increase debug logging for this file size.
  *
  */
-uint64_t debug_size;
+extern uint64_t debug_size;
 
 
 /** ***************************************************************************
