@@ -366,10 +366,6 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
           sprintf(pbi->buf + pos, "%s%c", file, 0);
         }
 
-        if (use_hash_cache && size > cache_min_size) {
-          cache_db_add_entry(file, p->hash, hash_bufsize);
-        }
-
         LOG_MORE_INFO {
           int hsize = hash_get_bufsize(hash_function);
           char hash_out[HASH_MAX_BUFSIZE];

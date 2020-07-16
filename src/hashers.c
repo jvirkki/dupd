@@ -1,5 +1,5 @@
 /*
-  Copyright 2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2018-2020 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -17,6 +17,7 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "dbops.h"
 #include "hash.h"
 #include "hashers.h"
 #include "hashlist.h"
@@ -67,6 +68,7 @@ static int build_hash_list_round(sqlite3 * dbh,
                                  struct hash_table * hl)
 {
   char hash_out[HASH_MAX_BUFSIZE];
+  char file[DUPD_PATH_MAX];
   struct path_list_entry * node;
   int completed = 0;
   uint32_t prev_buffer = 0;
@@ -84,6 +86,16 @@ static int build_hash_list_round(sqlite3 * dbh,
       update_node_hash(node, hash_out);
       add_to_hash_table(hl, node, hash_out);
       node->state = FS_NEED_DATA;
+
+      // If we've fully read these files it means we have the full hash.
+      // If applicable, save in hash cache. Note if the large file differed
+      // only in the final block we may have unique files but since we
+      // went to the trouble of hashing them fully, cache it now.
+      if (size_node->fully_read && use_hash_cache &&
+          size_node->size > cache_min_size) {
+        build_path(node, file);
+        cache_db_add_entry(file, hash_out, hash_bufsize);
+      }
 
       if (prev_buffer > 0 && node->data_in_buffer != prev_buffer) {
         printf("error: inconsistent amount of data in buffers\n");
