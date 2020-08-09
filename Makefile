@@ -103,6 +103,12 @@ endif
 #
 ifeq ($(BUILD_OS),Darwin)
 CFLAGS+=-DDIRENT_HAS_TYPE
+
+ifeq ($(LIB_DIR),)
+LIB+=-L/usr/local/lib
+else
+LIB+=-L$(LIB_DIR)
+endif
 endif
 
 
