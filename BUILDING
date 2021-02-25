@@ -3,6 +3,11 @@ Dependencies
 ------------
 dupd requires SQLite (-lsqlite3) and OpenSSL (-lcrypto).
 
+For example, on Debian Linux and descendants (like Ubuntu) the
+development headers are provided by packages libsqlite3-dev and
+libssl-dev. On other platforms please check your package manager
+documentation.
+
 Note that dupd no longer requires libbloom.
 
 Branches
@@ -18,8 +23,8 @@ instead of using the master branch.
 
 Building
 --------
-Some pre-built binaries and/or packages are available so you might
-not have to build from source. For pointers on these, see the project page:
+Some pre-built packages are available so you might not have to build
+from source. For pointers on these, see the project page:
 http://www.virkki.com/dupd/
 
 The Makefile specifically supports Linux, SunOS, Darwin (OS X), OpenBSD
