@@ -116,10 +116,10 @@ OPTIONS
               This can reduce clutter in the output  text  if  all  the  files
               scanned share a long identical prefix.
 
-       --minsize SIZE
+       -m, --minsize SIZE
               Report only duplicate sets which consume at least this much disk
-              space.  Note this is the total size occupied by all  the  dupli‐
-              cates in a set, not their individual file size.
+              space, in bytes.  Note this is the total size  occupied  by  all
+              the duplicates in a set, not their individual file size.
 
        --format NAME
               Produce  the report in this output format.  NAME is one of text,
