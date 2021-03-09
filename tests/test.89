@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="scan(files) be sure to normalize start path"
+$DUPD_CMD scan --path `pwd`/files/../files -q $DUPD_CACHEOPT
+checkrv $?
+
+DESC="ls"
+$DUPD_CMD ls --cut `pwd`/files/ --path `pwd`/files/ $DUPD_CACHEOPT > nreport
+checkrv $?
+
+check_nreport output.08
+
+tdone

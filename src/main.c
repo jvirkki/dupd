@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -172,25 +172,7 @@ int opt_add_path(char * arg, int command)
     start_path_state = START_PATH_GIVEN;
   }
 
-  // Strip any trailing slashes for consistency
-  int x = strlen(arg) - 1;
-  if (x > 0) {
-    while (arg[x] == '/') {
-      arg[x--] = 0;
-    }
-  }
-
-  // If the path is absolute just copy it as-is, otherwise prefix it with
-  // the current directory.
-  if (arg[0] == '/') {
-    start_path[start_path_count] = (char *)malloc(x + 2);
-    strcpy(start_path[start_path_count], arg);
-  } else {
-    start_path[start_path_count] = (char *)malloc(DUPD_PATH_MAX);
-    getcwd(start_path[start_path_count], DUPD_PATH_MAX);
-    strcat(start_path[start_path_count], "/");
-    strcat(start_path[start_path_count], arg);
-  }
+  start_path[start_path_count] = realpath(arg, NULL);
 
   STRUCT_STAT info;
   if (get_file_info(start_path[start_path_count], &info) ||
