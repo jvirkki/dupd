@@ -86,20 +86,6 @@ struct size_list * add_to_size_list(uint64_t size,
 
 
 /** ***************************************************************************
- * An internal testing version of process_size_list. Produces output
- * showing how many blocks needed to discard potential duplicates.
- * Not intended for normal usage.
- *
- * Parameters:
- *    dbh - Database pointer.
- *
- * Return: none
- *
- */
-void analyze_process_size_list(sqlite3 * dbh);
-
-
-/** ***************************************************************************
  * Process the size list. The core of the duplicate detection is done
  * from here.
  *
