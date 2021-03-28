@@ -1,5 +1,5 @@
 /*
-  Copyright 2016-2020 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -27,6 +27,7 @@
 
 #include "dirtree.h"
 #include "main.h"
+#include "paths.h"
 #include "readlist.h"
 #include "sizelist.h"
 #include "stats.h"

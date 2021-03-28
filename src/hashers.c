@@ -1,5 +1,5 @@
 /*
-  Copyright 2018-2020 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2018-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -18,6 +18,7 @@
 */
 
 #include "dbops.h"
+#include "dirtree.h"
 #include "hash.h"
 #include "hashers.h"
 #include "hashlist.h"

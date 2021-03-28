@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -758,7 +758,7 @@ void mark_path_entry_ready(struct path_list_head * head,
 
     LOG_INFO {
       struct path_list_entry * pe = pb_get_first_entry(head);
-      int ready = 0;
+      uint32_t ready = 0;
       while (pe != NULL) {
         if (pe->state == FS_BUFFER_READY) { ready++; }
         pe = pe->next;
