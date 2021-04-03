@@ -18,11 +18,17 @@ checkrv $?
 # Since can't rely on which files are reported, verify that only two are
 # (for a total output lenght of 7 lines).
 
-WC=`wc nreport | awk -e '{print $1;}'`
+# mawk is missing -e option so changed to using a file and -f option
+# hopefully this works with all variants of awk
+
+echo '{print $1;}' > /tmp/test.63.$$
+WC=`wc nreport | awk -f /tmp/test.63.$$`
 if [ "$WC" != "7" ]; then
         echo "FAIL ${DESC}"
         exit 1
 fi
+
+rm -f /tmp/test.63.$$
 
 # File 8 is always a true dup (not a hard link, contains same data)
 # so it must always be one of the two reported.
