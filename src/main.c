@@ -226,7 +226,6 @@ static void free_start_paths()
 
 /** ***************************************************************************
  * Process command line arguments and set corresponding globals.
- * Shows usage and exits if errors are detected in argument usage.
  *
  */
 static int process_args(int argc, char * argv[])
@@ -269,7 +268,10 @@ static int process_args(int argc, char * argv[])
 
   if (start_path_state == START_PATH_NULL) {
     start_path[0] = (char *)malloc(DUPD_PATH_MAX);
-    getcwd(start_path[0], DUPD_PATH_MAX);
+    if (!getcwd(start_path[0], DUPD_PATH_MAX)) {
+      printf("error: unable to get current directory\n");
+      return 2;
+    }
     start_path_count = 1;
     LOG(L_INFO, "Defaulting --path to [%s]\n", start_path[0]);
   }
@@ -280,7 +282,10 @@ static int process_args(int argc, char * argv[])
     if (file_path[0] != '/') {
       file_path = (char *)malloc(DUPD_PATH_MAX);
       free_file_path = 1;
-      getcwd(file_path, DUPD_PATH_MAX);
+      if (!getcwd(file_path, DUPD_PATH_MAX)) {
+        printf("error: unable to get current directory\n");
+        return 2;
+      }
       strcat(file_path, "/");
       strcat(file_path, options[OPT_file]);
     }
