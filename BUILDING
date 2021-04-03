@@ -5,8 +5,8 @@ dupd requires SQLite (-lsqlite3) and OpenSSL (-lcrypto).
 
 For example, on Debian Linux and descendants (like Ubuntu) the
 development headers are provided by packages libsqlite3-dev and
-libssl-dev. On other platforms please check your package manager
-documentation.
+libssl-dev. To run the tests you'll also need sqlite3 package. On
+other platforms please check your package manager documentation.
 
 Note that dupd no longer requires libbloom.
 
@@ -18,8 +18,7 @@ the master branch is always kept in a working state, this might not
 always be true in practice.
 
 If you're looking to build a stable binary for production use or
-packaging, it is best to build from the most recent release tag
-instead of using the master branch.
+packaging, it is best to build from the most recent release tag.
 
 Building
 --------
