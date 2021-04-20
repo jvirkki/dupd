@@ -1,12 +1,16 @@
 
-dupd is a file duplicate detection CLI utility.
+dupd is a duplicate file finder CLI utility.
+
+dupd enables an exploratory approach to finding duplicates in your
+filesystems instead of only showing a static list of duplicate
+files. See the docs directory for more information and examples.
+
+dupd also seeks to be fast. For most file sets it performs better than
+other popular tools.
 
 The build currently supports Linux, Solaris, OS X, OpenBSD and
 FreeBSD.  Other UNIX variants should work with minimal effort. See
-BUILDING file for notes on building dupd.
-
-dupd seeks to be fast and efficient. For most file sets it performs
-better than other popular tools.
+the BUILDING file for notes on building dupd.
 
 http://www.virkki.com/dupd
 
