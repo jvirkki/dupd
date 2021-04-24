@@ -578,6 +578,7 @@ int main(int argc, char * argv[])
   free_read_list();
   free_dirtree();
   free_path_buffer();
+  pthread_key_delete(thread_name);
 
   stats_time_total = get_current_time_millis() - stats_main_start;
 
