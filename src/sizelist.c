@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -89,7 +89,7 @@ void show_processed(int total, int files, uint64_t size)
 
   stats_size_list_done++;
 
-  LOG(L_PROGRESS, "Processed %d/%d (%d files of size %" PRIu64 ")\n",
+  LOG(L_PROGRESS, "Processed %d/%d (%d duplicates of size %" PRIu64 ")\n",
       stats_size_list_done, total, files, size);
 
   if (stats_size_list_done > total) {                        // LCOV_EXCL_START
