@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -143,8 +143,6 @@ void add_hash_table_from_mem(struct hash_table * hl,
  *
  * This should only be called on a hash table which has been built from
  * full file hashes so the duplicates are known to be real duplicates.
- *
- * If write_db is false, only print the files to stdout.
  *
  * Parameters:
  *     dbh   - Database handle.
