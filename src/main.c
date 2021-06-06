@@ -256,6 +256,11 @@ static int process_args(int argc, char * argv[])
     return 2;
   }                                                          // LCOV_EXCL_STOP
 
+  if (options[OPT_x_wait]) {
+    printf("%d\n", getpid());
+    getchar();
+  }
+
   if (options[OPT_x_small_buffers]) { x_small_buffers = 1; }
   if (options[OPT_x_testing]) { only_testing = 1; }
   if (options[OPT_quiet]) { log_level = -99; }

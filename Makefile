@@ -1,5 +1,5 @@
 #
-#  Copyright 2012-2019 Jyri J. Virkki <jyri@virkki.com>
+#  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 #
 #  This file is part of dupd.
 #
@@ -57,6 +57,10 @@ OBJS:=$(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
 #
 ifeq ($(BUILD_OS),Linux)
 CFLAGS+=-D_FILE_OFFSET_BITS=64 -DDIRENT_HAS_TYPE -DUSE_FIEMAP
+ifeq ($(DUPD_DTRACE),1)
+CFLAGS+=-DDUPD_DTRACE
+OBJS+=$(BUILD)/dupd.o
+endif
 endif
 
 #
@@ -119,7 +123,7 @@ OPT?=-O3
 endif
 
 
-dupd: src/optgen.c src/optgen.h $(OBJS)
+dupd: src/optgen.c src/optgen.h src/dupd.h $(OBJS)
 	$(CCC) $(CFLAGS) $(OBJS) $(LIB) \
 	    -lsqlite3 -lcrypto -lpthread -lm -o dupd
 
@@ -131,7 +135,7 @@ $(BUILD)/%.o: src/%.c src/%.h
 
 clean:
 	rm -f dupd
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) src/dupd.h
 	rm -f dupd*.tar.gz
 
 lint:
@@ -176,6 +180,14 @@ ifeq (/,$(OPTGEN))
 	(cd src; optgen options.conf && cd .. && $(MAKE) clean)
 else
 	@echo optgen not found, unable to regenerate option code
+endif
+
+src/dupd.h $(BUILD)/dupd.o: src/dupd.d
+ifeq ($(DUPD_DTRACE),1)
+	@mkdir -p $(BUILD)
+	(cd src; dtrace -s dupd.d -h && dtrace -s dupd.d -G && mv dupd.o $(BUILD))
+else
+	touch src/dupd.h
 endif
 
 .PHONY: man

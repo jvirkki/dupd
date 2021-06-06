@@ -83,6 +83,7 @@ int option_x_small_buffers[] = { 18 };
 int option_x_testing[] = { 18 };
 int option_x_no_cache[] = { 18 };
 int option_x_cache_min_size[] = { 18 };
+int option_x_wait[] = { 18 };
 
 int optgen_parse(int argc, char * argv[], int * command, char * options[])
 {
@@ -998,6 +999,31 @@ int optgen_parse(int argc, char * argv[], int * command, char * options[])
       }
       if (!ok) {
         printf("error: option 'x_cache_min_size' not compatible with given command\n");
+        exit(1);
+      }
+      continue;
+    }
+    if ((l == 8 && !strncmp("--x-wait", argv[pos], 8))) {
+      if (options[35] == NULL) {
+        options[35] = numstring[0];
+      } else {
+        options[35] = numstring[atoi(options[35])];
+        if (!strcmp(options[35], "X")) {
+          printf("error: option %s repeated too many times!\n", argv[pos]);
+          exit(1);
+        }
+      }
+      pos++;
+      // strict_options: is x_wait allowed?
+      int ok = 0;
+      unsigned int cc;
+      unsigned int len = sizeof(option_x_wait) / sizeof(option_x_wait)[0];
+      for (cc = 0; cc < len; cc++) {
+        if (option_x_wait[cc] == *command) { ok = 1; }
+        if (option_x_wait[cc] == COMMAND_GLOBAL) { ok = 1; }
+      }
+      if (!ok) {
+        printf("error: option 'x_wait' not compatible with given command\n");
         exit(1);
       }
       continue;

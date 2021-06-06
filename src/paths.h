@@ -68,6 +68,7 @@ struct path_list_head {
 };
 
 
+// Do not change or re-use these constants
 // File State used in path_list_entry
 #define FS_NEED_DATA 51
 #define FS_BUFFER_READY 53
@@ -77,6 +78,7 @@ struct path_list_head {
 #define FS_IGNORE 60
 #define FS_IGNORE_HL 62
 
+// Do not change or re-use these constants
 // Path List State in path_list_head
 #define PLS_NEED_DATA 14
 #define PLS_ALL_BUFFERS_READY 18

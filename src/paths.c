@@ -25,6 +25,7 @@
 
 #include "dbops.h"
 #include "dirtree.h"
+#include "dtrace.h"
 #include "hash.h"
 #include "main.h"
 #include "paths.h"
@@ -216,6 +217,7 @@ static int clear_remaining_entry(struct path_list_head * head)
     case FS_CACHE_DONE:
       free_path_entry(e);
       good++;
+      // XXX dtrace
       e->state = FS_UNIQUE;
       break;
 
@@ -281,6 +283,19 @@ static int mark_path_entry_ignore_int(struct path_list_head * head,
   }
 
   return head->list_size;
+}
+
+
+/** ***************************************************************************
+ * Set the state on new path_list_entry.
+ *
+ */
+static void mark_path_entry_new(struct path_list_entry * entry,
+                                char * filename)
+{
+  (void)filename;
+  entry->state = FS_NEED_DATA;
+  DTRACE_PROBE3(dupd, set_state_new, filename, 0, FS_NEED_DATA);
 }
 
 
@@ -413,7 +428,6 @@ struct path_list_head * insert_first_path(char * filename,
 
   // Initialize the first entry
   s_files_processed++;
-  first_entry->state = FS_NEED_DATA;
   first_entry->filename_size = (uint8_t)filename_len;
   first_entry->fd = 0;
   first_entry->dir = dir_entry;
@@ -428,6 +442,7 @@ struct path_list_head * insert_first_path(char * filename,
   first_entry->bufsize = 0;
   first_entry->data_in_buffer = 0;
   memcpy(filebuf, filename, filename_len);
+  mark_path_entry_new(first_entry, filename);
 
   LOG_EVEN_MORE_TRACE {
     dump_path_list("AFTER insert_first_path", size, head, 0);
@@ -475,7 +490,6 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
 
   // Initialize this new entry
   s_files_processed++;
-  entry->state = FS_NEED_DATA;
   entry->filename_size = (uint8_t)filename_len;
   entry->fd = 0;
   entry->dir = dir_entry;
@@ -490,6 +504,7 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   entry->next_buffer_pos = 0;
   entry->next_read_block = 0;
   memcpy(filebuf, filename, filename_len);
+  mark_path_entry_new(entry, filename);
 
   // If there are now two entries in this path list, it means we have
   // just identified a size which is a candidate for duplicate

@@ -33,6 +33,7 @@
 
 #include "dbops.h"
 #include "dirtree.h"
+#include "dtrace.h"
 #include "filecompare.h"
 #include "hash.h"
 #include "hashers.h"
@@ -716,6 +717,8 @@ void process_cached_hashes(sqlite3 * dbh)
         }                                                    // LCOV_EXCL_STOP
 
         add_to_hash_table(hl, entry, hashbuf);
+        DTRACE_PROBE3(dupd, set_state_cache_done,
+                      pathbuf, entry->state, FS_CACHE_DONE);
         entry->state = FS_CACHE_DONE;
         stats_files_done_from_cache++;
         entry = entry->next;

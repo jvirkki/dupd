@@ -18,6 +18,7 @@
 */
 
 #include "dbops.h"
+#include "dtrace.h"
 #include "dirtree.h"
 #include "hash.h"
 #include "hashers.h"
@@ -86,7 +87,10 @@ static int build_hash_list_round(sqlite3 * dbh,
     if (node->state == FS_BUFFER_READY) {
       update_node_hash(node, hash_out);
       add_to_hash_table(hl, node, hash_out);
+      build_path(node, file);
       node->state = FS_NEED_DATA;
+      DTRACE_PROBE3(dupd, set_state_need_data,
+                    file, FS_BUFFER_READY, FS_NEED_DATA);
 
       // If we've fully read these files it means we have the full hash.
       // If applicable, save in hash cache. Note if the large file differed
@@ -94,7 +98,6 @@ static int build_hash_list_round(sqlite3 * dbh,
       // went to the trouble of hashing them fully, cache it now.
       if (size_node->fully_read && use_hash_cache &&
           size_node->size > cache_min_size) {
-        build_path(node, file);
         cache_db_add_entry(file, hash_out, hash_bufsize);
       }
 

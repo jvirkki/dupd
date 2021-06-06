@@ -44,7 +44,7 @@
 // ab..e.g.ijk..no..rstu.w.yzAB..E.G..JK.MNOPQRSTU.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 35
+#define COUNT_OPTIONS 36
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -150,6 +150,9 @@
 
 // x_cache_min_size (--x-cache-min-size) N : for testing only, not useful otherwise
 #define OPT_x_cache_min_size 34
+
+// x_wait (--x-wait) : wait for newline before starting
+#define OPT_x_wait 35
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -30,6 +30,7 @@
 
 #include "dbops.h"
 #include "dirtree.h"
+#include "dtrace.h"
 #include "hash.h"
 #include "hashlist.h"
 #include "hashlist_priv.h"
@@ -379,6 +380,7 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
           }                                                  // LCOV_EXCL_STOP
         }
 
+        DTRACE_PROBE3(dupd, set_state_done, file, entry->state, FS_DONE);
         entry->state = FS_DONE;
         free_path_entry(entry);
       }
