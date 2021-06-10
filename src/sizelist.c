@@ -264,6 +264,9 @@ static void * size_list_flusher(void * arg)
 
         case FS_NEED_DATA:
         case FS_BUFFER_READY:
+          // Set state to FS_NEED_DATA because size_list_flusher ignores data
+          // read so far and will read everything again.
+          entry->state = FS_NEED_DATA;
           add_hash_table(ht, entry, 0, 0, 0);
           break;
 

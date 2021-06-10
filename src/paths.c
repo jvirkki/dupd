@@ -667,8 +667,9 @@ void mark_path_entry_unique(struct path_list_head * head,
 
   // After shrinking list_size, we might now have all remaining entries ready
   if (head->list_size == head->buffer_ready) {
-    printf("XXXX setUNIQUE need to deal with all buffers full\n");
-    exit(1);
+    head->state = PLS_ALL_BUFFERS_READY;
+    LOG(L_TRACE, "unique: After shrinking list_size to %d, state now %s\n",
+        head->list_size, pls_state(head->state));
   }
 
   if (head->list_size == 1) {
