@@ -28,3 +28,15 @@ usdt:/tmp/dupd:dupd:set_file_state
 {
   printf("%ld: state %d -> %d : (%d) %s\n", nsecs, arg2, arg3, arg1, str(arg0));
 }
+
+usdt:/tmp/dupd:dupd:readbuf_inc
+/str(arg0) == str($1)/
+{
+  printf("%ld: readbuf +%d : (%d) %s\n", nsecs, arg2, arg1, str(arg0));
+}
+
+usdt:/tmp/dupd:dupd:readbuf_dec
+/str(arg0) == str($1)/
+{
+  printf("%ld: readbuf -%d : (%d) %s\n", nsecs, arg2, arg1, str(arg0));
+}

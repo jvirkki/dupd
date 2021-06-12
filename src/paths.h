@@ -133,12 +133,15 @@ void free_path_block();
  * Free buffers related to one path entry.
  *
  * Parameters:
- *     entry - The path list entry.
+ *     path  - File path of entry
+ *     size  - Size of file in path
+ *     entry - The path list entry
  *
  * Return: none
  *
  */
-void free_path_entry(struct path_list_entry * entry);
+void free_path_entry(char * path, uint64_t size,
+                     struct path_list_entry * entry);
 
 
 /** ***************************************************************************

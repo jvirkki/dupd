@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "dtrace.h"
 #include "main.h"
 #include "stats.h"
 #include "utils.h"
@@ -199,10 +200,13 @@ void save_stats()
  * Public function, see header file.
  *
  */
-void inc_stats_read_buffers_allocated(int bytes)
+void inc_stats_read_buffers_allocated(char * path,
+                                      uint64_t size, uint32_t bytes)
 {
   d_mutex_lock(&stats_lock, "increasing buffers");
   stats_read_buffers_allocated += bytes;
+  DTRACE_PROBE4(dupd, readbuf_inc,
+                path, size, bytes, stats_read_buffers_allocated);
   d_mutex_unlock(&stats_lock);
 }
 
@@ -211,10 +215,13 @@ void inc_stats_read_buffers_allocated(int bytes)
  * Public function, see header file.
  *
  */
-void dec_stats_read_buffers_allocated(int bytes)
+void dec_stats_read_buffers_allocated(char * path,
+                                      uint64_t size, uint32_t bytes)
 {
   d_mutex_lock(&stats_lock, "decreasing buffers");
   stats_read_buffers_allocated -= bytes;
+  DTRACE_PROBE4(dupd, readbuf_dec,
+                path, size, bytes, stats_read_buffers_allocated);
   d_mutex_unlock(&stats_lock);
 }
 

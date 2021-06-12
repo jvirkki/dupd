@@ -18,26 +18,17 @@
 */
 
 /*
-  This bpftrace script follows events associated with files of
-  one given size.
+  This bpftrace script follows events associated with one file.
 
-  Parameter needs to be the size of files to follow.
+  Parameter needs to be the full path to the file to follow.
 */
 
-usdt:/tmp/dupd:dupd:set_file_state
-/arg1 == $1/
-{
-  printf("%ld: state %d -> %d : (%d) %s\n", nsecs, arg2, arg3, arg1, str(arg0));
-}
-
 usdt:/tmp/dupd:dupd:readbuf_inc
-/arg1 == $1/
 {
-  printf("%ld: readbuf +%d : (%d) %s\n", nsecs, arg2, arg1, str(arg0));
+  printf("%ld: readbuf: +%d: total: %d\n", nsecs, arg2, arg3);
 }
 
 usdt:/tmp/dupd:dupd:readbuf_dec
-/arg1 == $1/
 {
-  printf("%ld: readbuf -%d : (%d) %s\n", nsecs, arg2, arg1, str(arg0));
+  printf("%ld: readbuf: -%d: total: %d\n", nsecs, arg2, arg3);
 }

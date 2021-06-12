@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2020 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -146,14 +146,16 @@ void save_stats();
  * Increment counter of read buffers allocated.
  *
  */
-void inc_stats_read_buffers_allocated(int bytes);
+void inc_stats_read_buffers_allocated(char * path,
+                                      uint64_t size, uint32_t bytes);
 
 
 /** ***************************************************************************
  * Decrement counter of read buffers allocated.
  *
  */
-void dec_stats_read_buffers_allocated(int bytes);
+void dec_stats_read_buffers_allocated(char * path,
+                                      uint64_t size, uint32_t bytes);
 
 
 /** ***************************************************************************

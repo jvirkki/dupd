@@ -382,7 +382,7 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
 
         dtrace_set_state(file, size, entry->state, FS_DONE);
         entry->state = FS_DONE;
-        free_path_entry(entry);
+        free_path_entry(file, size, entry);
       }
 
       // go publish to db

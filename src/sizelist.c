@@ -347,7 +347,7 @@ static int fill_data_block(struct path_list_head * head,
     entry->bufsize = head->wanted_bufsize;
     entry->buffer = (char *)malloc(entry->bufsize);
     entry->next_buffer_pos = 0;
-    inc_stats_read_buffers_allocated(entry->bufsize);
+    inc_stats_read_buffers_allocated(path, head->sizelist->size, entry->bufsize);
   }
 
   // Or if the desired bufsize has increased since we allocated, realloc.
@@ -357,7 +357,7 @@ static int fill_data_block(struct path_list_head * head,
     entry->bufsize = head->wanted_bufsize;
     entry->buffer = (char *)realloc(entry->buffer, entry->bufsize);
     entry->next_buffer_pos = 0;
-    inc_stats_read_buffers_allocated(inc);
+    inc_stats_read_buffers_allocated(path, head->sizelist->size, inc);
   }
 
   if (entry->buffer == NULL) {                               // LCOV_EXCL_START

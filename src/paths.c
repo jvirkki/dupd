@@ -220,7 +220,7 @@ static int clear_remaining_entry(struct path_list_head * head)
       build_path(e, file);
       dtrace_set_state(file, head->sizelist->size, e->state, FS_UNIQUE);
       e->state = FS_UNIQUE;
-      free_path_entry(e);
+      free_path_entry(file, head->sizelist->size, e);
       break;
 
     case FS_UNIQUE:
@@ -258,7 +258,7 @@ static int mark_path_entry_ignore_int(struct path_list_head * head,
   entry->state = ignore_state;
 
   head->list_size--;
-  free_path_entry(entry);
+  free_path_entry(file, head->sizelist->size, entry);
   LOG(L_TRACE, "ignore: reduced list size to %d\n", head->list_size);
 
   // If list is down to one entry, it's also unique and no more work remains
@@ -345,12 +345,13 @@ void free_path_block()
  * Public function, see paths.h
  *
  */
-void free_path_entry(struct path_list_entry * entry)
+void free_path_entry(char * path, uint64_t size,
+                     struct path_list_entry * entry)
 {
   if (entry->buffer != NULL) {
     free(entry->buffer);
     entry->buffer = NULL;
-    dec_stats_read_buffers_allocated(entry->bufsize);
+    dec_stats_read_buffers_allocated(path, size, entry->bufsize);
     entry->bufsize = 0;
     entry->data_in_buffer = 0;
   }
@@ -662,7 +663,7 @@ void mark_path_entry_unique(struct path_list_head * head,
   dtrace_set_state(file, head->sizelist->size, entry->state, FS_UNIQUE);
   entry->state = FS_UNIQUE;
   head->list_size--;
-  free_path_entry(entry);
+  free_path_entry(file, head->sizelist->size, entry);
   LOG(L_TRACE, "unique: reduced list size to %d\n", head->list_size);
 
   // After shrinking list_size, we might now have all remaining entries ready
