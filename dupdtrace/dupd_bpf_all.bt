@@ -17,37 +17,15 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DUPD_DTRACE_H
-#define _DUPD_DTRACE_H
+/*
+  This sample bpftrace script enables ALL dupd probes.
+  The purpose is to show all the available probes and sample usage.
 
-#include <stdint.h>
+  For other than small runs, this isn't normally what you'd want
+  as it will generate too much output.
+*/
 
-#ifdef DUPD_DTRACE
-
-#include "dupd.h"
-
-#else // ifdef DUPD_DTRACE
-
-#define DTRACE_PROBE2(p, n, o, t)
-#define DTRACE_PROBE3(p, n, o, t, h)
-#define DTRACE_PROBE4(p, n, o, t, h, f)
-
-#endif // ifdef DUPD_DTRACE
-
-
-/** ***************************************************************************
- * Common dtrace probe for file state changes. See states in paths.h
- *
- * Parameters:
- *    path   - Path to the file
- *    size   - Size of file
- *    before - Previous state
- *    after  - New state
- *
- * Return: none
- *
- */
-void dtrace_set_state(char * path, uint64_t size, int before, int after);
-
-
-#endif
+usdt:/tmp/dupd:dupd:set_file_state
+{
+  printf("%ld [%s] %d -> %d : (%d) %s\n", nsecs, probe, arg2, arg3, arg1, str(arg0));
+}

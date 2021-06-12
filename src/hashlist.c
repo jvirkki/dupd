@@ -380,7 +380,7 @@ static void publish_duplicate_hash_list(sqlite3 * dbh,
           }                                                  // LCOV_EXCL_STOP
         }
 
-        DTRACE_PROBE3(dupd, set_state_done, file, entry->state, FS_DONE);
+        dtrace_set_state(file, size, entry->state, FS_DONE);
         entry->state = FS_DONE;
         free_path_entry(entry);
       }

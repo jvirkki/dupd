@@ -17,37 +17,22 @@
   along with dupd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _DUPD_DTRACE_H
-#define _DUPD_DTRACE_H
-
-#include <stdint.h>
-
-#ifdef DUPD_DTRACE
-
-#include "dupd.h"
-
-#else // ifdef DUPD_DTRACE
-
-#define DTRACE_PROBE2(p, n, o, t)
-#define DTRACE_PROBE3(p, n, o, t, h)
-#define DTRACE_PROBE4(p, n, o, t, h, f)
-
-#endif // ifdef DUPD_DTRACE
+#include "dtrace.h"
 
 
 /** ***************************************************************************
- * Common dtrace probe for file state changes. See states in paths.h
- *
- * Parameters:
- *    path   - Path to the file
- *    size   - Size of file
- *    before - Previous state
- *    after  - New state
- *
- * Return: none
+ * Public function, see header file.
  *
  */
-void dtrace_set_state(char * path, uint64_t size, int before, int after);
-
-
+void dtrace_set_state(char * path, uint64_t size, int before, int after)
+{
+#ifdef DUPD_DTRACE
+  DTRACE_PROBE4(dupd, set_file_state, path, size, before, after);
+#else
+  (void)path;
+  (void)size;
+  (void)before;
+  (void)after;
 #endif
+  return;
+}

@@ -199,6 +199,7 @@ inline static void check_space(int needed)
  */
 static int clear_remaining_entry(struct path_list_head * head)
 {
+  char file[DUPD_PATH_MAX];
   head->state = PLS_DONE;
   head->list_size = 0;
   d_mutex_lock(&stats_lock, "mark invalid stats");
@@ -215,10 +216,11 @@ static int clear_remaining_entry(struct path_list_head * head)
     case FS_NEED_DATA:
     case FS_BUFFER_READY:
     case FS_CACHE_DONE:
-      free_path_entry(e);
       good++;
-      // XXX dtrace
+      build_path(e, file);
+      dtrace_set_state(file, head->sizelist->size, e->state, FS_UNIQUE);
       e->state = FS_UNIQUE;
+      free_path_entry(e);
       break;
 
     case FS_UNIQUE:
@@ -249,7 +251,12 @@ static int mark_path_entry_ignore_int(struct path_list_head * head,
                                       struct path_list_entry * entry,
                                       int ignore_state)
 {
+  char file[DUPD_PATH_MAX];
+
+  build_path(entry, file);
+  dtrace_set_state(file, head->sizelist->size, entry->state, ignore_state);
   entry->state = ignore_state;
+
   head->list_size--;
   free_path_entry(entry);
   LOG(L_TRACE, "ignore: reduced list size to %d\n", head->list_size);
@@ -283,19 +290,6 @@ static int mark_path_entry_ignore_int(struct path_list_head * head,
   }
 
   return head->list_size;
-}
-
-
-/** ***************************************************************************
- * Set the state on new path_list_entry.
- *
- */
-static void mark_path_entry_new(struct path_list_entry * entry,
-                                char * filename)
-{
-  (void)filename;
-  entry->state = FS_NEED_DATA;
-  DTRACE_PROBE3(dupd, set_state_new, filename, 0, FS_NEED_DATA);
 }
 
 
@@ -442,7 +436,8 @@ struct path_list_head * insert_first_path(char * filename,
   first_entry->bufsize = 0;
   first_entry->data_in_buffer = 0;
   memcpy(filebuf, filename, filename_len);
-  mark_path_entry_new(first_entry, filename);
+  dtrace_set_state(filename, size, 0, FS_NEED_DATA);
+  first_entry->state = FS_NEED_DATA;
 
   LOG_EVEN_MORE_TRACE {
     dump_path_list("AFTER insert_first_path", size, head, 0);
@@ -504,7 +499,8 @@ void insert_end_path(char * filename, struct direntry * dir_entry,
   entry->next_buffer_pos = 0;
   entry->next_read_block = 0;
   memcpy(filebuf, filename, filename_len);
-  mark_path_entry_new(entry, filename);
+  dtrace_set_state(filename, size, 0, FS_NEED_DATA);
+  entry->state = FS_NEED_DATA;
 
   // If there are now two entries in this path list, it means we have
   // just identified a size which is a candidate for duplicate
@@ -633,6 +629,8 @@ const char * file_state(int state)
 void mark_path_entry_unique(struct path_list_head * head,
                             struct path_list_entry * entry)
 {
+  char file[DUPD_PATH_MAX];
+
   if (debug_size == head->sizelist->size) {
     dump_path_list("IN mark_path_entry_unique", head->sizelist->size, head, 1);
   }
@@ -660,6 +658,8 @@ void mark_path_entry_unique(struct path_list_head * head,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
 
+  build_path(entry, file);
+  dtrace_set_state(file, head->sizelist->size, entry->state, FS_UNIQUE);
   entry->state = FS_UNIQUE;
   head->list_size--;
   free_path_entry(entry);
@@ -753,6 +753,7 @@ int mark_path_entry_ignore_hardlink(struct path_list_head * head,
 void mark_path_entry_ready(struct path_list_head * head,
                            struct path_list_entry * entry)
 {
+  char file[DUPD_PATH_MAX];
 
   if (head->state != PLS_NEED_DATA) {
     printf("error: mark_path_entry_ready: head->state != PLS_NEED_DATA\n");
@@ -766,6 +767,8 @@ void mark_path_entry_ready(struct path_list_head * head,
     exit(1);
   }
 
+  build_path(entry, file);
+  dtrace_set_state(file, head->sizelist->size, entry->state, FS_BUFFER_READY);
   entry->state = FS_BUFFER_READY;
   head->buffer_ready++;
 

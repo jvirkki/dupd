@@ -1,6 +1,9 @@
 provider dupd {
-  probe set_state_new(string, int, int);
-  probe set_state_cache_done(string, int, int);
-  probe set_state_need_data(string, int, int);
-  probe set_state_done(string, int, int);
+
+  // This marks the state of a file has changed.
+  // See paths.h for the int constants for state values.
+  // Parameters are:
+  //   (string) path, (int) size, (int) previous state, (int) new state
+
+  probe set_file_state(string, int, int, int);
 };

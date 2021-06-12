@@ -227,6 +227,7 @@ static void submit_path_list(int thread,
  */
 static void * size_list_flusher(void * arg)
 {
+  char file[DUPD_PATH_MAX];
   struct size_list * size_node;
   struct size_list * size_node_next;
   struct path_list_entry * entry;
@@ -253,12 +254,9 @@ static void * size_list_flusher(void * arg)
 
       while (entry != NULL) {
 
-        LOG_MORE_THREADS {
-          char buffer[DUPD_PATH_MAX];
-          build_path(entry, buffer);
-          LOG(L_MORE_THREADS, "FL.FILE %s state %s\n",
-              buffer, file_state(entry->state));
-        }
+        build_path(entry, file);
+        LOG(L_MORE_THREADS, "FL.FILE %s state %s\n",
+            file, file_state(entry->state));
 
         switch (entry->state) {
 
@@ -266,6 +264,7 @@ static void * size_list_flusher(void * arg)
         case FS_BUFFER_READY:
           // Set state to FS_NEED_DATA because size_list_flusher ignores data
           // read so far and will read everything again.
+          dtrace_set_state(file, size_node->size, entry->state, FS_NEED_DATA);
           entry->state = FS_NEED_DATA;
           add_hash_table(ht, entry, 0, 0, 0);
           break;
@@ -720,8 +719,7 @@ void process_cached_hashes(sqlite3 * dbh)
         }                                                    // LCOV_EXCL_STOP
 
         add_to_hash_table(hl, entry, hashbuf);
-        DTRACE_PROBE3(dupd, set_state_cache_done,
-                      pathbuf, entry->state, FS_CACHE_DONE);
+        dtrace_set_state(pathbuf, size_node->size, entry->state, FS_CACHE_DONE);
         entry->state = FS_CACHE_DONE;
         stats_files_done_from_cache++;
         entry = entry->next;

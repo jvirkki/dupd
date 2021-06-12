@@ -89,8 +89,7 @@ static int build_hash_list_round(sqlite3 * dbh,
       add_to_hash_table(hl, node, hash_out);
       build_path(node, file);
       node->state = FS_NEED_DATA;
-      DTRACE_PROBE3(dupd, set_state_need_data,
-                    file, FS_BUFFER_READY, FS_NEED_DATA);
+      dtrace_set_state(file, size_node->size, FS_BUFFER_READY, FS_NEED_DATA);
 
       // If we've fully read these files it means we have the full hash.
       // If applicable, save in hash cache. Note if the large file differed
