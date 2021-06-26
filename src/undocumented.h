@@ -1,5 +1,5 @@
 /*
-  Copyright 2016 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2016-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -26,20 +26,6 @@
   which might go away on a whim at any time. That's why they are
   undocumented. If you find that you NEED any of this, let me know the
   use case so I can make it more reliable.
-
-
-  Configurable path separator (probably to be removed in 2.0)
-  -----------------------------------------------------------
-  The scan operation takes option --pathsep:
-
-  --pathsep CHAR     Change the internal path separator character to CHAR.
-                     When a list of paths is saved to the database, they are
-                     separated by this character. The result is that any files
-                     which contains this character in the name will be ignored
-                     during scan because the name conflicts with the separator.
-
-  The default path separator is 0x1C (decimal 28) which is the rarely
-  used ASCII file separator character.
 
 
   Testing small buffers
