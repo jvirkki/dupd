@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -28,7 +28,7 @@
 #define ROUND2 1
 #define MAX_HASHER_THREADS 2
 
-pthread_mutex_t stats_lock;
+extern pthread_mutex_t stats_lock;
 
 extern int stats_sets_processed[ROUNDS];
 extern int stats_sets_dup_done[ROUNDS];

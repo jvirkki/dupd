@@ -1,3 +1,7 @@
+2021-08-22  Jyri J. Virkki  <jyri@virkki.com>
+	* Version 1.7.1
+	* Backport fix to include file.
+
 2018-07-18  Jyri J. Virkki  <jyri@virkki.com>
 
 	* Version 1.7
