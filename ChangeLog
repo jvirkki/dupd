@@ -1,6 +1,7 @@
 2021-08-22  Jyri J. Virkki  <jyri@virkki.com>
 	* Version 1.7.1
-	* Backport fix to include file.
+	* (Backport from 2.0-dev) Fix in include file.
+	* (Backport from 2.0-dev) Use file with awk instead of -e option.
 
 2018-07-18  Jyri J. Virkki  <jyri@virkki.com>
 
