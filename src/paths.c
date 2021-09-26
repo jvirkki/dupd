@@ -38,6 +38,7 @@
 // as needed. This list holds the blocks we've had to allocate.
 
 struct path_block_list {
+  uint32_t ptr_block_size;
   char * ptr;
   struct path_block_list * next;
 };
@@ -142,12 +143,13 @@ void dump_path_list(const char * line, uint64_t size,
  * Allocate a path block.
  *
  */
-static struct path_block_list * alloc_path_block(int bsize)
+static struct path_block_list * alloc_path_block(uint32_t bsize)
 {
   struct path_block_list * next;
 
   next = (struct path_block_list *)malloc(sizeof(struct path_block_list));
   next->next = NULL;
+  next->ptr_block_size = bsize;
   next->ptr = (char *)malloc(bsize);
 
   if (next->ptr == NULL) {                                   // LCOV_EXCL_START
@@ -156,6 +158,7 @@ static struct path_block_list * alloc_path_block(int bsize)
   }                                                          // LCOV_EXCL_STOP
 
   LOG(L_RESOURCES, "Allocated %d bytes for the next path block.\n", bsize);
+  inc_stats_pblocks(bsize);
 
   return next;
 }
@@ -167,7 +170,7 @@ static struct path_block_list * alloc_path_block(int bsize)
  */
 static void add_path_block()
 {
-  int bsize = 8 * 1024 * 1024;
+  uint32_t bsize = last_path_block->ptr_block_size * 2;
   if (x_small_buffers) { bsize = DUPD_PATH_MAX; }
 
   struct path_block_list * next = alloc_path_block(bsize);
@@ -299,7 +302,7 @@ static int mark_path_entry_ignore_int(struct path_list_head * head,
  */
 void init_path_block()
 {
-  int bsize = 1024 * 1024;
+  uint32_t bsize = K64;
   if (x_small_buffers) { bsize = DUPD_PATH_MAX; }
 
   first_path_block = alloc_path_block(bsize);
@@ -328,6 +331,7 @@ void free_path_block()
   p = first_path_block;
   while (p != NULL) {
     free(p->ptr);
+    dec_stats_pblocks(p->ptr_block_size);
     b = p;
     p = b->next;
     free(b);

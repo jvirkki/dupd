@@ -71,6 +71,8 @@ int hash_block_size = 8192;
 int filecmp_block_size = 131072;
 int opt_compare_two = 0;
 char * stats_file = NULL;
+char * trace_file = NULL;
+int trace_file_fd = -1;
 int rmsh_link = 0;
 int scan_hidden = 0;
 int path_separator = '\x1C';
@@ -340,6 +342,7 @@ static int process_args(int argc, char * argv[])
   }
 
   stats_file = options[OPT_stats_file];
+  trace_file = options[OPT_trace_mem];
 
   minimum_file_size = opt_int(options[OPT_minsize], minimum_file_size);
   if (minimum_file_size < 1) { minimum_file_size = 1; }
@@ -540,6 +543,15 @@ int main(int argc, char * argv[])
   signal(SIGUSR1, &handle_signal);
   signal(SIGUSR2, &handle_signal);
 
+  if (trace_file != NULL) {
+    trace_file_fd = open(trace_file, O_CREAT | O_TRUNC | O_APPEND | O_WRONLY,
+                         S_IRUSR | S_IWUSR | S_IRGRP);
+    if (trace_file_fd < 0) {
+      printf("error: unable to create trace-file [%s]\n", trace_file);
+      goto DONE;
+    }
+  }
+
   switch (operation) {
 
     case COMMAND_scan:      scan();                      break;
@@ -585,6 +597,11 @@ int main(int argc, char * argv[])
   stats_time_total = get_current_time_millis() - stats_main_start;
 
   LOG(L_PROGRESS, "Total time: %ld ms\n", stats_time_total);
+
+  if (trace_file_fd != -1) {
+    close(trace_file_fd);
+    trace_file_fd = -1;
+  }
 
   if (stats_file != NULL) {
     save_stats();

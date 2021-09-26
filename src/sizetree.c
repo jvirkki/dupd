@@ -126,6 +126,10 @@ static char * queue_state(int s)
 static struct size_node * new_node(uint64_t size, char * filename,
                                    struct direntry * dir_entry)
 {
+  // Note: Not tracking size_node allocations in --trace-memory because
+  // all of them get freed after scan stage so these don't contribute to
+  // memory usage during read/hash stage.
+
   struct size_node * n = (struct size_node *)malloc(sizeof(struct size_node));
   n->left = NULL;
   n->right = NULL;

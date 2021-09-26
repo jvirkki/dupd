@@ -126,6 +126,9 @@ static struct size_list * new_size_list_entry(uint64_t size,
     exit(1);
   }                                                          // LCOV_EXCL_STOP
   e->next = NULL;
+
+  inc_stats_size_list(size, sizeof(struct size_list));
+
   return e;
 }
 
@@ -798,6 +801,7 @@ void free_size_list()
     while (p != NULL) {
       p = p->next;
       pthread_mutex_destroy(&me->lock);
+      dec_stats_size_list(me->size, sizeof(struct size_list));
       free(me);
       me = p;
     }

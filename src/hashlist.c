@@ -63,6 +63,8 @@ struct path_buffer_info {
  */
 static struct hash_list * new_hash_list_node()
 {
+  uint32_t bytes = sizeof(struct hash_list);
+
   struct hash_list * hl = (struct hash_list *)malloc(sizeof(struct hash_list));
 
   hl->hash_valid = 0;
@@ -70,10 +72,14 @@ static struct hash_list * new_hash_list_node()
 
   hl->entries = (struct path_list_entry **)
     malloc(sizeof(struct path_list_entry *) * DEFAULT_PATH_CAPACITY);
+  bytes += sizeof(struct path_list_entry *) * DEFAULT_PATH_CAPACITY;
 
   hl->capacity = DEFAULT_PATH_CAPACITY;
   hl->next_index = 0;
   hl->next = NULL;
+
+  inc_stats_hashtable(bytes);
+
   return hl;
 }
 
@@ -128,10 +134,11 @@ void add_to_hash_table(struct hash_table * hl,
 
       if (p->next_index == p->capacity) {
         // Found correct node but need more space in path list
+        uint32_t bytes = p->capacity * sizeof(struct path_list_entry *);
         p->capacity = p->capacity * 2;
         p->entries = (struct path_list_entry **)
           realloc(p->entries, p->capacity * sizeof(struct path_list_entry *));
-
+        inc_stats_hashtable(bytes);
         stats_hashlist_path_realloc++;
         LOG(L_RESOURCES, "Increased path capacity to %d\n", p->capacity);
       }
@@ -184,18 +191,22 @@ void add_to_hash_table(struct hash_table * hl,
 struct hash_table * init_hash_table()
 {
   struct hash_table * hl = NULL;
+  uint32_t bytes = sizeof(struct hash_table);
 
   hl = (struct hash_table *)malloc(sizeof(struct hash_table));
   hl->has_dups = 0;
   hl->entries = 256;
 
   struct hash_list ** hll = malloc(256 * sizeof(struct hash_list *));
+  bytes += 256 * sizeof(struct hash_list *);
 
   for (int n = 0; n <= 255; n++) {
     hll[n] = NULL;
   }
 
   hl->table = hll;
+
+  inc_stats_hashtable(bytes);
 
   return hl;
 }
@@ -227,6 +238,7 @@ void free_hash_table(struct hash_table * hl)
 {
   struct hash_list * me;
   struct hash_list * p;
+  uint32_t bytes = 0;
 
   for (int n = 0; n <= 255; n++) {
     p = hl->table[n];
@@ -234,13 +246,19 @@ void free_hash_table(struct hash_table * hl)
     while (p != NULL) {
       p = p->next;
       free(me->entries);
+      bytes += me->capacity * sizeof(struct path_list_entry *);
       free(me);
+      bytes += sizeof(struct hash_list);
       me = p;
     }
     hl->table[n] = NULL;
   }
   free(hl->table);
+  bytes += 256 * sizeof(struct hash_list *);
   free(hl);
+  bytes += sizeof(struct hash_table);
+
+  dec_stats_hashtable(bytes);
 }
 
 

@@ -25,6 +25,10 @@
 #include <sys/types.h>
 #include <sqlite3.h>
 
+#define K4 (1024 * 4)
+#define K64 (1024 * 64)
+#define K128 (1024 * 128)
+#define K256 (1024 * 256)
 #define K512 (1024 * 512)
 #define MB1 (1024 * 1024)
 #define MB2 (1024 * 1024 * 2)
@@ -198,6 +202,13 @@ extern int filecmp_block_size;
  *
  */
 extern char * stats_file;
+
+
+/** ***************************************************************************
+ * Save trace info to this file descriptor if valid (> 0)
+ *
+ */
+extern int trace_file_fd;
 
 
 /** ***************************************************************************

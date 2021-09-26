@@ -86,6 +86,11 @@ int stats_hash_list_len_inc = 0;
 int scan_list_usage_max = 0;
 int scan_list_resizes = 0;
 uint64_t stats_read_buffers_allocated = 0;
+uint64_t stats_size_list_allocated = 0;
+uint64_t stats_size_hashtable_allocated = 0;
+uint64_t stats_size_readlist_allocated = 0;
+uint64_t stats_size_dirbuf_allocated = 0;
+uint64_t stats_size_pblocks_allocated = 0;
 int stats_flusher_active = 0;
 uint32_t stats_fiemap_total_blocks = 0;
 uint32_t stats_fiemap_zero_blocks = 0;
@@ -207,6 +212,16 @@ void inc_stats_read_buffers_allocated(char * path,
   stats_read_buffers_allocated += bytes;
   DTRACE_PROBE4(dupd, readbuf_inc,
                 path, size, bytes, stats_read_buffers_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " A RB %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_read_buffers_allocated);
+    write(trace_file_fd, line, n);
+  }
+
   d_mutex_unlock(&stats_lock);
 }
 
@@ -222,6 +237,246 @@ void dec_stats_read_buffers_allocated(char * path,
   stats_read_buffers_allocated -= bytes;
   DTRACE_PROBE4(dupd, readbuf_dec,
                 path, size, bytes, stats_read_buffers_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " F RB %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_read_buffers_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void inc_stats_size_list(uint64_t size, uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_list_allocated += bytes;
+  DTRACE_PROBE3(dupd, sizelist_inc, size, bytes, stats_size_list_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " A SL %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_list_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void dec_stats_size_list(uint64_t size, uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "decreasing buffers");
+  stats_size_list_allocated -= bytes;
+  DTRACE_PROBE3(dupd, sizelist_dec, size, bytes, stats_size_list_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " F SL %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_list_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void inc_stats_hashtable(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_hashtable_allocated += bytes;
+  DTRACE_PROBE2(dupd, hashtable_inc, bytes, stats_size_hashtable_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " A HT %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_hashtable_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void dec_stats_hashtable(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_hashtable_allocated -= bytes;
+  DTRACE_PROBE2(dupd, hashtable_dec, bytes, stats_size_hashtable_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " F HT %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_hashtable_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void inc_stats_readlist(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_readlist_allocated += bytes;
+  DTRACE_PROBE2(dupd, readlist_inc, bytes, stats_size_readlist_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " A RL %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_readlist_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void dec_stats_readlist(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_readlist_allocated -= bytes;
+  DTRACE_PROBE2(dupd, readlist_dec, bytes, stats_size_readlist_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " F RL %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_readlist_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void inc_stats_dirbuf(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_dirbuf_allocated += bytes;
+  DTRACE_PROBE2(dupd, dirbuf_inc, bytes, stats_size_dirbuf_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " A DB %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_dirbuf_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void dec_stats_dirbuf(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_dirbuf_allocated -= bytes;
+  DTRACE_PROBE2(dupd, dirbuf_dec, bytes, stats_size_dirbuf_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " F DB %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_dirbuf_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void inc_stats_pblocks(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_pblocks_allocated += bytes;
+  DTRACE_PROBE2(dupd, pblocks_inc, bytes, stats_size_pblocks_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " A PB %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_pblocks_allocated);
+    write(trace_file_fd, line, n);
+  }
+
+  d_mutex_unlock(&stats_lock);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
+void dec_stats_pblocks(uint32_t bytes)
+{
+  d_mutex_lock(&stats_lock, "increasing buffers");
+  stats_size_pblocks_allocated -= bytes;
+  DTRACE_PROBE2(dupd, pblocks_dec, bytes, stats_size_pblocks_allocated);
+
+  if (trace_file_fd > 0) {
+    char line[80];
+    int n;
+    uint64_t t = get_current_time_millis() - stats_main_start;
+    n = snprintf(line, 80, "%" PRIu64 " F PB %" PRIu32 " %" PRIu64 "\n",
+                 t, bytes, stats_size_pblocks_allocated);
+    write(trace_file_fd, line, n);
+  }
+
   d_mutex_unlock(&stats_lock);
 }
 

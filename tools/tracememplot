@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use File::stat;
+use Time::localtime;
+
+
+#
+# This script takes as input the memory allocation trace file produced
+# by --trace-mem and munges the data so it can be plotted as stacked
+# line graphs by gnuplot.
+#
+# NOTE: gnuplot must be installed and in your $PATH
+#
+# Processed data is saved into file with same name appended with .toplot
+# If the .toplot file is newer than the input file, it is not regenerated.
+#
+# Plot image is generated into file with same name appended with .png
+# If the .png file is newer than the .toplot file, it is not regenerated.
+# Usage:
+#
+# % tracememplot TRACE_MEM_FILE
+#
+
+my $infile = shift @ARGV;
+if (!$infile) {
+    print "error: input file not specified\n";
+    exit(1);
+}
+my $outfile = $infile . ".toplot";
+
+my $infile_mtime = stat($infile)->mtime;
+
+my $outfile_mtime = 0;
+if (-e $outfile) {
+    $outfile_mtime = stat($outfile)->mtime;
+}
+
+if ($outfile_mtime > $infile_mtime) {
+    print "Skipping $outfile generation, newer than $infile\n";
+
+} else {
+    my %total;
+    $total{'SL'} = 0;
+    $total{'RB'} = 0;
+    $total{'HT'} = 0;
+    $total{'RL'} = 0;
+    $total{'DB'} = 0;
+    $total{'PB'} = 0;
+
+    my ($time, $aorf, $cat, $delta, $tot);
+
+    open(FOUT, ">$outfile");
+    open(FIN, $infile);
+    while (<FIN>) {
+        if (/^#/) { next; }
+        ($time, $aorf, $cat, $delta, $tot) = /(\d+) (\w) (\w\w) (\d+) (\d+)/;
+        $total{$cat} = $tot;
+        print FOUT "$time " .
+            ($total{'RB'} + $total{'HT'} + $total{'SL'} + $total{'RL'} + $total{'DB'} + $total{'PB'}) . " " .
+            ($total{'HT'} + $total{'SL'} + $total{'RL'} + $total{'DB'} + $total{'PB'}) . " " .
+            ($total{'SL'} + $total{'RL'} + $total{'DB'} + $total{'PB'}) . " " .
+            ($total{'SL'} + $total{'DB'} + $total{'PB'}) . " " .
+            ($total{'DB'} + $total{'PB'}) . " " .
+            ($total{'PB'}) . "\n";
+    }
+    close(FIN);
+    close(FOUT);
+}
+
+$outfile_mtime = stat($outfile)->mtime;
+my $script = $infile . ".gnuplot";
+my $png = $infile . ".png";
+
+my $png_mtime = 0;
+if (-e $png) {
+    $png_mtime = stat($png)->mtime;
+}
+
+if ($png_mtime > $outfile_mtime) {
+    print "Skipping $png generation, newer than $outfile\n";
+
+} else {
+    open(FOUT, ">$script");
+    print FOUT "set terminal png size 1200,900 \n";
+    print FOUT "set output \"$png\"\n";
+    print FOUT "set ylabel \"MB\"\n";
+    print FOUT "set xlabel \"ms runtime\"\n";
+    print FOUT "plot '$outfile' using 1:(\$2/1024/1024) title \"Read Buffers\" w filledcurves x1 linestyle 6, " .
+        "'$outfile' using 1:(\$3/1024/1024) title \"Hash Tables\" w filledcurves x1 linestyle 5, " .
+        "'$outfile' using 1:(\$4/1024/1024) title \"Size List\" w filledcurves x1 linestyle 4, " .
+        "'$outfile' using 1:(\$5/1024/1024) title \"Read List\" w filledcurves x1 linestyle 3, " .
+        "'$outfile' using 1:(\$6/1024/1024) title \"Dir Buffers\" w filledcurves x1 linestyle 2, " .
+        "'$outfile' using 1:(\$7/1024/1024) title \"Path Blocks\" w filledcurves x1 linestyle 1 " .
+        "\n";
+    close(FOUT);
+
+    system("gnuplot $script");
+    unlink $script;
+}
+
+print "Ready to view:\n$png\n";

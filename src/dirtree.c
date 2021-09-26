@@ -23,13 +23,14 @@
 
 #include "dirtree.h"
 #include "main.h"
+#include "stats.h"
 #include "utils.h"
 
 struct dirbuf_list {
   char * ptr;
   char * pos;
-  int size;
-  int free;
+  uint32_t size;
+  uint32_t free;
   struct dirbuf_list * next;
 };
 
@@ -50,10 +51,10 @@ static int total_dirbufs = 0;
  * Return: Pointer to allocated space.
  *
  */
-static inline char * dirbuf_alloc(int size)
+static inline char * dirbuf_alloc(uint32_t size)
 {
   if (last_dirbuf->free < size) {
-    int nextsize = last_dirbuf->size * 2;
+    uint32_t nextsize = last_dirbuf->size * 2;
     struct dirbuf_list * n;
 
     n = (struct dirbuf_list *)malloc(sizeof(struct dirbuf_list));
@@ -65,6 +66,8 @@ static inline char * dirbuf_alloc(int size)
     last_dirbuf->size = nextsize;
     last_dirbuf->free = nextsize;
     last_dirbuf->next = NULL;
+
+    inc_stats_dirbuf(nextsize);
   }
 
   char * p = last_dirbuf->pos;
@@ -82,12 +85,12 @@ static inline char * dirbuf_alloc(int size)
  */
 void init_dirtree()
 {
-  int init_size = 64 * MB1;
+  uint32_t init_size = K4;
 
   if (x_small_buffers) { init_size = 128; }
-
   first_dirbuf = (struct dirbuf_list *)malloc(sizeof(struct dirbuf_list));
   first_dirbuf->ptr = (char *)malloc(init_size);
+  inc_stats_dirbuf(init_size);
 
   last_dirbuf = first_dirbuf;
   last_dirbuf->pos = last_dirbuf->ptr;
@@ -105,10 +108,12 @@ void free_dirtree()
 {
   struct dirbuf_list * p;
   struct dirbuf_list * prev;
+  uint64_t total = 0;
 
   p = first_dirbuf;
   while(p != NULL) {
     free(p->ptr);
+    total += p->size;
     prev = p;
     p = p->next;
     free(prev);
@@ -116,8 +121,7 @@ void free_dirtree()
 
   first_dirbuf = NULL;
   last_dirbuf = NULL;
-
-  LOG(L_RESOURCES, "Total dirbuf space consumed: %d\n", total_dirbufs);
+  dec_stats_dirbuf(total);
 }
 
 

@@ -115,6 +115,7 @@ void init_read_list()
     inode_read_list =
       (struct read_list_entry *)calloc(inode_read_list_size,
                                        sizeof(struct read_list_entry));
+    inc_stats_readlist(sizeof(struct read_list_entry) * inode_read_list_size);
   }
 }
 
@@ -126,6 +127,7 @@ void init_read_list()
 void free_read_list()
 {
   if (read_list != NULL) {
+    dec_stats_readlist(sizeof(struct read_list_entry) * read_block_counter);
     free(read_list);
     read_list = NULL;
     read_list_end = 0;
@@ -140,6 +142,7 @@ void free_read_list()
 static void free_inode_read_list()
 {
   if (inode_read_list != NULL) {
+    dec_stats_readlist(sizeof(struct read_list_entry) * inode_read_list_size);
     free(inode_read_list);
     inode_read_list = NULL;
     inode_read_list_size = 0;
@@ -165,6 +168,7 @@ static void add_one_to_inode_read_list(struct path_list_head * head,
 
     inode_read_list_end++;
     if (inode_read_list_end == inode_read_list_size) {
+      inc_stats_readlist(sizeof(struct read_list_entry) * inode_read_list_size);
       inode_read_list_size *= 2;
       inode_read_list = (struct read_list_entry *)
         realloc(inode_read_list, sizeof(struct read_list_entry) *
@@ -299,10 +303,12 @@ void sort_read_list()
 
   struct read_list_entry * the_read_list = (struct read_list_entry *)
     malloc(sizeof(struct read_list_entry) * read_block_counter);
+  inc_stats_readlist(sizeof(struct read_list_entry) * read_block_counter);
   uint64_t read_list_index = 0;
 
   struct read_list_entry * tmp_read_list = (struct read_list_entry *)
     malloc(sizeof(struct read_list_entry) * read_block_counter);
+  inc_stats_readlist(sizeof(struct read_list_entry) * read_block_counter);
   uint64_t tmp_index = 0;
 
   uint64_t block_counter = 0;
@@ -437,6 +443,7 @@ void sort_read_list()
   free(tmp_read_list);
   tmp_read_list = NULL;
   tmp_index = 0;
+  dec_stats_readlist(sizeof(struct read_list_entry) * read_block_counter);
 
   read_list = the_read_list;
   read_list_end = read_list_index;

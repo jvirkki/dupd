@@ -41,10 +41,10 @@
 
 //
 // The following short options are NOT yet taken:
-// ab..e.g.ijk..no..rstu.w.yzAB..E.G..JK.MNOPQRSTU.W.YZ0123456789
+// ab..e.g.ijk..no..rstu.w.yzAB..E.G..JK.MNOPQRS.U.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 36
+#define COUNT_OPTIONS 37
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -64,95 +64,98 @@
 // one_file_system (-X,--one-file-system) : for each path, stay in that filesystem
 #define OPT_one_file_system 5
 
+// trace_mem (-T,--trace-mem) FILE : save memory trace data to this file
+#define OPT_trace_mem 6
+
 // hardlink_is_unique (-I,--hardlink-is-unique) : ignore hard links as duplicates
-#define OPT_hardlink_is_unique 6
+#define OPT_hardlink_is_unique 7
 
 // no_thread_scan (--no-thread-scan) : do scan phase in a single thread
-#define OPT_no_thread_scan 7
+#define OPT_no_thread_scan 8
 
 // firstblocks (--firstblocks) N : max blocks to read in first hash pass
-#define OPT_firstblocks 8
+#define OPT_firstblocks 9
 
 // firstblocksize (--firstblocksize) N : size of firstblocks to read
-#define OPT_firstblocksize 9
+#define OPT_firstblocksize 10
 
 // blocksize (--blocksize) N : size of regular blocks to read
-#define OPT_blocksize 10
+#define OPT_blocksize 11
 
 // fileblocksize (--fileblocksize) N : size of blocks to read in file compare
-#define OPT_fileblocksize 11
+#define OPT_fileblocksize 12
 
 // cmp_two (--cmp-two) : force direct comparison of two files
-#define OPT_cmp_two 12
+#define OPT_cmp_two 13
 
 // sort_by (--sort-by) NAME : testing
-#define OPT_sort_by 13
+#define OPT_sort_by 14
 
 // x_nofie (--x-nofie) : testing
-#define OPT_x_nofie 14
+#define OPT_x_nofie 15
 
 // debug_size (--debug-size) N : increase logging for this size
-#define OPT_debug_size 15
+#define OPT_debug_size 16
 
 // cut (-c,--cut) PATHSEG : remove 'PATHSEG' from report paths
-#define OPT_cut 16
+#define OPT_cut 17
 
 // format (--format) NAME : report output format (text, csv, json)
-#define OPT_format 17
+#define OPT_format 18
 
 // file (-f,--file) PATH : check this file
-#define OPT_file 18
+#define OPT_file 19
 
 // exclude_path (-x,--exclude-path) PATH : ignore duplicates under this path
-#define OPT_exclude_path 19
+#define OPT_exclude_path 20
 
 // delete (-D,--delete) : delete the cache
-#define OPT_delete 20
+#define OPT_delete 21
 
 // ls (-l,--ls) : list cache contents
-#define OPT_ls 21
+#define OPT_ls 22
 
 // link (-L,--link) : create symlinks for deleted files
-#define OPT_link 22
+#define OPT_link 23
 
 // hardlink (-H,--hardlink) : create hard links for deleted files
-#define OPT_hardlink 23
+#define OPT_hardlink 24
 
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 24
+#define OPT_hash 25
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 25
+#define OPT_verbose 26
 
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
-#define OPT_verbose_level 26
+#define OPT_verbose_level 27
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 27
+#define OPT_quiet 28
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 28
+#define OPT_db 29
 
 // cache (-C,--cache) PATH : path to dupd hash cache file
-#define OPT_cache 29
+#define OPT_cache 30
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 30
+#define OPT_help 31
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 31
+#define OPT_x_small_buffers 32
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 32
+#define OPT_x_testing 33
 
 // x_no_cache (--x-no-cache) : for testing only, not useful otherwise
-#define OPT_x_no_cache 33
+#define OPT_x_no_cache 34
 
 // x_cache_min_size (--x-cache-min-size) N : for testing only, not useful otherwise
-#define OPT_x_cache_min_size 34
+#define OPT_x_cache_min_size 35
 
 // x_wait (--x-wait) : wait for newline before starting
-#define OPT_x_wait 35
+#define OPT_x_wait 36
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1

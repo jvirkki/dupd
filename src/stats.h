@@ -159,6 +159,76 @@ void dec_stats_read_buffers_allocated(char * path,
 
 
 /** ***************************************************************************
+ * Increment size of size_list structs allocated.
+ *
+ */
+void inc_stats_size_list(uint64_t size, uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Decrement size of size_list structs allocated.
+ *
+ */
+void dec_stats_size_list(uint64_t size, uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Increment size of hashtable space allocated.
+ *
+ */
+void inc_stats_hashtable(uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Decrement size of hashtable space allocated.
+ *
+ */
+void dec_stats_hashtable(uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Increment size of readlist space allocated.
+ *
+ */
+void inc_stats_readlist(uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Decrement size of readlist space allocated.
+ *
+ */
+void dec_stats_readlist(uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Increment size of readlist space allocated.
+ *
+ */
+void inc_stats_dirbuf(uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Decrement size of readlist space allocated.
+ *
+ */
+void dec_stats_dirbuf(uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Increment size of path block space allocated.
+ *
+ */
+void inc_stats_pblocks(uint32_t bytes);
+
+
+/** ***************************************************************************
+ * Decrement size of path block space allocated.
+ *
+ */
+void dec_stats_pblocks(uint32_t bytes);
+
+
+/** ***************************************************************************
  * Increase counter of unique files by one.
  *
  */

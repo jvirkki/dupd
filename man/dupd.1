@@ -104,6 +104,11 @@ interactive operations.
 On completion, create (or append to) FILE and save some stats from the run.
 These are the same stats as get displayed in verbose mode but are more
 suitable for programmatic consumption.
+.TP
+.BR \-T ", " \-\-trace\-mem " " FILE
+Generate FILE containing info about all memory allocations and releases.
+Warning: This file may become very large. The file can be processed into
+a graph with the script in tools/tracememplot from the source distribution.
 .PP
 .B report \- Display the list of duplicates.
 .TP
