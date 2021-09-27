@@ -384,6 +384,13 @@ extern uint64_t debug_size;
 
 
 /** ***************************************************************************
+ * info operation, exents path request
+ *
+ */
+extern char * info_extents_path;
+
+
+/** ***************************************************************************
  * Used as the max path+filename length.
  *
  */

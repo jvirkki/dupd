@@ -443,7 +443,18 @@ struct block_list * get_block_info_from_path(char * path, ino_t inode,
   for (int i = 0; i < count; i++) {
     bl->entry[i].start_pos = fmap->fm_extents[i].fe_logical;
     bl->entry[i].len = fmap->fm_extents[i].fe_length;
-    bl->entry[i].block = fmap->fm_extents[i].fe_physical;
+
+    // fe_physical returns location in bytes but most tools work in blocks
+    // so divide by 512 to make these correspond.
+    // Then add 2048, not really sure why yet. But comparing disk blocks as
+    // reported by tools like iosnoop and biosnoop, the block or sector is
+    // 2048 greater.
+    // This is done here only to make matching blocks easier when comparing
+    // output with other tools. If the 512 or 2048 constants are not
+    // correct in some context, it doesn't change relative ordering for
+    // dupd reads which is what matters, so it's mostly harmless if wrong.
+
+    bl->entry[i].block = (fmap->fm_extents[i].fe_physical / 512) + 2048;
 
     // Files created recently may report back fe_physical as zero.
     // Querying the same file a bit later returns the correct block.

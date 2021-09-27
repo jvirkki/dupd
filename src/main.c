@@ -29,6 +29,7 @@
 #include "filecompare.h"
 #include "hash.h"
 #include "hashlist.h"
+#include "info.h"
 #include "main.h"
 #include "man.h"
 #include "optgen.h"
@@ -72,6 +73,7 @@ int filecmp_block_size = 131072;
 int opt_compare_two = 0;
 char * stats_file = NULL;
 char * trace_file = NULL;
+char * info_extents_path = NULL;
 int trace_file_fd = -1;
 int rmsh_link = 0;
 int scan_hidden = 0;
@@ -343,6 +345,7 @@ static int process_args(int argc, char * argv[])
 
   stats_file = options[OPT_stats_file];
   trace_file = options[OPT_trace_mem];
+  info_extents_path = options[OPT_x_extents];
 
   minimum_file_size = opt_int(options[OPT_minsize], minimum_file_size);
   if (minimum_file_size < 1) { minimum_file_size = 1; }
@@ -571,6 +574,7 @@ int main(int argc, char * argv[])
     case COMMAND_testing:   testing();                   break;
     case COMMAND_hash:      operation_hash_file();       break;
     case COMMAND_cache:     operation_cache();           break;
+    case COMMAND_info:      operation_info();            break;
     case OPTGEN_NO_COMMAND: show_help();                 rv = 1; break;
 
     default:                                                 // LCOV_EXCL_START

@@ -44,7 +44,7 @@
 // ab..e.g.ijk..no..rstu.w.yzAB..E.G..JK.MNOPQRS.U.W.YZ0123456789
 //
 
-#define COUNT_OPTIONS 37
+#define COUNT_OPTIONS 38
 
 // path (-p,--path) PATH : path where scanning will start
 #define OPT_path 0
@@ -121,41 +121,44 @@
 // hardlink (-H,--hardlink) : create hard links for deleted files
 #define OPT_hardlink 24
 
+// x_extents (--x-extents) PATH : show extents
+#define OPT_x_extents 25
+
 // hash (-F,--hash) NAME : specify alternate hash function
-#define OPT_hash 25
+#define OPT_hash 26
 
 // verbose (-v,--verbose) : increase verbosity (may be repeated for more)
-#define OPT_verbose 26
+#define OPT_verbose 27
 
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
-#define OPT_verbose_level 27
+#define OPT_verbose_level 28
 
 // quiet (-q,--quiet) : quiet, supress all output except fatal errors
-#define OPT_quiet 28
+#define OPT_quiet 29
 
 // db (-d,--db) PATH : path to dupd database file
-#define OPT_db 29
+#define OPT_db 30
 
 // cache (-C,--cache) PATH : path to dupd hash cache file
-#define OPT_cache 30
+#define OPT_cache 31
 
 // help (-h,--help) : show brief usage info
-#define OPT_help 31
+#define OPT_help 32
 
 // x_small_buffers (--x-small-buffers) : for testing only, not useful otherwise
-#define OPT_x_small_buffers 32
+#define OPT_x_small_buffers 33
 
 // x_testing (--x-testing) : for testing only, not useful otherwise
-#define OPT_x_testing 33
+#define OPT_x_testing 34
 
 // x_no_cache (--x-no-cache) : for testing only, not useful otherwise
-#define OPT_x_no_cache 34
+#define OPT_x_no_cache 35
 
 // x_cache_min_size (--x-cache-min-size) N : for testing only, not useful otherwise
-#define OPT_x_cache_min_size 35
+#define OPT_x_cache_min_size 36
 
 // x_wait (--x-wait) : wait for newline before starting
-#define OPT_x_wait 36
+#define OPT_x_wait 37
 
 // scan: scan starting from the given path
 #define COMMAND_scan 1
@@ -208,8 +211,11 @@
 // testing: testing only, ignore
 #define COMMAND_testing 17
 
+// info: developer info, ignore
+#define COMMAND_info 18
+
 // GLOBAL: 
-#define COMMAND_GLOBAL 18
+#define COMMAND_GLOBAL 19
 
 /**
  * Function to parse the arguments.
