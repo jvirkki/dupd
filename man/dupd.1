@@ -146,7 +146,7 @@ Required: The file to check
 .BR \-\-cut " " PATHSEG
 Remove prefix PATHSEG from the file paths in the report output.
 .TP
-.BR \-\-exclude " " PATH
+.BR \-\-exclude\-path " " PATH
 Ignore any duplicates under PATH when reporting duplicates.
 This is useful if you intend to delete the entire tree under PATH,
 to make sure you don't delete all copies of the file.
@@ -172,7 +172,7 @@ Start from this directory (default is current directory)
 .BR \-\-cut " " PATHSEG
 Remove prefix $PATHSEG from the file paths in the output.
 .TP
-.BR \-\-exclude " " PATH
+.BR \-\-exclude\-path " " PATH
 Ignore any duplicates under PATH when reporting duplicates.
 .TP
 .BR \-\-hardlink\-is\-unique
