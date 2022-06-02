@@ -1,4 +1,6 @@
-dupd(1)                     General Commands Manual                    dupd(1)
+dupd(1)                                                                dupd(1)
+
+
 
 NAME
        dupd - find duplicate files
@@ -20,8 +22,8 @@ DESCRIPTION
        filesystem  for  duplicates after the scan has completed. See the file,
        ls, dups, uniques and refresh commands.
 
-       Additional documentation and examples are available under the docs  di‐
-       rectory  in  the  source tree. If you don't have the source tree avail‐
+       Additional documentation and examples  are  available  under  the  docs
+       directory  in the source tree. If you don't have the source tree avail‐
        able, see https://github.com/jvirkki/dupd/blob/master/docs/index.md
 
 COMMANDS
@@ -61,9 +63,9 @@ OPTIONS
 
        -p, --path PATH
               Recursively  scan the directory tree starting at this path.  The
-              path option can be given multiple times to specify multiple  di‐
-              rectory  trees to scan.  If no path option is given, the default
-              is to start scanning from the current directory.
+              path option can be given  multiple  times  to  specify  multiple
+              directory  trees  to  scan.   If  no  path  option is given, the
+              default is to start scanning from the current directory.
 
        -m, --minsize SIZE
               Minimum size (in bytes) to include  in  scan.   By  default  all
@@ -72,13 +74,13 @@ OPTIONS
               the scan by ignoring smaller files.
 
        --buflimit LIMIT
-              Limit read buffer size. LIMIT may be an integer in bytes, or in‐
-              clude a suffix of M for megabytes or G for gigabytes.  The  scan
-              animation  shows the percentage of buffer space in use (%b). Un‐
-              less that value goes up to 100% or beyond during a scan there is
-              no need to adjust this limit.  Setting this limit to a low value
-              will constrain dupd memory usage but possibly at a cost to  per‐
-              formance (depends on the data set).
+              Limit  read  buffer  size.  LIMIT may be an integer in bytes, or
+              include a suffix of M for megabytes or G for gigabytes. The scan
+              animation  shows  the  percentage  of  buffer space in use (%b).
+              Unless that value goes up to 100% or beyond during a scan  there
+              is  no  need  to adjust this limit.  Setting this limit to a low
+              value will constrain dupd memory usage but possibly at a cost to
+              performance (depends on the data set).
 
        -X, --one-file-system
               For each path scanned, do not cross over to a different filesys‐
@@ -92,15 +94,15 @@ OPTIONS
 
        --db PATH
               Override  the  default  database  file location.  The default is
-              $HOME/.dupd_sqlite.  If you override the path during  scan,  re‐
-              member  to provide this argument and the path for subsequent op‐
-              erations so the database can be found.
+              $HOME/.dupd_sqlite.  If  you  override  the  path  during  scan,
+              remember  to  provide  this argument and the path for subsequent
+              operations so the database can be found.
 
        -I, --hardlink-is-unique
-              Consider hard links to the same file content as unique.  By  de‐
-              fault  hard links are listed as duplicates.  See HARD LINKS sec‐
-              tion below.  Note that if this option is given during  scan,  it
-              cannot be given during interactive operations.
+              Consider hard links to the same  file  content  as  unique.   By
+              default  hard  links  are  listed as duplicates.  See HARD LINKS
+              section below.  Note that if this option is given  during  scan,
+              it cannot be given during interactive operations.
 
        --stats-file FILE
               On  completion,  create  (or append to) FILE and save some stats
@@ -148,7 +150,7 @@ OPTIONS
        --cut PATHSEG
               Remove prefix PATHSEG from the file paths in the report output.
 
-       --exclude PATH
+       --exclude-path PATH
               Ignore any duplicates  under  PATH  when  reporting  duplicates.
               This  is  useful  if  you intend to delete the entire tree under
               PATH, to make sure you don't delete all copies of the file.
@@ -174,7 +176,7 @@ OPTIONS
        --cut PATHSEG
               Remove prefix $PATHSEG from the file paths in the output.
 
-       --exclude PATH
+       --exclude-path PATH
               Ignore any duplicates under PATH when reporting duplicates.
 
        --hardlink-is-unique
@@ -212,8 +214,8 @@ OPTIONS
        as it may be useful if you want to reconfirm that all duplicates in the
        database are still truly duplicates.
 
-       In most cases you will be better off re-running the scan operation  in‐
-       stead of using validate.
+       In most cases you will be better  off  re-running  the  scan  operation
+       instead of using validate.
 
        Validate  is  fairly slow as it will fully hash every file in the data‐
        base.
@@ -236,8 +238,8 @@ OPTIONS
        better file name and/or location.
 
        Optionally,  the shell script can create either soft or hard links from
-       each removed file to the copy being kept.  The options are mutually ex‐
-       clusive.
+       each removed file to the copy being kept.   The  options  are  mutually
+       exclusive.
 
        --link Create symlinks for deleted files.
 
@@ -318,5 +320,7 @@ SEE ALSO
        sqlite3(1)
 
        https://github.com/jvirkki/dupd/blob/master/docs/index.md
+
+
 
                                                                        dupd(1)
