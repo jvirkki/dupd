@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2023 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -59,8 +59,8 @@ struct path_list_head {
   struct size_list * sizelist;
   struct path_list_entry * last_entry;
   uint32_t wanted_bufsize;
-  uint16_t list_size;
-  uint16_t buffer_ready;
+  uint32_t list_size;
+  uint32_t buffer_ready;
   uint8_t state;
   uint8_t hash_passes;
   // first_entry follows

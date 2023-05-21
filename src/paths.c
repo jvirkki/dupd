@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2023 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -575,6 +575,11 @@ void mark_path_entry_ready(struct path_list_head * head,
 
   if (head->state != PLS_NEED_DATA) {
     printf("error: mark_path_entry_ready: head->state != PLS_NEED_DATA\n");
+    char buffer[entry->filename_size + 1];
+    char * filename = pb_get_filename(entry);
+    memcpy(buffer, filename, entry->filename_size);
+    buffer[entry->filename_size] = 0;
+    printf("  for path_list_entry %s\n", buffer);
     dump_path_list("", head->sizelist->size, head, 1);
     exit(1);
   }
@@ -593,7 +598,7 @@ void mark_path_entry_ready(struct path_list_head * head,
 
     LOG_INFO {
       struct path_list_entry * pe = pb_get_first_entry(head);
-      int ready = 0;
+      uint32_t ready = 0;
       while (pe != NULL) {
         if (pe->state == FS_BUFFER_READY) { ready++; }
         pe = pe->next;

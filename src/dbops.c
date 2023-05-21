@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2023 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -516,7 +516,11 @@ void init_get_known_duplicates()
  */
 char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
 {
-  static char path_list[ONE_MB_BYTES];
+  static char * path_list;
+  uint32_t path_list_len = 50000;
+
+  path_list = (char *)malloc(path_list_len);
+  path_list[0] = 0;
 
   const char * sql = "SELECT paths FROM duplicates WHERE paths LIKE ?";
   int rv;
@@ -557,10 +561,10 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     }                                                        // LCOV_EXCL_STOP
 
     char * p = (char *)sqlite3_column_text(stmt_get_known_duplicates, 0);
-    if (strlen(p) + 1 > ONE_MB_BYTES) {                      // LCOV_EXCL_START
-      printf("error: no one expects a path list this long: %zu\n", strlen(p));
-      exit(1);
-    }                                                        // LCOV_EXCL_STOP
+    if (strlen(p) + 1 > path_list_len) {
+      path_list_len = strlen(p) + 1;
+      path_list = (char *)realloc(path_list, path_list_len);
+    }
     strcpy(path_list, p);
 
     LOG(L_TRACE, "match: %s\n", path_list);
@@ -630,6 +634,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     LOG(L_TRACE, "get_known_duplicates: NONE\n");
     *dups = 0;
     sqlite3_reset(stmt_get_known_duplicates);
+    free(path_list);
     return(NULL);
   }
 
@@ -647,6 +652,7 @@ char * * get_known_duplicates(sqlite3  *dbh, char * path, int * dups)
     }
   }
 
+  free(path_list);
   return(known_dup_path_list);
 }
 
