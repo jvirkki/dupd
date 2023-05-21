@@ -415,7 +415,12 @@ static int file_callback(sqlite3 * dbh,
     if (is_known_unique(dbh, path)) {
       if (print_uniques) {
         print_path(unique_pfx, path);
+        return(0);
       }
+    }
+    // If we're only printing uniques and we have_uniques above, nothing
+    // more left to do for this file.
+    if (!print_duplicates) {
       return(0);
     }
   }
