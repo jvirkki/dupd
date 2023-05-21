@@ -17,7 +17,7 @@ Even though dupd can be used as a simple duplicate reporting tool similar
 to how other duplicate finders work (by running \fBdupd scan ; dupd report\fR),
 the real power of dupd comes from interactively exploring the filesystem
 for duplicates after the scan has completed. See the file, ls, dups, uniques
-and refresh commands.
+and refresh commands. Read also the section STALE DATABASE for more context.
 .PP
 Additional documentation and examples are available under the docs directory
 in the source tree. If you don't have the source tree available, see
@@ -275,6 +275,26 @@ By default dupd considers hardlinks as duplicates. You can switch this
 around with the --hardlink-is-unique option.
 This option can be given either during scan or to the interactive
 reporting commands (file, ls, uniques, dups).
+.SH STALE DATABASE
+Much of the flexibility of dupd comes from the fact that the duplicate sets
+(and optionally unique files) are saved in the database, which enables the
+exploratory usage dupd enables. However, it is important to be aware of the
+limitations of this database.
+.PP
+The database is created during a \fBdupd scan\fR operation. Unless you
+are scanning a read-only filesystem, it is possible that files get
+modified, added and deleted after that point in time by actions
+outside the knowledge of dupd. This means that over time the database
+becomes increasingly stale compared to the content of the files. To
+discourage use of an old database, dupd prints a warning if the db is
+older than 3 days. But this is an arbitrary value and files may change
+instants after being scanned.
+.PP
+If you are only deleting duplicate files from the data set, refer to
+the \fBrefresh\fP command to update the database. However, if files
+are being modified and/or added, then it is best to re-run a \fBdupd
+scan\fR operation whenever the data set has changed sufficiently,
+which is a judgment call.
 .SH EXAMPLES
 .PP
 Scan all files in your home directory and then show the sets of duplicates
