@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2021 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -204,7 +204,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
   int rv;
   int curlen;
   struct dirent * entry;
-  char newpath[DUPD_PATH_MAX];
+  char newpath[DUPD_PATH_MAX * 2];
   struct direntry * current_dir_entry;
   char current[DUPD_PATH_MAX];
   ino_t inode;
@@ -270,7 +270,7 @@ void walk_dir(sqlite3 * dbh, const char * path, struct direntry * dir_entry,
       if (curlen == 1 && current[0] == '/') {
         snprintf(newpath, DUPD_PATH_MAX, "/%s", entry->d_name);
       } else {
-        snprintf(newpath, DUPD_PATH_MAX, "%s/%s", current, entry->d_name);
+        snprintf(newpath, DUPD_PATH_MAX * 2, "%s/%s", current, entry->d_name);
       }
 
       // If DIRENT_HAS_TYPE, we can get the type of the file from entry->d_type
