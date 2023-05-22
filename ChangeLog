@@ -1,3 +1,10 @@
+2023-05-21  Jyri J. Virkki  <jyri@virkki.com>
+	* Version 1.7.2
+	* (Backport from 2.0-dev) Allow path list to be larger than 64K files.
+	* (Backport from 2.0-dev) Silence false positive warning by increasing buffer
+	* Add some commentary in the manpage on database staleness.
+	* Make the uniques operation more efficient if scan done with --uniques.
+
 2021-08-22  Jyri J. Virkki  <jyri@virkki.com>
 	* Version 1.7.1
 	* (Backport from 2.0-dev) Fix in include file.
