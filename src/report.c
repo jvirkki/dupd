@@ -513,18 +513,34 @@ void operation_ls()
  */
 void operation_uniques()
 {
-  print_uniques = 1;
-  LOG_MORE {
-    list_all_duplicates = 1;
-  }
+  if (have_uniques) {
 
-  sqlite3 * dbh = open_database(db_path, 0);
-  init_get_known_duplicates();
-  init_scanlist();
-  init_dirtree();
-  walk_dir(dbh, start_path[0], NULL, 0, file_callback);
-  close_database(dbh);
-  free_get_known_duplicates();
+    // If we have_uniques (the files table) in the db, simply print out
+    // all the unique files (at time of scan) which fall under start_path[0]
+
+    sqlite3 * dbh = open_database(db_path, 0);
+    print_all_uniques(dbh, start_path[0]);
+    close_database(dbh);
+    return;
+
+  } else {
+
+    // Otherise, walk the dir tree and identify uniques by their absensce in
+    // duplicates table, which is (much) slower.
+
+    print_uniques = 1;
+    LOG_MORE {
+      list_all_duplicates = 1;
+    }
+
+    sqlite3 * dbh = open_database(db_path, 0);
+    init_get_known_duplicates();
+    init_scanlist();
+    init_dirtree();
+    walk_dir(dbh, start_path[0], NULL, 0, file_callback);
+    close_database(dbh);
+    free_get_known_duplicates();
+  }
 }
 
 

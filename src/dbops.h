@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014,2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2023 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -148,6 +148,20 @@ void unique_to_db(sqlite3 * dbh, char * path, char * msg);
  *
  */
 int is_known_unique(sqlite3 * dbh, char * path);
+
+
+/** ***************************************************************************
+ * Print to stdout all the unique files from 'files' table which fall under
+ * the given 'path'.
+ *
+ * Parameters:
+ *    dbh  - Database handle.
+ *    path - Subdirectory tree path to consider.
+ *
+ * Return: none
+ *
+ */
+void print_all_uniques(sqlite3 * dbh, char * path);
 
 
 /** ***************************************************************************

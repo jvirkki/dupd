@@ -489,6 +489,44 @@ int is_known_unique(sqlite3 * dbh, char * path)
  * Public function, see header file.
  *
  */
+void print_all_uniques(sqlite3 * dbh, char * path)
+{
+  const char * sql = "SELECT path FROM files";
+  int rv;
+  int pathlen = strlen(path);
+
+  if (!have_uniques) {                                     // LCOV_EXCL_START
+    printf("error: print_all_uniques called by don't have_uniques!\n");
+    exit(1);
+  }                                                        // LCOV_EXCL_STOP
+
+  sqlite3_stmt * stmt;
+  rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
+  rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
+
+  char * got_path = NULL;
+
+  while (rv != SQLITE_DONE) {
+    rv = sqlite3_step(stmt);
+    if (rv == SQLITE_DONE) { continue; }
+    if (rv != SQLITE_ROW) {                                  // LCOV_EXCL_START
+      printf("Error reading uniques table!\n");
+      exit(1);
+    }                                                        // LCOV_EXCL_STOP
+
+    got_path = (char *)sqlite3_column_text(stmt, 0);
+    if (!strncmp(path, got_path, pathlen)) {
+      printf("%s\n", got_path);
+    }
+  }
+  sqlite3_reset(stmt);
+}
+
+
+/** ***************************************************************************
+ * Public function, see header file.
+ *
+ */
 void init_get_known_duplicates()
 {
   if (known_dup_path_list != NULL) {
