@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2023 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -116,7 +116,7 @@ char * log_level_name[] = {
  */
 static void show_banner()
 {
-  printf("dupd " DUPD_VERSION " Copyright 2012-2018 Jyri J. Virkki\n");
+  printf("dupd " DUPD_VERSION " Copyright 2012-2023 Jyri J. Virkki\n");
   printf("This program comes with ABSOLUTELY NO WARRANTY.\n");
   printf("This is free software, and you are welcome to redistribute it\n");
   printf("under certain conditions. Run 'dupd license' for details.\n");
