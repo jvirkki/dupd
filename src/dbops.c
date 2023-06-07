@@ -88,7 +88,7 @@ static void initialize_database(sqlite3 * dbh)
 
   single_statement(dbh, "CREATE TABLE meta "
                         "(separator TEXT, hidden INTEGER, version TEXT, "
-                        "dbtime INTEGER, hardlinks TEXT)");
+                        "dbtime INTEGER, hardlinks TEXT, minsize INTEGER)");
 
   if (save_uniques) {
     single_statement(dbh, "CREATE TABLE files (path TEXT)");
@@ -98,8 +98,8 @@ static void initialize_database(sqlite3 * dbh)
 
   static sqlite3_stmt * stmt;
   const char * sql = "INSERT INTO meta (separator, hidden, version, "
-                     "dbtime, hardlinks) "
-                     "VALUES (?, ?, ?, ?, ?)";
+                     "dbtime, hardlinks, minsize) "
+                     "VALUES (?, ?, ?, ?, ?, ?)";
 
   int rv = sqlite3_prepare_v2(dbh, sql, -1, &stmt, NULL);
   rvchk(rv, SQLITE_OK, "Can't prepare statement: %s\n", dbh);
@@ -123,6 +123,9 @@ static void initialize_database(sqlite3 * dbh)
     rv = sqlite3_bind_text(stmt, 5, "normal", -1, SQLITE_STATIC);
   }
   rvchk(rv, SQLITE_OK, "Can't bind hardlinks: %s\n", dbh);
+
+  rv = sqlite3_bind_int(stmt, 6, minimum_file_size);
+  rvchk(rv, SQLITE_OK, "Can't bind minimum_file_size: %s\n", dbh);
 
   rv = sqlite3_step(stmt);
   rvchk(rv, SQLITE_DONE, "tried to set meta data: %s\n", dbh);
@@ -197,7 +200,7 @@ sqlite3 * open_database(char * path, int newdb)
   // Load meta info from database
 
   sqlite3_stmt * statement = NULL;
-  char * sql = "SELECT separator, hidden, version, dbtime, hardlinks "
+  char * sql = "SELECT separator, hidden, version, dbtime, hardlinks, minsize "
                "FROM meta";
 
   rv = sqlite3_prepare_v2(dbh, sql, -1, &statement, NULL);
@@ -256,6 +259,14 @@ sqlite3 * open_database(char * path, int newdb)
       printf("error: scan was already performed with --hardlink-is-unique\n");
       exit(1);
     }
+  }
+
+  // If opening an existing db, get the minsize parameter from there to
+  // the value which was set during scan. This allows consistent behavior
+  // for minimum file size between scan and subsequent commands.
+
+  if (!newdb) {
+    minimum_file_size = (uint32_t)sqlite3_column_int64(statement, 5);
   }
 
   sqlite3_finalize(statement);

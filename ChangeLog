@@ -1,3 +1,8 @@
+2023-06-06  Jyri J. Virkki  <jyri@virkki.com>
+	* Version 1.7.3
+	* Interactive commands now treat files smaller than minsize consistent
+	    with scan and report behavior (github bug #47).
+
 2023-05-21  Jyri J. Virkki  <jyri@virkki.com>
 	* Version 1.7.2
 	* (Backport from 2.0-dev) Allow path list to be larger than 64K files.

@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2018 Jyri J. Virkki <jyri@virkki.com>
+  Copyright 2012-2023 Jyri J. Virkki <jyri@virkki.com>
 
   This file is part of dupd.
 
@@ -383,7 +383,7 @@ void operation_report()
  *
  * Parameters:
  *    dbh  - sqlite3 database handle.
- *    size - IGNORED
+ *    size - Size of the file, but note it may be SCAN_SIZE_UNKNOWN
  *    path - Process this file.
  *
  * Return:
@@ -402,6 +402,26 @@ static int file_callback(sqlite3 * dbh,
   (void)dir_entry;
   char * unique_pfx = "";
   char * dup_pfx = "";
+
+  // If the file is smaller than what the scan cared about, ignore it.
+  // Otherwise it leads to inconsistent behavior where a file is not
+  // processed during the scan (and thus not reported by report) but
+  // is reported by the interactive functions. This has led to confusion,
+  // so it is best to be consistent in output.
+
+  if (size == SCAN_SIZE_UNKNOWN) {
+    STRUCT_STAT stat_info;
+    int rv = get_file_info(path, &stat_info);
+    if (rv != 0) {
+      printf("error: unable to stat the size of %s\n", path);
+      exit(1);
+    }
+    size = (uint64_t)stat_info.st_size;
+  }
+
+  if (size < minimum_file_size) {
+    return 0;
+  }
 
   // For uniques and dups, only print the list of filenames.
   // For ls which prints both, include prefixes to identify the type.

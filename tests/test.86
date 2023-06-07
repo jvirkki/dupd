@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="interactive commands need to ignore files under minsize (same as scan)"
+
+$DUPD_CMD scan --path `pwd`/files10 -q --minsize 10
+checkrv $?
+
+DESC="verify dups ignores files under minsize (same as scan)"
+$DUPD_CMD dups --cut `pwd`/files10/ --path `pwd`/files10/ > nreport
+checkrv $?
+check_nreport output.86
+
+DESC="verify uniques ignores files under minsize (same as scan)"
+$DUPD_CMD uniques --cut `pwd`/files10/ --path `pwd`/files10/ > nreport
+checkrv $?
+check_nreport output.86
+
+DESC="verify ls ignores files under minsize (same as scan)"
+$DUPD_CMD ls --cut `pwd`/files10/ --path `pwd`/files10/ > nreport
+checkrv $?
+check_nreport output.86
+
+tdone

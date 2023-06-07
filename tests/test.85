@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+source common
+
+DESC="interactive commands need to ignore empty files (same as scan)"
+
+$DUPD_CMD scan --path `pwd`/files10 -q
+checkrv $?
+
+DESC="verify dups ignores empty files (same as scan)"
+$DUPD_CMD dups --cut `pwd`/files10/ --path `pwd`/files10/ > nreport
+checkrv $?
+check_nreport output.85a
+
+DESC="verify uniques ignores empty files (same as scan)"
+$DUPD_CMD uniques --cut `pwd`/files10/ --path `pwd`/files10/ > nreport
+checkrv $?
+check_nreport output.85b
+
+DESC="verify ls ignores empty files (same as scan)"
+$DUPD_CMD ls --cut `pwd`/files10/ --path `pwd`/files10/ > nreport
+checkrv $?
+check_nreport output.85c
+
+tdone

@@ -156,6 +156,8 @@ OPTIONS
 
        While  the  file  command checks the duplicate status of a single file,
        these commands do the same for all the files in a given directory tree.
+       Please  note  that  files  which are smaller than the minimum file size
+       processed during the scan operation will not be shown.
 
        ls - List all files, show whether they have duplicates or not.
 
