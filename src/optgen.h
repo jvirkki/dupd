@@ -133,7 +133,7 @@
 // verbose_level (-V,--verbose-level) N : set verbosity level to N
 #define OPT_verbose_level 28
 
-// quiet (-q,--quiet) : quiet, supress all output except fatal errors
+// quiet (-q,--quiet) : quiet, suppress all output except fatal errors
 #define OPT_quiet 29
 
 // db (-d,--db) PATH : path to dupd database file
