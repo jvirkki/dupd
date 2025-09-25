@@ -1190,7 +1190,7 @@ void opt_show_help()
   printf("  -F --hash NAME           specify alternate hash function\n");
   printf("  -v --verbose             increase verbosity (may be repeated for more)\n");
   printf("  -V --verbose-level N     set verbosity level to N\n");
-  printf("  -q --quiet               quiet, supress all output except fatal errors\n");
+  printf("  -q --quiet               quiet, suppress all output except fatal errors\n");
   printf("  -d --db PATH             path to dupd database file\n");
   printf("  -C --cache PATH          path to dupd hash cache file\n");
   printf("  -h --help                show brief usage info\n");
